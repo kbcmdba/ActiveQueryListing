@@ -1,0 +1,11 @@
+config.xml
+.settings
+.project
+.buildpath
+.php_cs.cache
+vendor/
+build/
+.DS_Store
+.circleci/config.yml
+deploy/appspec.yml
+

@@ -1,0 +1,13 @@
+{
+    "name": "kbcmdba/aql",
+    "description": "Active Query Listing (MySQL)",
+    "type": "project",
+    "license": "GPL 2",
+    "authors": [
+        {
+            "name": "KB Benton",
+            "email": "kbcmdba@gmail.com"
+        }
+    ],
+    "require": {}
+}
