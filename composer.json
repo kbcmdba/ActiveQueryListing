@@ -9,5 +9,27 @@
             "email": "kbcmdba@gmail.com"
         }
     ],
-    "require": {}
+    "require": {},
+    "autoload": {
+        "psr-4": {
+             "com\\kbcmdba\\aql\\Libs\\": "Libs/"
+        }
+    },
+    "config": {
+        "vendor-dir": "vendor"
+    },
+    "scripts": {
+        "clean": [
+            "rm -fr build"
+        ],
+        "build": [
+            "mkdir -p build/dist",
+            "cp -R .php_cs.dist AJAXgetaql.php LICENSE Libs README composer.json config_sample.xml css index.php js killproc.php setup_db.sql todo.php utility.php build/dist",
+            "git describe --tags --always > build/dist/VERSION.txt",
+            "@composer install -d build/dist -n --no-ansi --no-dev --prefer-dist -o --no-scripts --ignore-platform-reqs",
+            "(find build/dist -type d -name .git && find build/dist -name .gitignore && find build/dist -name .gitmodules) | xargs rm -rf",
+            "cp -R deploy/* build",
+            "cd build && tar czf build.tar.gz appspec.yml dist"
+        ]
+    }
 }
