@@ -42,12 +42,17 @@
 }
 
 .level1 {
-  background-color: white ;
+  background-color: #ddd ;
   color: black ;
 }
 
 .level0 {
   background-color: cyan ;
+  color: black ;
+}
+
+.sleeping {
+  background-color: #eee ;
   color: black ;
 }
 
@@ -63,6 +68,24 @@
 
 th {
   background-color: #eee ;
+}
+
+.dupe {
+	background-color: pink ;
+	color: black ;
+	text-align: center ;
+}
+
+.similar {
+	background-color: lightgreen ;
+	color: black ;
+	text-align: center ;
+}
+
+.unique {
+	background-color: silver ;
+	color: black ;
+	text-align: center ;
 }
 
 .comment {
@@ -82,4 +105,19 @@ a {
 }
 a:visited {
 	color: #0254EB
+}
+
+div.now {
+  color: #a0a0a0;
+  font-size: 75%;
+  text-align: right;  
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table, th, td {
+  border: 1px solid black;
 }

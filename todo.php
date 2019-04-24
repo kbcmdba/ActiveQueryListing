@@ -2,7 +2,7 @@
 
 /*
  *
- * aql - Active Query Listing
+ * ActiveQueryListing - Active Query Listing
  *
  * Copyright (C) 2018 Kevin Benton - kbcmdba [at] gmail [dot] com
  *
@@ -22,7 +22,7 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\ActiveQueryListing ;
 
 // @todo 01 Implement Host/Group Limiter
 // @todo 02 Protect code from SQL injection

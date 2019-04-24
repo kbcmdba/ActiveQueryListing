@@ -2,7 +2,7 @@
 
 /*
  *
- * aql - Active Query Listing
+ * ActiveQueryListing - Active Query Listing
  *
  * Copyright (C) 2018 Kevin Benton - kbcmdba [at] gmail [dot] com
  *
@@ -22,10 +22,10 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\ActiveQueryListing ;
 
 spl_autoload_register(function ($className) {
-    $className = str_replace('com\\kbcmdba\\aql\\', '', $className);
+    $className = str_replace('com\\kbcmdba\\ActiveQueryListing\\', '', $className);
     switch (true) {
         case (preg_match('/^ControllerBase$/', $className)
              || preg_match('/Controller(|Interface)$/', $className)

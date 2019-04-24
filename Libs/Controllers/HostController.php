@@ -1,7 +1,7 @@
 <?php
 
 /**
- * aql
+ * ActiveQueryListing
  *
  * Copyright (C) 2018 Kevin Benton - kbcmdba [at] gmail [dot] com
  *
@@ -21,7 +21,7 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\ActiveQueryListing ;
 
 class HostController extends ControllerBase
 {

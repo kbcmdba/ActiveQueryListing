@@ -1,3 +1,4 @@
+<!-- Sample configuration file to be placed in /etc/aql_config.xml -->
 <config>
     <param name="baseUrl">http://localhost/aql/AJAXgetaql.php</param>
     <param name="dbHost">127.0.0.1</param>
@@ -7,5 +8,6 @@
     <param name="dbPass">SomethingComplicated</param>
     <param name="timeZone">America/Chicago</param>
     <param name="minRefresh">15</param>
-    <param name="defaultRefresh">60</param>
+    <param name="defaultRefresh">120</param>
+    <param name="issueUrl">https://jira.somewhere.com/secure/CreateIssueDetails!init.jspa?pid=418&amp;issuetype=301&amp;summary=%SUMMARY%&amp;description=%DESCRIPTION%&amp;priority=3</param>
 </config>

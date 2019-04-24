@@ -2,7 +2,7 @@
 
 /*
  *
- * aql - Active Query Listing
+ * ActiveQueryListing - Active Query Listing
  *
  * Copyright (C) 2018 Kevin Benton - kbcmdba [at] gmail [dot] com
  *
@@ -22,7 +22,9 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\ActiveQueryListing\Libs ;
+
+use com\kbcmdba\ActiveQueryListing\Libs\Exceptions\WebPageException ;
 
 /**
  * Web Page
@@ -54,14 +56,19 @@ class WebPage
                        , 'Cache-Control: post-check=0, pre-check=0', false
                        , 'Pragma: no-cache'
                        ]) ;
+        $cssVersion = \filemtime('css/main.css') ;
+        $jsVersion = \filemtime('js/common.js') ;
         $this->setHead(
             <<<HTML
-  <link rel="stylesheet" href="css/main.css" />
-  <!-- <link rel="stylesheet" href="//code.jquery.com/ui/latest/themes/smoothness/jquery-ui.css" /> -->
-  <!-- <script src="//code.jquery.com/ui/latest/jquery-ui.js"></script> -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/main.css?version=$cssVersion" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.0/js/jquery.tablesorter.js"></script>
-  <script src="js/common.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="js/common.js?version=$jsVersion"></script>
 
 HTML
         ) ;
@@ -81,7 +88,7 @@ HTML
     {
         if ('text/html' === $this->getMimeType()) {
             //@formatter:off
-            return ("<html>\n"
+            return ("<html lang=\"en\">\n"
                    . "<head>\n"
                    . "<!-- StartOfPage -->\n"
                    . '  <title>' . $this->getPageTitle() . "</title>\n"

@@ -2,7 +2,7 @@
 
 /*
  *
- * aql - Active Query Listing
+ * ActiveQueryListing - Active Query Listing
  *
  * Copyright (C) 2018 Kevin Benton - kbcmdba [at] gmail [dot] com
  *
@@ -22,9 +22,9 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\ActiveQueryListing\Libs ;
 
-use PDO;
+use com\kbcmdba\ActiveQueryListing\Libs\Exceptions\DaoException;
 
 /**
  * DBConnection
@@ -96,7 +96,7 @@ class DBConnection
                     throw new DaoException('Failed setting connection timeout.');
                 }
                 try {
-                    set_error_handler("\\com\\kbcmdba\\aql\\DBConnection::myErrorHandler");
+                    set_error_handler("\\com\\kbcmdba\\ActiveQueryListing\\Libs\\DBConnection::myErrorHandler");
                     $result = $mysqli->real_connect(
                         $oConfig->getDbHost(),
                         $oConfig->getDbUser(),
@@ -106,10 +106,10 @@ class DBConnection
                     );
                     restore_error_handler();
                 } catch (\Exception $e) {
-                    throw new DaoException($e->getMessage());
+                    throw new Exceptions\DaoException($e->getMessage());
                 }
                 if ((! $result) || ($mysqli->connect_errno)) {
-                    throw new DaoException(
+                    throw new Exceptions\DaoException(
                         'Error connecting to database server(' . $oConfig->getDbHost() . ')! : '
                         . $mysqli->connect_error
                     );
@@ -141,8 +141,8 @@ class DBConnection
                 }
                 break;
             case 'PDO':
-                // May throw PDOException by itself.
-                $this->dbh = new \PDO($oConfig->getDsn(), $oConfig->getDbPass(),
+                // May throw \PDOException by itself.
+                $this->dbh = new \PDO($oConfig->getDsn(), $oConfig->getDbUser(), $oConfig->getDbPass(),
                                        [\PDO::ATTR_TIMEOUT=>self::CONNECT_TIMEOUT_SECONDS, \PDO::ATTR_ERRMODE=>\PDO::ERRMODE_EXCEPTION]
                                       );
                 if (! $this->dbh) {
@@ -163,7 +163,7 @@ class DBConnection
     public function __toString()
     {
         if (isset($this->dbh)) {
-            return $oConfig;
+            return $this->oConfig->__toString();
         } else {
             return "Not connected.";
         }

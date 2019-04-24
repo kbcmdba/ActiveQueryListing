@@ -2,7 +2,7 @@
 
 /*
  *
- * aql - Active Query Listing
+ * ActiveQueryListing - Active Query Listing
  *
  * Copyright (C) 2018 Kevin Benton - kbcmdba [at] gmail [dot] com
  *
@@ -22,7 +22,7 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\ActiveQueryListing\Libs ;
 
 /**
  * Configuration for this tool set
@@ -34,7 +34,7 @@ class Config
      * Configuration Class
      *
      * Note: There are no setters for this class. All the configuration comes from
-     * config.xml (described in config_sample.xml).
+     * /etc/aql_config.xml (described in config_sample.xml).
      *
      * Usage Examples:
      *
@@ -61,6 +61,7 @@ class Config
     private $dbPass = null;
     private $dbName = null;
     private $timeZone = null;
+    private $issueUrl = null;
     /**
      * #@-
      */
@@ -89,12 +90,12 @@ class Config
      */
     public function __construct($dbHost = null, $dbPort = null, $dbName = null, $dbUser = null, $dbPass = null)
     {
-        if (! is_readable('config.xml')) {
-            throw new \Exception("Unable to load configuration from config.xml!");
+        if (! is_readable('/etc/aql_config.xml')) {
+            throw new \Exception("Unable to load configuration from /etc/aql_config.xml!");
         }
-        $xml = simplexml_load_file('config.xml');
+        $xml = simplexml_load_file('/etc/aql_config.xml');
         if (! $xml) {
-            throw new \Exception("Invalid syntax in config.xml!");
+            throw new \Exception("Invalid syntax in /etc/aql_config.xml!");
         }
         $errors = "";
         $cfgValues = [
@@ -123,6 +124,10 @@ class Config
                 'value' => 0
             ],
             'baseUrl' => [
+                'isRequired' => 1,
+                'value' => 0
+            ],
+            'issueUrl' => [
                 'isRequired' => 1,
                 'value' => 0
             ],
@@ -165,6 +170,7 @@ class Config
             throw new \Exception("\nConfiguration problem!\n\n" . $errors . "\n");
         }
         $this->baseUrl = $cfgValues['baseUrl'];
+        $this->issueUrl = $cfgValues['issueUrl'];
         $this->dbHost = (! isset($dbHost)) ? $cfgValues['dbHost'] : $dbHost;
         $this->dbPort = (! isset($dbPort)) ? $cfgValues['dbPort'] : $dbPort;
         $this->dbName = (! isset($dbName)) ? $cfgValues['dbName'] : $dbName;
@@ -196,6 +202,16 @@ class Config
         return $this->baseUrl;
     }
 
+    /**
+     * Getter
+     *
+     * @return string
+     */
+    public function getIssueUrl()
+    {
+        return $this->issueUrl;
+    }
+    
     /**
      * Getter
      *

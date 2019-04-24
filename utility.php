@@ -2,7 +2,7 @@
 
 /*
  *
- * aql - Active Query Listing
+ * ActiveQueryListing - Active Query Listing
  *
  * Copyright (C) 2018 Kevin Benton - kbcmdba [at] gmail [dot] com
  *
@@ -22,7 +22,11 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\ActiveQueryListing ;
+
+require_once('vendor/autoload.php') ;
+
+use com\kbcmdba\ActiveQueryListing\Libs\Tools;
 
 /**
  * Since parameters directly map to query options...

@@ -1,6 +1,6 @@
 <?php
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\ActiveQueryListing\Libs\Exceptions ;
 
 class ControllerException extends \Exception
 {
