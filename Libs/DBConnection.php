@@ -31,7 +31,8 @@ use PDO;
  */
 class DBConnection
 {
-    const CONNECT_TIMEOUT_SECONDS = 9 ;
+    const CONNECT_TIMEOUT_SECONDS = 4 ;
+
     private $dbh;
     private $oConfig;
     private $connectionClass;
