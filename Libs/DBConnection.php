@@ -106,7 +106,7 @@ class DBConnection
                     );
                     restore_error_handler();
                 } catch (\Exception $e) {
-                    throw new DaoException($e->getMessage());
+                    throw new DaoException($e->getMessage() . "\n" ) ;
                 }
                 if ((! $result) || ($mysqli->connect_errno)) {
                     throw new DaoException(
