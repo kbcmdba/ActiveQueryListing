@@ -62,7 +62,7 @@ SQL;
                       ;
     }
     else {
-        $processQuery .= "AND COMMAND NOT IN ( 'Sleep', 'Daemon' )\n"
+        $processQuery .= "AND COMMAND NOT IN ( 'Sleep', 'Daemon', 'Binlog Dump' )\n"
                       .  "AND id <> connection_id()\n"
                       ;
     }
