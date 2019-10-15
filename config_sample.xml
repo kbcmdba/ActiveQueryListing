@@ -8,4 +8,5 @@
     <param name="timeZone">America/Chicago</param>
     <param name="minRefresh">15</param>
     <param name="defaultRefresh">60</param>
+    <param name="issueTrackerBaseUrl">https://somewhere.jira.com/</param>
 </config>

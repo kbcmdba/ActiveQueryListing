@@ -56,13 +56,14 @@ SELECT id
  WHERE 1 = 1
 
 SQL;
+    $notIn = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Slave_IO', 'Slave_SQL' )"
     if ( $debug ) {
-        $processQuery .= "-- AND COMMAND NOT IN ( 'Sleep', 'Daemon' )\n"
+        $processQuery .= "-- AND COMMAND NOT IN $notIn\n"
                       .  "-- AND id <> connection_id()\n"
                       ;
     }
     else {
-        $processQuery .= "AND COMMAND NOT IN ( 'Sleep', 'Daemon', 'Binlog Dump' )\n"
+        $processQuery .= "AND COMMAND NOT IN $notIn\n"
                       .  "AND id <> connection_id()\n"
                       ;
     }

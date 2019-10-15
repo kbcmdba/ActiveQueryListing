@@ -48,7 +48,7 @@ class Config
      * ) ;
      * $dbh->mysql_select_db( $config->getDbName() ) ;
      */
-    
+
     /**
      * #@+
      *
@@ -61,10 +61,11 @@ class Config
     private $dbPass = null;
     private $dbName = null;
     private $timeZone = null;
+    private $issueTrackerBaseUrl = null;
     /**
      * #@-
      */
-    
+
     /**
      * #@+
      *
@@ -75,7 +76,7 @@ class Config
     /**
      * #@-
      */
-    
+
     /**
      * Class Constructor
      *
@@ -137,8 +138,13 @@ class Config
             'defaultRefresh' => [
                 'isRequired' => 0,
                 'value' => 0
+            ],
+            'issueTrackerBaseUrl' => [
+                'isRequired' => 1,
+                'value' => 0
             ]
         ];
+
         // verify that all the parameters are present and just once.
         foreach ($xml as $v) {
             $key = (string) $v['name'];
