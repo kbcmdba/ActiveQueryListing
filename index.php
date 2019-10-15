@@ -90,7 +90,7 @@ var timeoutId = null;
 var reloadSeconds = $reloadSeconds * 1000 ;
 
 function loadPage() {
-    \$("#tbodyid").html( '<tr id="figment"><td colspan="11"><center>Data loading</center></td></tr>' ) ;
+    \$("#tbodyid").html( '<tr id="figment"><td colspan="12"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
         function ( $thenParamBlock ) {
             $thenCodeBlock
