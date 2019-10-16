@@ -70,6 +70,9 @@ SQL;
     $processQuery .= "ORDER BY time DESC\n" ;
     $outputList = [] ;
     $result = $dbh->query($processQuery) ;
+    if ( $result === false ) {
+        throw new \ErrorException( "Error running query: $processQuery (" . $dbh->errorCode() . ")\n" ) ;
+    }
     while ($row = $result->fetch_row()) {
         $pid     = $row[ 0 ] ;
         $uid     = $row[ 1 ] ;
