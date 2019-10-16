@@ -71,7 +71,7 @@ SQL;
     $outputList = [] ;
     $result = $dbh->query($processQuery) ;
     if ( $result === false ) {
-        throw new \ErrorException( "Error running query: $processQuery (" . $dbh->errorCode() . ")\n" ) ;
+        throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
     }
     while ($row = $result->fetch_row()) {
         $pid     = $row[ 0 ] ;
