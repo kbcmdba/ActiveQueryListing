@@ -234,4 +234,20 @@ conds
         $str = preg_replace('/(\s{4,})/', "\n$1", $str, -1) ;
         return $str ;
     } // END OF function makeQuotedStringPIISafe( $str )
+
+    /**
+     * preformatted print_r back to a web page then maybe exit()
+     *
+     * @param mixed $data
+     * @param boolean $die
+     */
+    public static function pr( $data, $die = false) {
+        echo '<pre>';
+        print_r( $data );
+        echo '</pre>';
+        if ($die) {
+            exit();
+        }
+    }
+
 }
