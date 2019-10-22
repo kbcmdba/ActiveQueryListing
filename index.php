@@ -24,7 +24,12 @@
 
 namespace com\kbcmdba\aql ;
 
-require('Libs/autoload.php');
+use com\kbcmdba\aql\Libs\Config ;
+use com\kbcmdba\aql\Libs\DBConnection ;
+use com\kbcmdba\aql\Libs\Tools ;
+use com\kbcmdba\aql\Libs\WebPage ;
+
+require('vendor/autoload.php');
 require('utility.php');
 
 $hostList = Tools::params( 'hosts' ) ;

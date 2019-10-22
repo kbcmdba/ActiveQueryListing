@@ -22,7 +22,7 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs\Exceptions ;
 
 class DaoException extends \Exception
 {

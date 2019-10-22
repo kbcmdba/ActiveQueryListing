@@ -22,7 +22,7 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs ;
 
 /**
  * A series of static methods for re-use.

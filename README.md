@@ -1,3 +1,4 @@
+# MySQL Active Query Listing Tool (AQL)
 
 Welcome to the MySQL Active Query Listing (AQL) tool. This tool provides
 users with a listing of active queries on a (set of) MySQL server(s). This
@@ -10,4 +11,8 @@ Please note that this software is alpha quality at this time.
 For more information on this tool, please see:
 
 https://github.com/kbcmdba/ActiveQueryListing/wiki
+
+Before using this tool, you'll need to run the following composer command:
+
+```composer install```
 

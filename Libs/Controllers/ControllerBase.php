@@ -21,7 +21,7 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs\Controllers ;
 
 /**
  * Controller Base

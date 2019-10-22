@@ -22,7 +22,7 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs ;
 
 /**
  * Configuration for this tool set

@@ -24,7 +24,10 @@
 
 namespace com\kbcmdba\aql ;
 
-require_once('Libs/autoload.php') ;
+use com\kbcmdba\aql\Libs\DBConnection ;
+use com\kbcmdba\aql\Libs\Tools ;
+
+require_once('vendor/autoload.php') ;
 
 header('Content-type: application/json') ;
 header('Access-Control-Allow-Origin: *') ;

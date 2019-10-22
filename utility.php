@@ -24,6 +24,8 @@
 
 namespace com\kbcmdba\aql ;
 
+use com\kbcmdba\aql\Libs\Tools ;
+
 /**
  * Since parameters directly map to query options...
  *

@@ -22,9 +22,10 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs ;
 
 use PDO;
+use com\kbcmdba\aql\Libs\Tools ;
 
 /**
  * DBConnection
@@ -97,7 +98,7 @@ class DBConnection
                     throw new DaoException('Failed setting connection timeout.');
                 }
                 try {
-                    set_error_handler("\\com\\kbcmdba\\aql\\DBConnection::myErrorHandler");
+                    set_error_handler("\\com\\kbcmdba\\aql\\Libs\\DBConnection::myErrorHandler");
                     $result = $mysqli->real_connect(
                         $oConfig->getDbHost(),
                         $oConfig->getDbUser(),
