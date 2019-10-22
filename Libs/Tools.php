@@ -250,4 +250,19 @@ conds
         }
     }
 
+    /**
+     * var_dump back to a web page then maybe exit()
+     *
+     * @param mixed $data
+     * @param boolean $die
+     */
+    public static function vd( $data, $die = false) {
+        echo '<pre>';
+        var_dump( $data );
+        echo '</pre>';
+        if ($die) {
+            exit();
+        }
+    }
+
 }

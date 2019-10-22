@@ -91,6 +91,7 @@ SELECT h.hostname
   FROM aql_db.host AS h
  WHERE h.decommissioned = 0
    AND h.hostname IN ( $in )
+
 SQL;
 $allHostsList = '';
 $baseUrl = $config->getBaseUrl();
