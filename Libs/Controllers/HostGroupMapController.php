@@ -23,7 +23,7 @@
 
 namespace com\kbcmdba\aql\Libs\Controllers ;
 
-class HostGroupController extends ControllerBase
+class HostGroupMapController extends ControllerBase
 {
 
     /**
