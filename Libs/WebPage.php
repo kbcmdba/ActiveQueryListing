@@ -24,6 +24,8 @@
 
 namespace com\kbcmdba\aql\Libs ;
 
+use com\kbcmdba\aql\Libs\Exceptions\WebPageException ;
+
 /**
  * Web Page
  */

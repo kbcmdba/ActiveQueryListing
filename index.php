@@ -28,6 +28,7 @@ use com\kbcmdba\aql\Libs\Config ;
 use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\Tools ;
 use com\kbcmdba\aql\Libs\WebPage ;
+use com\kbcmdba\aql\Libs\Exceptions\DaoException;
 
 require('vendor/autoload.php');
 require('utility.php');

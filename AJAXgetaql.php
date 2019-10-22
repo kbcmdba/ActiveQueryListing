@@ -24,6 +24,8 @@
 
 namespace com\kbcmdba\aql ;
 
+require_once 'vendor/autoload.php';
+
 use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\Tools ;
 

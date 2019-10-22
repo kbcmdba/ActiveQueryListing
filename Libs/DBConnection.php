@@ -24,8 +24,7 @@
 
 namespace com\kbcmdba\aql\Libs ;
 
-use PDO;
-use com\kbcmdba\aql\Libs\Tools ;
+use com\kbcmdba\aql\Libs\Exceptions\DaoException ;
 
 /**
  * DBConnection
@@ -165,7 +164,7 @@ class DBConnection
     public function __toString()
     {
         if (isset($this->dbh)) {
-            return $oConfig;
+            return $this->oConfig;
         } else {
             return "Not connected.";
         }

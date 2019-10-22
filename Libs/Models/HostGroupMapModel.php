@@ -23,6 +23,8 @@
 
 namespace com\kbcmdba\aql\Libs\Models ;
 
+use com\kbcmdba\aql\Libs\Tools ;
+
 /**
  * Host-Group-Map Model
  */
