@@ -27,6 +27,12 @@ namespace com\kbcmdba\aql ;
 require('Libs/autoload.php');
 require('utility.php');
 
+$hostList = Tools::params( 'hosts' ) ;
+
+if ( ! is_array( $hostList ) ) {
+    $hostList = [ Tools::params('hosts') ] ;
+}
+
 $headerFooterRow = <<<HTML
 <tr>
       <th>Server</th>
@@ -61,22 +67,49 @@ SELECT h.hostname
      , h.alert_info_secs
      , h.alert_low_secs
   FROM aql_db.host AS h
- WHERE 1 = 1
-   AND should_monitor = 1
-   AND decommissioned = 0
+ WHERE h.should_monitor = 1
+   AND h.decommissioned = 0
  
 SQL;
+$config = new Config();
+$dbc = new DBConnection();
+$dbh = $dbc->getConnection();
+$dbh->set_charset('utf8');
+$in = "'" . implode("', '", array_map( [ $dbh, 'real_escape_string' ], $hostList ) ) . "'";
+
+$someHostsQuery = <<<SQL
+SELECT h.hostname
+     , h.alert_crit_secs
+     , h.alert_warn_secs
+     , h.alert_info_secs
+     , h.alert_low_secs
+  FROM aql_db.host AS h
+ WHERE h.decommissioned = 0
+   AND h.hostname IN ( $in )
+SQL;
 $allHostsList = '';
+$baseUrl = $config->getBaseUrl();
+$showAllHosts = ( 0 === count($hostList) );
 try {
-    $config = new Config();
-    $dbc = new DBConnection();
-    $dbh = $dbc->getConnection();
     $result = $dbh->query($allHostsQuery);
-    if ($result) {
+    if (! $result) {
+        throw new \ErrorException( "Query failed: $allHostsQuery\n Error: " . $dbh->error );
+    }
+    while ($row = $result->fetch_row()) {
+        $serverName = htmlentities($row[0]);
+        $selected = ( in_array( $row[0], $hostList ) ) ? 'selected="selected"' : '' ;
+        $allHostsList .= "  <option value=\"$serverName\" $selected>$serverName</option>\n";
+        if ( $showAllHosts ) {
+            processHost($js, $row[0], $baseUrl, $row[1], $row[2], $row[3], $row[4]);
+        }
+    }
+    if ( ! $showAllHosts ) {
+        $result = $dbh->query($someHostsQuery);
+        if (! $result) {
+            throw new \ErrorException( "Query failed: $someHostsQuery\n Error: " . $dbh->error );
+        }
         while ($row = $result->fetch_row()) {
-            $serverName = htmlentities($row[0]);
-            $allHostsList .= "  <option value=\"$serverName\">$serverName</option>\n";
-            processHost($js, $row[0], $config->getBaseUrl(), $row[1], $row[2], $row[3], $row[4]);
+            processHost($js, $row[0], $baseUrl, $row[1], $row[2], $row[3], $row[4]);
         }
     }
     $whenBlock = $js['WhenBlock'];
@@ -107,9 +140,31 @@ function loadPage() {
 
 JS
     );
+    $now = Tools::currentTimestamp();
+    $debugChecked = ( $debug ) ? 'checked="checked"' : '' ;
     $page->setBody(
         <<<HTML
-<h1>Active Queries List</h1>
+<table id="top" width="100%" border="1">
+  <tr>
+    <td valign="middle"><h1>Active<br/>Queries<br/>Listing</h1></td>
+    <td valign="middle">Queries by Level Chart here</td>
+    <td valign="middle">Queries by Host Chart here</td>
+    <td valign="middle">Queries by DB Chart here</td>
+    <td valign="middle">Queries by RW/RO Chart here</td>
+    <td valign="middle">
+      <center>
+        <form method="get">
+          <select name="hosts[]" multiple="multiple" size=5>
+            $allHostsList
+          </select><br />
+          <input type="checkbox" name="debug" value="1" $debugChecked/> Debug Mode<br />
+          <input type="submit" value="Update" />
+        </form>
+      </center>
+    </td>
+    <td valign="middle" id="updatedAt">Page last updated at $now</td>
+  </tr>
+</table>
 
 <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
 <table border=1 cellspacing=0 cellpadding=2 id="dataTable" width="100%" class="tablesorter">

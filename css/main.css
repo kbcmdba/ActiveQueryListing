@@ -86,3 +86,7 @@ a {
 a:visited {
 	color: #0254EB
 }
+#updatedAt {
+	color: silver;
+	font-size: 8pt;
+}

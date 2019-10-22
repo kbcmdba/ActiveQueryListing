@@ -1,4 +1,3 @@
-
 /**
  *
  * aql - Active Query Listing
@@ -174,7 +173,11 @@ function flipFlop() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function myCallback( i, item ) {
-    var showChars = 40 ;
+	console.log(i, item);
+    var showChars = 40;
+    const urlParams = new URLSearchParams(window.location.search);
+    const debug = urlParams.get('debug');
+    const debugString = ( debug == '1' ) ? '&debug=1' : '' ;
     if (    ( typeof item[ 'result' ] !== 'undefined' )
          && ( typeof item[ 'result' ][0] !== 'undefined' )
          && ( typeof item[ 'result' ][0][ 'level' ] !== 'undefined' )
@@ -184,6 +187,7 @@ function myCallback( i, item ) {
             var level  = item[ 'result' ][ itemNo ][ 'level' ] ;
             var info   = item[ 'result' ][ itemNo ][ 'info' ] ;
             var server = item[ 'result' ][ itemNo ][ 'server' ] ;
+            var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
             if ( info.length > showChars + 8 ) {
                 var first = info.substr( 0, showChars ) ;
                 var last  = info.substr( showChars, info.length - showChars ) ;
@@ -194,18 +198,8 @@ function myCallback( i, item ) {
                           + '</span>&nbsp;&nbsp;<a href="" class="morelink">'
                           + 'more</a></span>' ;
             }
-            if ( server.length > showChars ) {
-            	var first = server.substr( 0, showChars ) ;
-            	var last  = server.substr( showChars, server.length - showChars ) ;
-            	server    = first
-                          + '<span class="moreelipses">...</span>'
-                          + '<span class="morecontent"><span>'
-                          + last
-                          + '</span>&nbsp;&nbsp;<a href="" class="morelink">'
-                          + 'more</a></span>' ;
-            }
             var myRow = $("<tr class=\"level" + level + "\">"
-                         +      "<td class=\"comment more\">" + server
+                         +      "<td class=\"comment more\">" + serverLinkAddress
                          + "</td><td align=\"center\">" + level
                          + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'       ]
 	                     + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'     ]
