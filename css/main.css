@@ -86,7 +86,15 @@ a {
 a:visited {
 	color: #0254EB
 }
+
+.headerTableTd {
+    vertical-align: middle;
+    text-align: center;
+}
+
 #updatedAt {
 	color: silver;
 	font-size: 8pt;
+	vertical-align: middle;
+	text-align: center;
 }

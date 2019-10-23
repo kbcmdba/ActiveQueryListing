@@ -24,14 +24,15 @@
 
 namespace com\kbcmdba\aql ;
 
+require('vendor/autoload.php');
+require('utility.php');
+
 use com\kbcmdba\aql\Libs\Config ;
 use com\kbcmdba\aql\Libs\DBConnection ;
+use com\kbcmdba\aql\Libs\Exceptions\ConfigurationException ;
 use com\kbcmdba\aql\Libs\Exceptions\DaoException;
 use com\kbcmdba\aql\Libs\Tools ;
 use com\kbcmdba\aql\Libs\WebPage ;
-
-require('vendor/autoload.php');
-require('utility.php');
 
 $hostList = Tools::params( 'hosts' ) ;
 
@@ -65,7 +66,16 @@ $js['Blocks'] = 0;
 $js['WhenBlock'] = '';
 $js['ThenParamBlock'] = '';
 $js['ThenCodeBlock'] = '';
-
+try {
+    $config = new Config();
+}
+catch ( ConfigurationException $e ) {
+    print("Has AQL been configured? " . $e->getMessage());
+    exit(1);
+}
+$dbc = new DBConnection();
+$dbh = $dbc->getConnection();
+$dbh->set_charset('utf8');
 $allHostsQuery = <<<SQL
 SELECT h.hostname
      , h.alert_crit_secs
@@ -77,12 +87,7 @@ SELECT h.hostname
    AND h.decommissioned = 0
  
 SQL;
-$config = new Config();
-$dbc = new DBConnection();
-$dbh = $dbc->getConnection();
-$dbh->set_charset('utf8');
 $in = "'" . implode("', '", array_map( [ $dbh, 'real_escape_string' ], $hostList ) ) . "'";
-
 $someHostsQuery = <<<SQL
 SELECT h.hostname
      , h.alert_crit_secs
@@ -132,7 +137,7 @@ var reloadSeconds = $reloadSeconds * 1000 ;
 function loadPage() {
     \$("#tbodyid").html( '<tr id="figment"><td colspan="12"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
-        function ( $thenParamBlock ) {
+        function ($thenParamBlock ) {
             $thenCodeBlock
             \$("#figment").remove() ;
             \$("#dataTable").tablesorter( {sortList: [[1,1], [7, 1]]} ); 
@@ -153,12 +158,12 @@ JS
         <<<HTML
 <table id="top" width="100%" border="1">
   <tr>
-    <td valign="middle"><h1>Active<br/>Queries<br/>Listing</h1></td>
-    <td valign="middle">Queries by Level Chart here</td>
-    <td valign="middle">Queries by Host Chart here</td>
-    <td valign="middle">Queries by DB Chart here</td>
-    <td valign="middle">Queries by RW/RO Chart here</td>
-    <td valign="middle">
+    <td class="headerTableTd"><h1>Active<br/>Queries<br/>Listing</h1></td>
+    <td class="headerTableTd">Queries by Level Chart here</td>
+    <td class="headerTableTd">Queries by Host Chart here</td>
+    <td class="headerTableTd">Queries by DB Chart here</td>
+    <td class="headerTableTd">Queries by RW/RO Chart here</td>
+    <td class="headerTableTd">
       <center>
         <form method="get">
           <select name="hosts[]" multiple="multiple" size=5>
@@ -169,7 +174,7 @@ JS
         </form>
       </center>
     </td>
-    <td valign="middle" id="updatedAt">Page last updated at $now</td>
+    <td id="updatedAt">Page last updated at $now</td>
   </tr>
 </table>
 

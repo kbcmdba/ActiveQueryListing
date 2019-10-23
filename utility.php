@@ -72,12 +72,12 @@ function processParam($optionName, $columnName, $default, &$limits)
 function processHost(&$js, $hostname, $baseUrl, $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs)
 {
     $debug = ( Tools::param('debug')==='1' ) ? '&debug=1' : '' ;
-    $prefix = (0 !== $js['Blocks']) ? ',' : '';
+    $prefix = (0 !== $js['Blocks']) ? "\n          ," : '';
     $blockNum = $js['Blocks'];
     $js['Blocks'] ++;
     $js['WhenBlock'] .= "$prefix\$.getJSON( \"$baseUrl?hostname=$hostname&alertCritSecs=$alertCritSecs&alertWarnSecs=$alertWarnSecs&alertInfoSecs=$alertInfoSecs&alertLowSecs=$alertLowSecs$debug\")";
     $js['ThenParamBlock'] .= "$prefix res$blockNum";
-    $js['ThenCodeBlock'] .= "\$.each(res$blockNum, myCallback);";
+    $js['ThenCodeBlock'] .= "\n            \$.each(res$blockNum, myCallback);";
 }
 
 /**
