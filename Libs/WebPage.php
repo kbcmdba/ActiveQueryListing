@@ -63,6 +63,7 @@ class WebPage
   <!-- <script src="//code.jquery.com/ui/latest/jquery-ui.js"></script> -->
   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.0/js/jquery.tablesorter.js"></script>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="js/common.js"></script>
 
 HTML
