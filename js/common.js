@@ -20,6 +20,10 @@
  *
  */
 
+const urlParams = new URLSearchParams(window.location.search);
+const debug = urlParams.get('debug');
+const debugString = ( debug == '1' ) ? '&debug=1' : '' ;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -226,9 +230,6 @@ var base_counts = {
 ///////////////////////////////////////////////////////////////////////////////
 
 function myCallback( i, item ) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const debug = urlParams.get('debug');
-    const debugString = ( debug == '1' ) ? '&debug=1' : '' ;
     const showChars = 40;
     var itemNo = 0;
     var level = -1;
@@ -261,7 +262,7 @@ function myCallback( i, item ) {
             else {
                 base_counts['Level' + level] ++ ;
             }
-            console.log(item['result'][itemNo]);
+//            console.log(item['result'][itemNo]);
             if (item['result'][itemNo]['readOnly'] == "0") {
                 base_counts[ 'RW' ] ++ ;
             }
@@ -331,6 +332,13 @@ function togglePageRefresh() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+function makeHref( item ) {
+    var loc = location.protocol + '//' + location.host + location.pathname ;
+    return loc + '?hosts[]=' + encodeURI( item ) + debugString ;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 function drawPieChartByLevel() {
     var data = google.visualization.arrayToDataTable(
              [ [ 'Label', 'Count' ]
@@ -359,33 +367,53 @@ function drawPieChartByLevel() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-function makeHref( item ) {
-    return 'Not Implemented' ;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 function drawPieChartByHost() {
     Object
         .keys( host_count )
         .forEach( function(item) {
             host_counts.push( [ item, makeHref( item ), host_count[ item ] ] ) ;
         } ) ;
-    console.log(host_counts);
     var data = google.visualization.arrayToDataTable( host_counts ) ;
+    var view = new google.visualization.DataView(data);
+    view.setColumns([ 0, 2 ]);
     var options = {
-            title : 'Host Counts'
+            title : 'Queries by Host'
           , is3D : true
           } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByHost'));
-    chart.draw(data, options);
+    chart.draw(view, options);
+    var selectHandler = function(e) {
+        window.location = data.getValue(chart.getSelection()[0]['row'], 1);
+    }
+    google.visualization.events.addListener(chart, 'select', selectHandler);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByDB() {
     return;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function drawPieChartByDupeState() {
+    var data = google.visualization.arrayToDataTable(
+            [ [ 'Label', 'Count' ]
+            , [ 'Duplicate (' + base_counts['Dupe'] + ')', base_counts['Dupe'] ]
+            , [ 'Similar (' + base_counts['Similar'] + ')', base_counts['Similar'] ]
+            , [ 'Unique (' + base_counts['Unique'] + ')', base_counts['Unique'] ]
+            ] );
+   var options = {
+                 title : 'Read-Only vs. Read-Write Counts'
+               , is3D : true
+               , slices : { 0 : { color : 'pink'   }
+                          , 1 : { color : 'yellow' }
+                          , 2 : { color : 'silver' }
+                          } };
+    var chart = new google.visualization.PieChart(document
+              .getElementById('pieChartByDupeState'));
+    chart.draw(data, options);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -397,7 +425,7 @@ function drawPieChartByReadWrite() {
             , [ 'Read-Write (' + base_counts['RW'] + ')', base_counts['RW'] ]
             ] );
    var options = {
-                 title : 'Read-Only Vs. Read-Write Counts'
+                 title : 'Read-Only vs. Read-Write Counts'
                , is3D : true
                , slices : { 0 : { color : 'cyan'   }
                           , 1 : { color : 'yellow' }
@@ -405,12 +433,6 @@ function drawPieChartByReadWrite() {
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByReadWrite'));
     chart.draw(data, options);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-function drawPieChartByDupeState() {
-    return;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
