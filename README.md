@@ -24,6 +24,28 @@ out there on how to install these tools. I won't reproduce that excellent work
 here. I personally like XAMPP by ApacheFriends. For more information, see
 https://www.apachefriends.org/download.html
 
+## Configuring AQL
+
+Your installation comes with a config_sample.xml file. This file needs to be
+installed in /etc/aql_config.xml. It should be readable only by the web server
+in order to protect it from prying eyes. Protecting this file from prying eyes
+is browser-dependent so that's the reason for asking it be put in /etc.
+
+There are three parts to this configuration file that you need to pay special
+attention to. DbPass is the password you're giving AQL in order to access
+servers. In the code above, it's the "SomethingComplicated" bit. This will need
+to be run on all your MySQL servers to AQL can access the server and get the
+output of SHOW PROCESSLIST.
+
+The next thing you'll need to pay special attention to is the
+issueTrackerBaseUrl. Configuring this can be a bit of a project, but once it's
+set up properly, it makes filing issues against a particular query very simple.
+
+Finally, roQueryPart needs to be configured to detect when a MySQL server is in
+read-only mode. For most installations, you can leave this alone. If you run an
+older version of MySQL, you may need to adjust this to suit your installation's
+needs.
+
 ## Setting up the MySQL database on the "configuration" server
 
 In order to use AQL, you'll need to set up the database that tells AQL where
