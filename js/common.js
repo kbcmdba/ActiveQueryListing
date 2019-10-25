@@ -172,22 +172,70 @@ function flipFlop() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+var host_counts = [ 'Label', 'Link', 'Count' ] ;
+var host_count = [] ;
+var db_counts = [ [ 'Label', 'Count' ] ] ;
+var db_count = [] ;
+var base_counts = {
+                  'Dupe'    : 0
+                , 'Error'   : 0
+                , 'Level4'  : 0
+                , 'Level3'  : 0
+                , 'Level2'  : 0
+                , 'Level1'  : 0
+                , 'Level0'  : 0
+                , 'RO'      : 0
+                , 'RW'      : 0
+                , 'Similar' : 0
+                , 'Unique'  : 0
+                } ;
+
+///////////////////////////////////////////////////////////////////////////////
+
 function myCallback( i, item ) {
-	console.log(i, item);
-    var showChars = 40;
     const urlParams = new URLSearchParams(window.location.search);
     const debug = urlParams.get('debug');
     const debugString = ( debug == '1' ) ? '&debug=1' : '' ;
+    const showChars = 40;
+    var itemNo = 0;
+    var level = -1;
+    var info = '' ;
+    var dupe = '' ;
+    var server = '' ;
+    var serverLinkAddress = '' ;
+    var first = '' ;
+    var last = '' ;
+    var myRow = '' ;
+    var summaryRow = '' ;
+    var myUrl = '' ;
+    var summaryData = item[ 'summaryData' ] ;
     if (    ( typeof item[ 'result' ] !== 'undefined' )
-         && ( typeof item[ 'result' ][0] !== 'undefined' )
-         && ( typeof item[ 'result' ][0][ 'level' ] !== 'undefined' )
+         && ( typeof item[ 'result' ][ 0 ] !== 'undefined' )
+         && ( typeof item[ 'result' ][ 0 ][ 'level' ] !== 'undefined' )
        ) {
     	// Assumption - if we can get any rows from the server, we should be able to get all of the rows.
-    	for (var itemNo=0; itemNo<item[ 'result' ].length; itemNo++ ) {
-            var level  = item[ 'result' ][ itemNo ][ 'level' ] ;
-            var info   = item[ 'result' ][ itemNo ][ 'info' ] ;
-            var server = item[ 'result' ][ itemNo ][ 'server' ] ;
-            var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
+    	server = item[ 'result' ][ 0 ][ 'server' ] ;
+        serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
+        if ( typeof host_count[ server ] === 'undefined' ) {
+        	host_count[ server ] = 0 ;
+        }
+    	for ( itemNo=0; itemNo<item[ 'result' ].length; itemNo++ ) {
+    		host_count[ server ] ++ ;
+            level  = item[ 'result' ][ itemNo ][ 'level' ] ;
+            if ( 9 == level ) {
+            	base_counts['Error'] ++ ;
+            }
+            else {
+            	base_counts['Level' + level] ++ ;
+            }
+            console.log(item['result'][itemNo]);
+            if (item['result'][itemNo]['readOnly'] == "0") {
+            	base_counts[ 'RW' ] ++ ;
+            }
+            else {
+            	base_counts[ 'RO' ] ++ ;
+            }
+            info   = item[ 'result' ][ itemNo ][ 'info' ] ;
             if ( info.length > showChars + 8 ) {
                 var first = info.substr( 0, showChars ) ;
                 var last  = info.substr( showChars, info.length - showChars ) ;
@@ -280,3 +328,86 @@ function togglePageRefresh() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+function drawPieChartByLevel() {
+    var data = google.visualization.arrayToDataTable(
+             [ [ 'Label', 'Count' ]
+             , [ 'Error (' + base_counts['Error'] + ')', base_counts['Error'] ]
+             , [ 'Level 4 (' + base_counts['Level4'] + ')', base_counts['Level4'] ]
+             , [ 'Level 3 (' + base_counts['Level3'] + ')', base_counts['Level3'] ]
+             , [ 'Level 2 (' + base_counts['Level2'] + ')', base_counts['Level2'] ]
+             , [ 'Level 1 (' + base_counts['Level1'] + ')', base_counts['Level1'] ]
+             , [ 'Level 0 (' + base_counts['Level0'] + ')', base_counts['Level0'] ]
+             ] );
+    var options = {
+                  title : 'Level Counts'
+                , is3D : true
+                , slices : { 0 : { color : 'red'        }
+                           , 1 : { color : 'orange'     }
+                           , 2 : { color : 'yellow'     }
+                           , 3 : { color : 'lightgreen' }
+                           , 4 : { color : '#ddd'       }
+                           , 5 : { color : 'cyan'       }
+                           } };
+    var chart = new google.visualization.PieChart(document
+              .getElementById('pieChartByLevel'));
+    chart.draw(data, options);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function drawPieChartByHost() {
+	return ;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function drawPieChartByDB() {
+	return;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function drawPieChartByReadWrite() {
+    var data = google.visualization.arrayToDataTable(
+            [ [ 'Label', 'Count' ]
+            , [ 'Read-Only (' + base_counts['RO'] + ')', base_counts['RO'] ]
+            , [ 'Read-Write (' + base_counts['RW'] + ')', base_counts['RW'] ]
+            ] );
+   var options = {
+                 title : 'Read-Only Vs. Read-Write Counts'
+               , is3D : true
+               , slices : { 0 : { color : 'cyan'   }
+                          , 1 : { color : 'yellow' }
+                          } };
+	var chart = new google.visualization.PieChart(document
+			  .getElementById('pieChartByReadWrite'));
+	chart.draw(data, options);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function drawPieChartByDupeState() {
+	return;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+* This will update the summary table and display the pie charts.
+*
+* @returns void
+*/
+function displayCharts() {
+    google.charts.load('current', {
+        packages : [ 'corechart' ]
+    });
+    google.charts.setOnLoadCallback(drawPieChartByLevel);
+    google.charts.setOnLoadCallback(drawPieChartByHost);
+    google.charts.setOnLoadCallback(drawPieChartByDB);
+    google.charts.setOnLoadCallback(drawPieChartByReadWrite);
+    google.charts.setOnLoadCallback(drawPieChartByDupeState);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+

@@ -136,31 +136,6 @@ var reloadSeconds = $reloadSeconds * 1000 ;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-function drawByLevel() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-function drawByHost() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-function drawByDB() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-function drawByDupeState() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-function drawByReadWritel() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 function loadPage() {
     \$("#tbodyid").html( '<tr id="figment"><td colspan="12"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
@@ -168,16 +143,11 @@ function loadPage() {
             $thenCodeBlock
             \$("#figment").remove() ;
             \$("#dataTable").tablesorter( {sortList: [[1,1], [7, 1]]} ); 
+            displayCharts();
         }
     );
-    \$('#tbodyid').on('click', '.morelink', flipFlop) ;
+    /* \$('#tbodyid').on('click', '.morelink', flipFlop) ; */
     timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
-    google.charts.load('current', {'packages':['corechart']});
-    piechartByLevel();
-    piechartByHost();
-    piechartByDB();
-    piechartByDupeState();
-    piechartByReadWrite();
 }
 
 \$(document).ready( loadPage ) ;
@@ -187,17 +157,16 @@ JS
     );
     $now          = Tools::currentTimestamp();
     $debugChecked = ( $debug ) ? 'checked="checked"' : '' ;
-    $chartSize    = 'width:250px; height=300px;' ;
     $page->setBody(
         <<<HTML
 <table id="top" width="100%" border="1">
   <tr>
     <td class="headerTableTd"><h1>Active<br/>Queries<br/>Listing</h1></td>
-    <td class="headerTableTd"><div id="piechartByLevel" style="$chartSize">Queries by Level Chart here</div></td>
-    <td class="headerTableTd"><div id="piechartByHost" style="$chartSize;">Queries by Host Chart here</div></td>
-    <td class="headerTableTd"><div id="piechartByDB" style="$chartSize">Queries by DB Chart here</div></td>
-    <td class="headerTableTd"><div id="piechartByDupeState" style="$chartSize">Queries by Duplicate State Chart here</div></td>
-    <td class="headerTableTd"><div id="piechartByReadWrite" style="$chartSize">Queries by RW/RO Chart here</div></td>
+    <td class="headerTableTd"><div id="pieChartByLevel" class="chartImage">Queries by Level Chart here</div></td>
+    <td class="headerTableTd"><div id="pieChartByHost" class="chartImage">Queries by Host Chart here</div></td>
+    <td class="headerTableTd"><div id="pieChartByDB" class="chartImage">Queries by DB Chart here</div></td>
+    <td class="headerTableTd"><div id="pieChartByDupeState" class="chartImage">Queries by Duplicate State Chart here</div></td>
+    <td class="headerTableTd"><div id="pieChartByReadWrite" class="chartImage">Queries by RW/RO Chart here</div></td>
     <td class="headerTableTd">
       <center>
         <form method="get">

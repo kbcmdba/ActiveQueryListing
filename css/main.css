@@ -92,6 +92,11 @@ a:visited {
     text-align: center;
 }
 
+.chartImage {
+    width:275px;
+    height:250px;
+}
+
 #updatedAt {
 	color: silver;
 	font-size: 8pt;
