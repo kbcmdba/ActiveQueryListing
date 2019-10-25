@@ -11,15 +11,18 @@ this time.
 
 ## Before using this tool:
 
-Before using this tool, you'll need to run the following composer command:
+Before using this tool, you'll need to install PHP 7.2 or greater. You'll
+also need to run the following composer command:
 
 ```
 composer install
 ```
 
-If you don't have composer installed, Google is your friend. :-) There are
-lots of good guides out there  on how to install Symphony / Comnposer. I
-won't reproduce that excellent work here.
+If you don't have a xAMP (like WAMP, MAMP, or LAMP) stack or Symphony /
+composer installed, Google is your friend.  :-) There are lots of good guides
+out there on how to install these tools. I won't reproduce that excellent work
+here. I personally like XAMPP by ApacheFriends. For more information, see
+https://www.apachefriends.org/download.html
 
 ## Setting up the MySQL database on the "configuration" server
 
