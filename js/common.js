@@ -154,6 +154,39 @@ function deleteRow( rowId ) {
     return false ;
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+function sortTable() {
+    var table, rows, switching, i, x, y, shouldSwitch ;
+    table = document.getElementById("tbodyid") ;
+    switching = true ;
+    rows = table.getElementsByTagName("tr") ;
+    rowcount = rows.length;
+    while ( switching ) {
+        switching = false ;
+        for (i = 0; i < (rowcount - 1); i++) {
+            shouldSwitch = false ;
+            x1 = rows[i].getElementsByTagName("td")[1] ;
+            x2 = rows[i].getElementsByTagName("td")[7] ;
+            y1 = rows[i + 1].getElementsByTagName("td")[1] ;
+            y2 = rows[i + 1].getElementsByTagName("td")[7] ;
+            if  ( ( Number(x1.innerHTML) < Number(y1.innerHTML) )
+               ||  ( Number(x1.innerHTML) == Number(y1.innerHTML)
+                  && Number(x2.innerHTML) < Number(y2.innerHTML)
+                   )
+                ) {
+                shouldSwitch = true ;
+                break ;
+            }
+        }
+        if (shouldSwitch) {
+            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]) ;
+            switching = true ;
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 function flipFlop() {
@@ -172,7 +205,7 @@ function flipFlop() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-var host_counts = [ 'Label', 'Link', 'Count' ] ;
+var host_counts = [ [ 'Label', 'Link', 'Count' ] ] ;
 var host_count = [] ;
 var db_counts = [ [ 'Label', 'Count' ] ] ;
 var db_count = [] ;
@@ -213,27 +246,27 @@ function myCallback( i, item ) {
          && ( typeof item[ 'result' ][ 0 ] !== 'undefined' )
          && ( typeof item[ 'result' ][ 0 ][ 'level' ] !== 'undefined' )
        ) {
-    	// Assumption - if we can get any rows from the server, we should be able to get all of the rows.
-    	server = item[ 'result' ][ 0 ][ 'server' ] ;
+        // Assumption - if we can get any rows from the server, we should be able to get all of the rows.
+        server = item[ 'result' ][ 0 ][ 'server' ] ;
         serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
         if ( typeof host_count[ server ] === 'undefined' ) {
-        	host_count[ server ] = 0 ;
+            host_count[ server ] = 0 ;
         }
-    	for ( itemNo=0; itemNo<item[ 'result' ].length; itemNo++ ) {
-    		host_count[ server ] ++ ;
+        for ( itemNo=0; itemNo<item[ 'result' ].length; itemNo++ ) {
+            host_count[ server ] ++ ;
             level  = item[ 'result' ][ itemNo ][ 'level' ] ;
             if ( 9 == level ) {
-            	base_counts['Error'] ++ ;
+                base_counts['Error'] ++ ;
             }
             else {
-            	base_counts['Level' + level] ++ ;
+                base_counts['Level' + level] ++ ;
             }
             console.log(item['result'][itemNo]);
             if (item['result'][itemNo]['readOnly'] == "0") {
-            	base_counts[ 'RW' ] ++ ;
+                base_counts[ 'RW' ] ++ ;
             }
             else {
-            	base_counts[ 'RO' ] ++ ;
+                base_counts[ 'RO' ] ++ ;
             }
             info   = item[ 'result' ][ itemNo ][ 'info' ] ;
             if ( info.length > showChars + 8 ) {
@@ -250,18 +283,18 @@ function myCallback( i, item ) {
                          +      "<td class=\"comment more\">" + serverLinkAddress
                          + "</td><td align=\"center\">" + level
                          + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'       ]
-	                     + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'     ]
-	                     + "</td><td>" + item[ 'result' ][ itemNo ][ 'host'     ]
-	                     + "</td><td>" + item[ 'result' ][ itemNo ][ 'db'       ]
-	                     + "</td><td>" + item[ 'result' ][ itemNo ][ 'command'  ]
-	                     + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'     ]
-	                     + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'    ]
-	                     + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly' ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
-	                     + "</td><td class=\"comment more\">" + info
-	                     + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'  ]
-	                     + "</td></tr>") ;
-	        myRow.appendTo( "#tbodyid" ) ;
-    	}
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'     ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'host'     ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'db'       ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'command'  ]
+                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'     ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'    ]
+                         + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly' ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
+                         + "</td><td class=\"comment more\">" + info
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'  ]
+                         + "</td></tr>") ;
+            myRow.appendTo( "#tbodyid" ) ;
+        }
     }
     else if ( typeof item[ 'error_output' ] !== 'undefined' ) {
         var myRow = $("<tr class=\"error\"><td>" + item[ 'hostname' ]
@@ -270,47 +303,16 @@ function myCallback( i, item ) {
         myRow.prependTo( "#tbodyid" ) ;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-function sortTable() {
-    var table, rows, switching, i, x, y, shouldSwitch ;
-    table = document.getElementById("tbodyid") ;
-    switching = true ;
-    rows = table.getElementsByTagName("tr") ;
-    rowcount = rows.length;
-    while ( switching ) {
-        switching = false ;
-        for (i = 0; i < (rowcount - 1); i++) {
-            shouldSwitch = false ;
-            x1 = rows[i].getElementsByTagName("td")[1] ;
-            x2 = rows[i].getElementsByTagName("td")[7] ;
-            y1 = rows[i + 1].getElementsByTagName("td")[1] ;
-            y2 = rows[i + 1].getElementsByTagName("td")[7] ;
-            if ( (Number(x1.innerHTML) < Number(y1.innerHTML))
-            	|| ( Number(x1.innerHTML) == Number(y1.innerHTML)
-            	    && Number(x2.innerHTML) < Number(y2.innerHTML))) {
-                shouldSwitch = true ;
-                break ;
-            }
-        }
-        if (shouldSwitch) {
-            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]) ;
-            switching = true ;
-        }
-    }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 function killProcOnHost( hostname, pid ) {
-	alert( "Not yet implemented.\n\nhostname=" + hostname + "\npid=" + pid ) ;
+    alert( "Not yet implemented.\n\nhostname=" + hostname + "\npid=" + pid ) ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 function fileIssue( hostname, ro, fromHost, user, db, time, safeUrl ) {
-	alert( "Not yet implemented.\n\nhostname=" + hostname + "\nro=" + ro + "\nfromHost=" + fromHost + "\nuser=" + user + "\ndb=" + db + "\ntime=" + time + "\nsafeUrl=" + safeUrl + "\n" ) ;
+    alert( "Not yet implemented.\n\nhostname=" + hostname + "\nro=" + ro + "\nfromHost=" + fromHost + "\nuser=" + user + "\ndb=" + db + "\ntime=" + time + "\nsafeUrl=" + safeUrl + "\n" ) ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -338,7 +340,7 @@ function drawPieChartByLevel() {
              , [ 'Level 2 (' + base_counts['Level2'] + ')', base_counts['Level2'] ]
              , [ 'Level 1 (' + base_counts['Level1'] + ')', base_counts['Level1'] ]
              , [ 'Level 0 (' + base_counts['Level0'] + ')', base_counts['Level0'] ]
-             ] );
+             ] ) ;
     var options = {
                   title : 'Level Counts'
                 , is3D : true
@@ -348,7 +350,8 @@ function drawPieChartByLevel() {
                            , 3 : { color : 'lightgreen' }
                            , 4 : { color : '#ddd'       }
                            , 5 : { color : 'cyan'       }
-                           } };
+                           }
+                } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByLevel'));
     chart.draw(data, options);
@@ -356,14 +359,33 @@ function drawPieChartByLevel() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+function makeHref( item ) {
+    return 'Not Implemented' ;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 function drawPieChartByHost() {
-	return ;
+    Object
+        .keys( host_count )
+        .forEach( function(item) {
+            host_counts.push( [ item, makeHref( item ), host_count[ item ] ] ) ;
+        } ) ;
+    console.log(host_counts);
+    var data = google.visualization.arrayToDataTable( host_counts ) ;
+    var options = {
+            title : 'Host Counts'
+          , is3D : true
+          } ;
+    var chart = new google.visualization.PieChart(document
+              .getElementById('pieChartByHost'));
+    chart.draw(data, options);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByDB() {
-	return;
+    return;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -380,15 +402,15 @@ function drawPieChartByReadWrite() {
                , slices : { 0 : { color : 'cyan'   }
                           , 1 : { color : 'yellow' }
                           } };
-	var chart = new google.visualization.PieChart(document
-			  .getElementById('pieChartByReadWrite'));
-	chart.draw(data, options);
+    var chart = new google.visualization.PieChart(document
+              .getElementById('pieChartByReadWrite'));
+    chart.draw(data, options);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByDupeState() {
-	return;
+    return;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
