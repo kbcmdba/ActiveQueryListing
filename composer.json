@@ -9,5 +9,18 @@
             "email": "kbcmdba@gmail.com"
         }
     ],
-    "require": {}
+    "require": {},
+	"autoload" : {
+		"psr-4" : {
+			"com\\kbcmdba\\aql\\Libs\\" : "Libs/"
+		}
+	},
+	"config" : {
+		"vendor-dir" : "vendor"
+	},
+	"scripts" : {
+		"clean" : "rm -fr build"
+	},
+	"minimum-stability" : "alpha",
+	"homepage" : "http://github.com/kbcmdba/ActiveQueryListing"
 }
