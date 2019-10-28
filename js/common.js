@@ -402,7 +402,7 @@ function drawPieChartByDB() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByDupeState() {
-    var dupe = base_counts['Dupe'] ;
+    var dupe = base_counts['Duplicate'] ;
     var similar = base_counts['Similar'] ;
     var unique = base_counts['Unique'] ;
     var blank = base_counts['Blank'] ;
