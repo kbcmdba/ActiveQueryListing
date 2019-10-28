@@ -21,7 +21,12 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs\Controllers ;
+
+use com\kbcmdba\aql\Libs\DBConnection ;
+use com\kbcmdba\aql\Libs\Exceptions\ControllerException ;
+use com\kbcmdba\aql\Libs\Models\ModelBase ;
+use com\kbcmdba\aql\Libs\Tools ;
 
 /**
  * Controller Base

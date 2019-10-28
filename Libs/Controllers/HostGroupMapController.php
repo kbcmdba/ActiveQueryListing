@@ -21,9 +21,12 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs\Controllers ;
 
-class HostGroupController extends ControllerBase
+use com\kbcmdba\aql\Libs\Exceptions\ControllerException ;
+use com\kbcmdba\aql\Libs\Models\HostGroupModel ;
+
+class HostGroupMapController extends ControllerBase
 {
 
     /**

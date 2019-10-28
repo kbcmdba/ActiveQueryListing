@@ -86,3 +86,20 @@ a {
 a:visited {
 	color: #0254EB
 }
+
+.headerTableTd {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.chartImage {
+    width:275px;
+    height:250px;
+}
+
+#updatedAt {
+	color: silver;
+	font-size: 8pt;
+	vertical-align: middle;
+	text-align: center;
+}

@@ -9,4 +9,5 @@
     <param name="minRefresh">15</param>
     <param name="defaultRefresh">60</param>
     <param name="issueTrackerBaseUrl">https://somewhere.jira.com/</param>
+    <param name="roQueryPart">@@global.read_only OR @@global.innodb_read_only</param>
 </config>

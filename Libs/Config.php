@@ -22,7 +22,9 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs ;
+
+use com\kbcmdba\aql\Libs\Exceptions\ConfigurationException ;
 
 /**
  * Configuration for this tool set
@@ -62,6 +64,7 @@ class Config
     private $dbName = null;
     private $timeZone = null;
     private $issueTrackerBaseUrl = null;
+    private $roQueryPart = null;
     /**
      * #@-
      */
@@ -85,22 +88,23 @@ class Config
      * @param string $dbName
      * @param string $dbUser
      * @param string $dbPass
-     * @throws \Exception
+     * @throws ConfigurationException
      * @SuppressWarnings indentation
      */
     public function __construct($dbHost = null, $dbPort = null, $dbName = null, $dbUser = null, $dbPass = null)
     {
         if (! is_readable('config.xml')) {
-            throw new \Exception("Unable to load configuration from config.xml!");
+            throw new ConfigurationException("Unable to load configuration from config.xml!");
         }
         $xml = simplexml_load_file('config.xml');
         if (! $xml) {
-            throw new \Exception("Invalid syntax in config.xml!");
+            throw new ConfigurationException("Invalid syntax in config.xml!");
         }
         $errors = "";
         $cfgValues = [
             'minRefresh' => 15,
-            'defaultRefresh' => 60
+            'defaultRefresh' => 60,
+            'roQueryPart' => '@@global.read_only'
         ];
         $paramList = [
             'dbHost' => [
@@ -142,6 +146,10 @@ class Config
             'issueTrackerBaseUrl' => [
                 'isRequired' => 1,
                 'value' => 0
+            ],
+            'roQueryPart' => [
+                'isRequired' => 1,
+                'value' => 0
             ]
         ];
 
@@ -180,6 +188,8 @@ class Config
         $this->defaultRefresh = $cfgValues['defaultRefresh'];
         $this->timeZone = $cfgValues['timeZone'];
         ini_set('date.timezone', $this->timeZone);
+        $this->issueTrackerBaseUrl = $cfgValues['issueTrackerBaseUrl'];
+        $this->roQueryPart = $cfgValues['roQueryPart'];
     }
 
     /**
@@ -280,6 +290,25 @@ class Config
     public function getDefaultRefresh()
     {
         return $this->defaultRefresh;
+    }
+
+    /**
+     * Getter
+     *
+     * @return string
+     */
+    public function getIssueTrackerBaseUrl()
+    {
+        return $this->issueTrackerBaseUrl;
+    }
+
+    /**
+     * Getter
+     *
+     * @return string
+     */
+    public function getRoQueryPart() {
+        return $this->roQueryPart;
     }
 
     /**

@@ -24,7 +24,13 @@
 
 namespace com\kbcmdba\aql ;
 
-require_once('Libs/autoload.php') ;
+require_once 'vendor/autoload.php';
+
+use com\kbcmdba\aql\Libs\Config ;
+use com\kbcmdba\aql\Libs\DBConnection ;
+use com\kbcmdba\aql\Libs\Tools ;
+
+require_once('vendor/autoload.php') ;
 
 header('Content-type: application/json') ;
 header('Access-Control-Allow-Origin: *') ;
@@ -33,7 +39,27 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0') ;
 header('Cache-Control: post-check=0, pre-check=0', false) ;
 header('Pragma: no-cache') ;
 
+$summaryData = [
+    'duplicate' => 0
+  , 'level0'    => 0
+  , 'level1'    => 0
+  , 'level2'    => 0
+  , 'level3'    => 0
+  , 'level4'    => 0
+  , 'level9'    => 0
+  , 'ro'        => 0
+  , 'rw'        => 0
+  , 'similar'   => 0
+  , 'threads'   => 0
+  , 'time'      => 0
+  , 'unique'    => 0
+];
+$queries = [] ;
+$safeQueries = [] ;
+
 try {
+    $config        = new Config() ;
+    $roQueryPart   = $config->getRoQueryPart() ;
     $debug         = Tools::param('debug') === "1" ;
     $hostname      = Tools::param('hostname') ;
     $alertCritSecs = Tools::param('alertCritSecs') ;
@@ -42,6 +68,10 @@ try {
     $alertLowSecs  = Tools::param('alertLowSecs') ;
     $dbc           = new DBConnection('process', $hostname) ;
     $dbh           = $dbc->getConnection() ;
+    $outputList    = [] ;
+    $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump'"
+                   . ", 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
+    $debugComment  = ( $debug ) ? '-- ' : '' ;
     $processQuery  = <<<SQL
 SELECT id
      , user
@@ -51,39 +81,50 @@ SELECT id
      , time
      , state
      , info
-     , @@global.read_only as read_only
+     , $roQueryPart as read_only
   FROM INFORMATION_SCHEMA.PROCESSLIST
  WHERE 1 = 1
+$debugComment   AND COMMAND NOT IN $notIn
+$debugComment   AND id <> CONNECTION_ID()
+ ORDER BY time DESC
 
 SQL;
-    $notIn = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
-    if ( $debug ) {
-        $processQuery .= "-- AND COMMAND NOT IN $notIn\n"
-                      .  "-- AND id <> connection_id()\n"
-                      ;
-    }
-    else {
-        $processQuery .= "AND COMMAND NOT IN $notIn\n"
-                      .  "AND id <> connection_id()\n"
-                      ;
-    }
-    $processQuery .= "ORDER BY time DESC\n" ;
-    $outputList = [] ;
     $result = $dbh->query($processQuery) ;
     if ( $result === false ) {
         throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
     }
     while ($row = $result->fetch_row()) {
-        $pid     = $row[ 0 ] ;
-        $uid     = $row[ 1 ] ;
-        $host    = $row[ 2 ] ;
-        $db      = $row[ 3 ] ;
-        $command = $row[ 4 ] ;
-        $time    = $row[ 5 ] ;
-        $state   = $row[ 6 ] ;
-        $safeInfo = Tools::makeQuotedStringPIISafe($row[ 7 ]) ;
+        $summaryData[ 'threads' ] ++ ;
+        $dupeState = '' ;
+        $pid       = $row[ 0 ] ;
+        $uid       = $row[ 1 ] ;
+        $host      = $row[ 2 ] ;
+        $db        = $row[ 3 ] ;
+        $command   = $row[ 4 ] ;
+        $time      = $row[ 5 ] ;
+        $state     = $row[ 6 ] ;
+        $info      = $row[ 7 ] ;
+        $safeInfo  = Tools::makeQuotedStringPIISafe( $info ) ;
+        if ( isset($info) && ($info !== '') ) {
+            if ( isset( $queries[ $info ] ) ) {
+                $dupeState = 'Duplicate' ;
+                $summaryData[ 'duplicate' ] ++ ;
+            }
+            elseif ( isset( $safeQueries[ $safeInfo ] ) ) {
+                $dupeState = 'Similar' ;
+                $summaryData[ 'similar' ] ++ ;
+            }
+            else {
+                $dupeState = 'Unique' ;
+                $summaryData[ 'unique' ] ++ ;
+            }
+        }
+        $queries[ $info ] = 1 ;
+        $safeQueries[ $safeInfo ] = 1 ;
         $safeUrl = urlencode( $safeInfo ) ;
         $readOnly = $row[ 8 ] ;
+        $summaryData[ 'time' ] += $time ;
+        $summaryData[ ( $readOnly ) ? 'ro' : 'rw' ] ++ ;
         switch (true) {
             case $time >= $alertCritSecs:
                 $level = 4 ;
@@ -100,25 +141,26 @@ SQL;
             default:
                 $level = 1 ;
         }
-        $outputItem = [] ;
-        $outputItem[ 'level'   ] = $level ;
-        $outputItem[ 'time'    ] = $time ;
-        $outputItem[ 'server'  ] = $hostname ;
-        $outputItem[ 'id'      ] = $pid ;
-        $outputItem[ 'user'    ] = $uid ;
-        $outputItem[ 'host'    ] = $host ;
-        $outputItem[ 'db'      ] = $db ;
-        $outputItem[ 'command' ] = $command ;
-        $outputItem[ 'state'   ] = $state ;
-        $outputItem[ 'info'    ] = htmlspecialchars( $safeInfo ) ;
-        $outputItem[ 'actions' ] = "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid ) ; return false ;\">Kill Thread</button>"
-                                 . "<button type=\"button\" onclick=\"fileIssue( '$hostname', '$readOnly', '$host', '$uid', '$db', $time, '$safeUrl' ) ; return false ;\">File Issue</button>"
-                                 ;
-        $outputItem[ 'readOnly' ] = $readOnly ;
-        $outputList[] = $outputItem ;
+        $summaryData[ "level$level" ] ++ ;
+        $outputList[] = [
+            'level'     => $level
+          , 'time'      => $time
+          , 'server'    => $hostname
+          , 'id'        => $pid
+          , 'user'      => $uid
+          , 'host'      => $host
+          , 'db'        => $db
+          , 'command'   => $command
+          , 'state'     => $state
+          , 'dupeState' => $dupeState
+          , 'info'      => htmlspecialchars( $safeInfo )
+          , 'actions'   => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid ) ; return false ;\">Kill Thread</button>"
+                         . "<button type=\"button\" onclick=\"fileIssue( '$hostname', '$readOnly', '$host', '$uid', '$db', $time, '$safeUrl' ) ; return false ;\">File Issue</button>"
+          , 'readOnly'  => $readOnly
+        ] ;
     }
 } catch (\Exception $e) {
     echo json_encode([ 'hostname' => $hostname, 'error_output' => $e->getMessage() ]) ;
     exit(1) ;
 }
-echo json_encode([ 'hostname' => $hostname, 'result' => $outputList ]) . "\n" ;
+echo json_encode([ 'hostname' => $hostname, 'result' => $outputList, 'summaryData' => $summaryData] ) . "\n" ;

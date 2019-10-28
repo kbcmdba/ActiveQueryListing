@@ -21,7 +21,9 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs\Models ;
+
+use com\kbcmdba\aql\Libs\Tools ;
 
 /**
  * Host-Group Model

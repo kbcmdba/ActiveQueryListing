@@ -22,7 +22,7 @@
  *
  */
 
-namespace com\kbcmdba\aql ;
+namespace com\kbcmdba\aql\Libs ;
 
 /**
  * A series of static methods for re-use.
@@ -244,6 +244,21 @@ conds
     public static function pr( $data, $die = false) {
         echo '<pre>';
         print_r( $data );
+        echo '</pre>';
+        if ($die) {
+            exit();
+        }
+    }
+
+    /**
+     * var_dump back to a web page then maybe exit()
+     *
+     * @param mixed $data
+     * @param boolean $die
+     */
+    public static function vd( $data, $die = false) {
+        echo '<pre>';
+        var_dump( $data );
         echo '</pre>';
         if ($die) {
             exit();

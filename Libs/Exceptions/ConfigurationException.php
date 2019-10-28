@@ -24,6 +24,6 @@
 
 namespace com\kbcmdba\aql\Libs\Exceptions ;
 
-class DaoException extends \Exception
+class ConfigurationException extends \Exception
 {
 }
