@@ -1,14 +1,16 @@
 {
-	"name" : "kbcmdba/aql",
-	"description" : "Active Query Listing (MySQL)",
-	"homepage" : "http://github.com/kbcmdba/ActiveQueryListing",
-	"type" : "project",
-	"license" : "GPL 2",
-	"authors" : [{
-			"name" : "KB Benton",
-			"email" : "kbcmdba@gmail.com"
-		}
-	],
+    "name" : "kbcmdba/aql",
+    "description" : "Active Query Listing (MySQL)",
+    "homepage" : "http://github.com/kbcmdba/ActiveQueryListing",
+    "type" : "project",
+    "license" : "GPL 2",
+    "authors" : [
+        {
+            "name" : "KB Benton",
+            "email" : "kbcmdba@gmail.com"
+        }
+    ],
+    "require" : {},
 	"autoload" : {
 		"psr-4" : {
 			"com\\kbcmdba\\aql\\Libs\\" : "Libs/"
@@ -16,6 +18,9 @@
 	},
 	"config" : {
 		"vendor-dir" : "vendor"
+	},
+	"scripts" : {
+		"clean" : "rm -fr build"
 	},
 	"minimum-stability" : "alpha"
 }
