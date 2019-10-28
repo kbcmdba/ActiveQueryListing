@@ -307,7 +307,7 @@ function myCallback( i, item ) {
         }
     }
     else if ( typeof item[ 'error_output' ] !== 'undefined' ) {
-        var myRow = $("<tr class=\"error\"><td>" + item[ 'hostname' ]
+        var myRow = $("<tr><td class=\"errorNotice\">" + item[ 'hostname' ]
                      + "</td><td class=\"errorNotice\">9</td><td colspan=\"12\" class=\"errorNotice\">" + item[ 'error_output' ]
                      + "</td></tr>") ;
         myRow.prependTo( "#tbodyid" ) ;

@@ -24,7 +24,8 @@
 .errorNotice {
 	background-color: red ;
 	color: white ;
-	font: 16pt bold;
+	font: 16pt bold ;
+	text-align: center ;
 }
 
 .error {
