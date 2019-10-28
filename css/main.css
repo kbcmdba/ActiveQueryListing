@@ -21,6 +21,12 @@
  *
  */
 
+.errorNotice {
+	background-color: red ;
+	color: white ;
+	font: 16pt bold;
+}
+
 .error {
   background-color: red ;
   color: white ;
