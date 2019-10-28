@@ -163,11 +163,11 @@ JS
 <table id="top" width="100%" border="1">
   <tr>
     <td class="headerTableTd"><h1>Active<br/>Queries<br/>Listing</h1></td>
-    <td class="headerTableTd"><div id="pieChartByLevel" class="chartImage">Queries by Level Chart here</div></td>
-    <td class="headerTableTd"><div id="pieChartByHost" class="chartImage">Queries by Host Chart here</div></td>
-    <td class="headerTableTd"><div id="pieChartByDB" class="chartImage">Queries by DB Chart here</div></td>
-    <td class="headerTableTd"><div id="pieChartByDupeState" class="chartImage">Queries by Duplicate State Chart here</div></td>
-    <td class="headerTableTd"><div id="pieChartByReadWrite" class="chartImage">Queries by RW/RO Chart here</div></td>
+    <td class="headerTableTd"><div id="pieChartByLevel" class="chartImage"></div></td>
+    <td class="headerTableTd"><div id="pieChartByHost" class="chartImage"></div></td>
+    <td class="headerTableTd"><div id="pieChartByDB" class="chartImage"></div></td>
+    <td class="headerTableTd"><div id="pieChartByDupeState" class="chartImage"></div></td>
+    <td class="headerTableTd"><div id="pieChartByReadWrite" class="chartImage"></div></td>
     <td class="headerTableTd">
       <center>
         <form method="get">
