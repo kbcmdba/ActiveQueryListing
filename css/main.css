@@ -103,3 +103,23 @@ a:visited {
 	vertical-align: middle;
 	text-align: center;
 }
+
+.Blank {
+	color: black;
+	background-color: white;
+}
+
+.Unique {
+	color: black;
+	background-color: silver;
+}
+
+.Similar {
+	color: black;
+	background-color: green;
+}
+
+.Duplicate {
+	color: black;
+	background-color: orange;
+}

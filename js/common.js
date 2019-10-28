@@ -230,46 +230,46 @@ var base_counts = {
 ///////////////////////////////////////////////////////////////////////////////
 
 function myCallback( i, item ) {
-    const showChars = 40;
-    var itemNo = 0;
-    var level = -1;
-    var info = '' ;
-    var dupe = '' ;
-    var server = '' ;
+    const showChars       = 40;
+    var itemNo            = 0;
+    var level             = -1;
+    var info              = '' ;
+    var dupeState         = '' ;
+    var server            = '' ;
     var serverLinkAddress = '' ;
-    var first = '' ;
-    var last = '' ;
-    var myRow = '' ;
-    var summaryRow = '' ;
-    var myUrl = '' ;
+    var first             = '' ;
+    var last              = '' ;
+    var myRow             = '' ;
+    var summaryRow        = '' ;
+    var myUrl             = '' ;
     var summaryData = item[ 'summaryData' ] ;
     if (    ( typeof item[ 'result' ] !== 'undefined' )
          && ( typeof item[ 'result' ][ 0 ] !== 'undefined' )
          && ( typeof item[ 'result' ][ 0 ][ 'level' ] !== 'undefined' )
        ) {
         // Assumption - if we can get any rows from the server, we should be able to get all of the rows.
-        server = item[ 'result' ][ 0 ][ 'server' ] ;
+        server            = item[ 'result' ][ 0 ][ 'server' ] ;
         serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
         if ( typeof host_count[ server ] === 'undefined' ) {
             host_count[ server ] = 0 ;
         }
         for ( itemNo=0; itemNo<item[ 'result' ].length; itemNo++ ) {
             host_count[ server ] ++ ;
-            level  = item[ 'result' ][ itemNo ][ 'level' ] ;
+            level = item[ 'result' ][ itemNo ][ 'level' ] ;
             if ( 9 == level ) {
                 base_counts['Error'] ++ ;
             }
             else {
                 base_counts['Level' + level] ++ ;
             }
-//            console.log(item['result'][itemNo]);
             if (item['result'][itemNo]['readOnly'] == "0") {
                 base_counts[ 'RW' ] ++ ;
             }
             else {
                 base_counts[ 'RO' ] ++ ;
             }
-            info   = item[ 'result' ][ itemNo ][ 'info' ] ;
+            dupeState = item[ 'result' ][ itemNo ][ 'dupeState' ] ;
+            info      = item[ 'result' ][ itemNo ][ 'info' ] ;
             if ( info.length > showChars + 8 ) {
                 var first = info.substr( 0, showChars ) ;
                 var last  = info.substr( showChars, info.length - showChars ) ;
@@ -291,6 +291,7 @@ function myCallback( i, item ) {
                          + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'     ]
                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'    ]
                          + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly' ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
+                         + "</td><td class=\"" + dupeState + "\">" + dupeState
                          + "</td><td class=\"comment more\">" + info
                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'  ]
                          + "</td></tr>") ;
@@ -299,7 +300,7 @@ function myCallback( i, item ) {
     }
     else if ( typeof item[ 'error_output' ] !== 'undefined' ) {
         var myRow = $("<tr class=\"error\"><td>" + item[ 'hostname' ]
-                     + "</td><td align=\"center\">9</td><td colspan=\"10\" align=\"center\">" + item[ 'error_output' ]
+                     + "</td><td align=\"center\">9</td><td colspan=\"11\" align=\"center\">" + item[ 'error_output' ]
                      + "</td></tr>") ;
         myRow.prependTo( "#tbodyid" ) ;
     }
@@ -331,6 +332,7 @@ function togglePageRefresh() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
 
 function makeHref( item ) {
     var loc = location.protocol + '//' + location.host + location.pathname ;

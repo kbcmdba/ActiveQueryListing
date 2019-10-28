@@ -52,6 +52,7 @@ $headerFooterRow = <<<HTML
       <th>Time<br />Secs</th>
       <th>State <a href="https://dev.mysql.com/doc/refman/5.6/en/general-thread-states.html" target="_blank">?</a></th>
       <th>R/O</th>
+      <th>Dupe<br>State</th>
       <th>Info</th>
       <th>Actions</th>
     </tr>
@@ -137,7 +138,7 @@ var reloadSeconds = $reloadSeconds * 1000 ;
 ///////////////////////////////////////////////////////////////////////////////
 
 function loadPage() {
-    \$("#tbodyid").html( '<tr id="figment"><td colspan="12"><center>Data loading</center></td></tr>' ) ;
+    \$("#tbodyid").html( '<tr id="figment"><td colspan="13"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
         function ($thenParamBlock ) {
             $thenCodeBlock
@@ -189,7 +190,7 @@ JS
   </thead>
   <tbody id="tbodyid">
     <tr id="figment">
-      <td colspan="11">
+      <td colspan="13">
         <center>Data loading</center>
       </td>
     </tr>

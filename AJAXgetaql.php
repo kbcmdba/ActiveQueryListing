@@ -40,7 +40,8 @@ header('Cache-Control: post-check=0, pre-check=0', false) ;
 header('Pragma: no-cache') ;
 
 $summaryData = [
-    'duplicate' => 0
+    'blank'     => 0
+  , 'duplicate' => 0
   , 'level0'    => 0
   , 'level1'    => 0
   , 'level2'    => 0
@@ -118,6 +119,10 @@ SQL;
                 $dupeState = 'Unique' ;
                 $summaryData[ 'unique' ] ++ ;
             }
+        }
+        else {
+            $dupeState = 'Blank' ;
+            $summaryData[ 'blank' ] ++ ;
         }
         $queries[ $info ] = 1 ;
         $safeQueries[ $safeInfo ] = 1 ;
