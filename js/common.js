@@ -214,18 +214,18 @@ var host_count = [] ;
 var db_counts = [ [ 'Label', 'Count' ] ] ;
 var db_count = [] ;
 var base_counts = {
-                  'Blank'   : 0
-                , 'Dupe'    : 0
-                , 'Error'   : 0
-                , 'Level4'  : 0
-                , 'Level3'  : 0
-                , 'Level2'  : 0
-                , 'Level1'  : 0
-                , 'Level0'  : 0
-                , 'RO'      : 0
-                , 'RW'      : 0
-                , 'Similar' : 0
-                , 'Unique'  : 0
+                  'Blank'     : 0
+                , 'Duplicate' : 0
+                , 'Error'     : 0
+                , 'Level4'    : 0
+                , 'Level3'    : 0
+                , 'Level2'    : 0
+                , 'Level1'    : 0
+                , 'Level0'    : 0
+                , 'RO'        : 0
+                , 'RW'        : 0
+                , 'Similar'   : 0
+                , 'Unique'    : 0
                 } ;
 
 ///////////////////////////////////////////////////////////////////////////////
