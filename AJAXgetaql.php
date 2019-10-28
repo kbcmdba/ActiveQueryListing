@@ -96,16 +96,17 @@ SQL;
     }
     while ($row = $result->fetch_row()) {
         $summaryData[ 'threads' ] ++ ;
-        $dupeState = '' ;
-        $pid       = $row[ 0 ] ;
-        $uid       = $row[ 1 ] ;
-        $host      = $row[ 2 ] ;
-        $db        = $row[ 3 ] ;
-        $command   = $row[ 4 ] ;
-        $time      = $row[ 5 ] ;
-        $state     = $row[ 6 ] ;
-        $info      = $row[ 7 ] ;
-        $safeInfo  = Tools::makeQuotedStringPIISafe( $info ) ;
+        $dupeState    = '' ;
+        $pid          = $row[ 0 ] ;
+        $uid          = $row[ 1 ] ;
+        $host         = $row[ 2 ] ;
+        $db           = $row[ 3 ] ;
+        $command      = $row[ 4 ] ;
+        $time         = $row[ 5 ] ;
+        $friendlyTime = Tools::friendlyTime( $time ) ;
+        $state        = $row[ 6 ] ;
+        $info         = $row[ 7 ] ;
+        $safeInfo     = Tools::makeQuotedStringPIISafe( $info ) ;
         if ( isset($info) && ($info !== '') ) {
             if ( isset( $queries[ $info ] ) ) {
                 $dupeState = 'Duplicate' ;
@@ -148,20 +149,21 @@ SQL;
         }
         $summaryData[ "level$level" ] ++ ;
         $outputList[] = [
-            'level'     => $level
-          , 'time'      => $time
-          , 'server'    => $hostname
-          , 'id'        => $pid
-          , 'user'      => $uid
-          , 'host'      => $host
-          , 'db'        => $db
-          , 'command'   => $command
-          , 'state'     => $state
-          , 'dupeState' => $dupeState
-          , 'info'      => htmlspecialchars( $safeInfo )
-          , 'actions'   => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid ) ; return false ;\">Kill Thread</button>"
-                         . "<button type=\"button\" onclick=\"fileIssue( '$hostname', '$readOnly', '$host', '$uid', '$db', $time, '$safeUrl' ) ; return false ;\">File Issue</button>"
-          , 'readOnly'  => $readOnly
+            'level'        => $level
+          , 'time'         => $time
+          , 'friendlyTime' => $friendlyTime
+          , 'server'       => $hostname
+          , 'id'           => $pid
+          , 'user'         => $uid
+          , 'host'         => $host
+          , 'db'           => $db
+          , 'command'      => $command
+          , 'state'        => $state
+          , 'dupeState'    => $dupeState
+          , 'info'         => htmlspecialchars( $safeInfo )
+          , 'actions'      => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid ) ; return false ;\">Kill Thread</button>"
+                            . "<button type=\"button\" onclick=\"fileIssue( '$hostname', '$readOnly', '$host', '$uid', '$db', $time, '$safeUrl' ) ; return false ;\">File Issue</button>"
+          , 'readOnly'     => $readOnly
         ] ;
     }
 } catch (\Exception $e) {

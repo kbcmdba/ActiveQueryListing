@@ -290,24 +290,25 @@ function myCallback( i, item ) {
             var myRow = $("<tr class=\"level" + level + "\">"
                          +      "<td class=\"comment more\">" + serverLinkAddress
                          + "</td><td align=\"center\">" + level
-                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'       ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'     ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'host'     ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'db'       ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'command'  ]
-                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'     ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'    ]
-                         + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly' ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
+                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'           ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'         ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'host'         ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'db'           ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'command'      ]
+                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'         ]
+                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'friendlyTime' ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'        ]
+                         + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly'     ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
                          + "</td><td class=\"" + dupeState + "\">" + dupeState
                          + "</td><td class=\"comment more\">" + info
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'  ]
+                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
                          + "</td></tr>") ;
             myRow.appendTo( "#tbodyid" ) ;
         }
     }
     else if ( typeof item[ 'error_output' ] !== 'undefined' ) {
         var myRow = $("<tr class=\"error\"><td>" + item[ 'hostname' ]
-                     + "</td><td align=\"center\">9</td><td colspan=\"11\" align=\"center\">" + item[ 'error_output' ]
+                     + "</td><td align=\"center\">9</td><td colspan=\"12\" align=\"center\">" + item[ 'error_output' ]
                      + "</td></tr>") ;
         myRow.prependTo( "#tbodyid" ) ;
     }

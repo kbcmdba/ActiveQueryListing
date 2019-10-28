@@ -50,9 +50,10 @@ $headerFooterRow = <<<HTML
       <th>DB</th>
       <th>Command <a href="https://dev.mysql.com/doc/refman/5.6/en/thread-commands.html" target="_blank">?</a></th>
       <th>Time<br />Secs</th>
+      <th>Friendly<br>Time</th>
       <th>State <a href="https://dev.mysql.com/doc/refman/5.6/en/general-thread-states.html" target="_blank">?</a></th>
       <th>R/O</th>
-      <th>Dupe<br>State</th>
+      <th>Dupe <a onclick="alert('Possible states are Unique, Similar, Duplicate and Blank. Similar indicates that a query is identical to another query except that the numbers and strings may be different. Duplicate means the entire query is identical to another query.') ; return false;">?</a><br>State</th>
       <th>Info</th>
       <th>Actions</th>
     </tr>
@@ -144,7 +145,7 @@ var reloadSeconds = $reloadSeconds * 1000 ;
 ///////////////////////////////////////////////////////////////////////////////
 
 function loadPage() {
-    \$("#tbodyid").html( '<tr id="figment"><td colspan="13"><center>Data loading</center></td></tr>' ) ;
+    \$("#tbodyid").html( '<tr id="figment"><td colspan="14"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
         function ($thenParamBlock ) {
             $thenCodeBlock
@@ -197,7 +198,7 @@ JS
   </thead>
   <tbody id="tbodyid">
     <tr id="figment">
-      <td colspan="13">
+      <td colspan="14">
         <center>Data loading</center>
       </td>
     </tr>
