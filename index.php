@@ -61,7 +61,13 @@ HTML;
 $debug = Tools::param('debug') === "1" ;
 $page = new WebPage('Active Queries List');
 $config = new Config();
-$reloadSeconds = $config->getDefaultRefresh();
+$defaultRefresh = $config->getDefaultRefresh() ;
+$minRefresh = $config->getMinRefresh() ;
+$reloadSeconds = Tools::param('refresh', $defaultRefresh) ;
+if ( $reloadSeconds < $minRefresh ) {
+    $reloadSeconds = $minRefresh ;
+}
+
 $js = [] ;
 $js['Blocks'] = 0;
 $js['WhenBlock'] = '';
@@ -171,9 +177,10 @@ JS
     <td class="headerTableTd">
       <center>
         <form method="get">
-          <select name="hosts[]" multiple="multiple" size=5>
+          <select name="hosts[]" multiple="multiple" size=10>
             $allHostsList
           </select><br />
+          Refresh every <input type="text" name="refresh" value="$reloadSeconds" size="3" /> seconds<br />
           <input type="checkbox" name="debug" value="1" $debugChecked/> Debug Mode<br />
           <input type="submit" value="Update" />
         </form>
