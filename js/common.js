@@ -272,6 +272,11 @@ function myCallback( i, item ) {
             dupeState = item[ 'result' ][ itemNo ][ 'dupeState' ] ;
             base_counts[ dupeState ] ++ ;
             info      = item[ 'result' ][ itemNo ][ 'info' ] ;
+            db        = item[ 'result' ][ itemNo ][ 'db' ] ;
+            if ( typeof db_count[ db ] === 'undefined' ) {
+                db_count[ db ] = 0 ;
+            }
+            db_count[ db ] ++ ;
             if ( info.length > showChars + 8 ) {
                 var first = info.substr( 0, showChars ) ;
                 var last  = info.substr( showChars, info.length - showChars ) ;
@@ -396,7 +401,19 @@ function drawPieChartByHost() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByDB() {
-    return;
+    Object
+          .keys( db_count )
+          .forEach( function(item) {
+              db_counts.push( [ item, db_count[ item ] ] ) ;
+          } ) ;
+    var data = google.visualization.arrayToDataTable( db_counts ) ;
+    var options = {
+            title : 'Queries by DB'
+          , is3D : true
+          } ;
+    var chart = new google.visualization.PieChart(document
+              .getElementById('pieChartByDB'));
+    chart.draw(data, options);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
