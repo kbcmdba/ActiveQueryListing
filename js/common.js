@@ -214,7 +214,8 @@ var host_count = [] ;
 var db_counts = [ [ 'Label', 'Count' ] ] ;
 var db_count = [] ;
 var base_counts = {
-                  'Dupe'    : 0
+                  'Blank'   : 0
+                , 'Dupe'    : 0
                 , 'Error'   : 0
                 , 'Level4'  : 0
                 , 'Level3'  : 0
@@ -269,6 +270,7 @@ function myCallback( i, item ) {
                 base_counts[ 'RO' ] ++ ;
             }
             dupeState = item[ 'result' ][ itemNo ][ 'dupeState' ] ;
+            base_counts[ dupeState ] ++ ;
             info      = item[ 'result' ][ itemNo ][ 'info' ] ;
             if ( info.length > showChars + 8 ) {
                 var first = info.substr( 0, showChars ) ;
@@ -400,18 +402,24 @@ function drawPieChartByDB() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByDupeState() {
-    var data = google.visualization.arrayToDataTable(
-            [ [ 'Label', 'Count' ]
-            , [ 'Duplicate (' + base_counts['Dupe'] + ')', base_counts['Dupe'] ]
-            , [ 'Similar (' + base_counts['Similar'] + ')', base_counts['Similar'] ]
-            , [ 'Unique (' + base_counts['Unique'] + ')', base_counts['Unique'] ]
-            ] );
-   var options = {
-                 title : 'Read-Only vs. Read-Write Counts'
+    var dupe = base_counts['Dupe'] ;
+    var similar = base_counts['Similar'] ;
+    var unique = base_counts['Unique'] ;
+    var blank = base_counts['Blank'] ;
+    var x = [ [ 'Label', 'Count' ]
+            , [ 'Duplicate (' + dupe + ')', dupe ]
+            , [ 'Similar (' + similar + ')', similar ]
+            , [ 'Unique (' + unique + ')', unique ]
+            , [ 'Blank (' + blank + ')', blank ]
+            ] ;
+    var data = google.visualization.arrayToDataTable( x ) ;
+    var options = {
+                 title : 'Duplicate/Similar/Unique/Blank Counts'
                , is3D : true
                , slices : { 0 : { color : 'pink'   }
                           , 1 : { color : 'yellow' }
                           , 2 : { color : 'silver' }
+                          , 3 : { color : 'white'  }
                           } };
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByDupeState'));
