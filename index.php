@@ -154,7 +154,7 @@ function loadPage() {
             displayCharts();
         }
     );
-    /* \$('#tbodyid').on('click', '.morelink', flipFlop) ; */
+    \$('#tbodyid').on('click', '.morelink', flipFlop) ;
     timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
 }
 
