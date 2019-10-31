@@ -170,7 +170,7 @@ JS
         <<<HTML
 <table id="top" width="100%" border="1">
   <tr>
-    <td class="headerTableTd"><h1>Active<br/>Queries<br/>Listing</h1></td>
+    <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1></td>
     <td class="headerTableTd"><div id="pieChartByLevel" class="chartImage"></div></td>
     <td class="headerTableTd"><div id="pieChartByHost" class="chartImage"></div></td>
     <td class="headerTableTd"><div id="pieChartByDB" class="chartImage"></div></td>
