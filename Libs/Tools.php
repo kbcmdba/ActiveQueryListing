@@ -257,9 +257,7 @@ conds
      * @param boolean $die
      */
     public static function vd( $data, $die = false) {
-        echo '<pre>';
         var_dump( $data );
-        echo '</pre>';
         if ($die) {
             exit();
         }

@@ -244,6 +244,7 @@ function myCallback( i, item ) {
     var summaryRow        = '' ;
     var myUrl             = '' ;
     var summaryData = item[ 'summaryData' ] ;
+    // We get other types of responses here as well. Ignore the noise.
     if (    ( typeof item[ 'result' ] !== 'undefined' )
          && ( typeof item[ 'result' ][ 0 ] !== 'undefined' )
          && ( typeof item[ 'result' ][ 0 ][ 'level' ] !== 'undefined' )

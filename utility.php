@@ -72,12 +72,16 @@ function processParam($optionName, $columnName, $default, &$limits)
 function processHost(&$js, $hostname, $baseUrl, $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs)
 {
     $debug = ( Tools::param('debug')==='1' ) ? '&debug=1' : '' ;
-    $prefix = (0 !== $js['Blocks']) ? "\n          ," : '';
-    $blockNum = $js['Blocks'];
-    $js['Blocks'] ++;
-    $js['WhenBlock'] .= "$prefix\$.getJSON( \"$baseUrl?hostname=$hostname&alertCritSecs=$alertCritSecs&alertWarnSecs=$alertWarnSecs&alertInfoSecs=$alertInfoSecs&alertLowSecs=$alertLowSecs$debug\")";
-    $js['ThenParamBlock'] .= "$prefix res$blockNum";
-    $js['ThenCodeBlock'] .= "\n            \$.each(res$blockNum, myCallback);";
+    $prefix = (0 !== $js['Blocks']) ? "\n          ," : '' ;
+    $blockNum = $js['Blocks'] ;
+    $js['Blocks'] ++ ;
+    $js['WhenBlock'] .= "$prefix\$.getJSON( \"$baseUrl?hostname=$hostname&alertCritSecs=$alertCritSecs&alertWarnSecs=$alertWarnSecs&alertInfoSecs=$alertInfoSecs&alertLowSecs=$alertLowSecs$debug\")" ;
+    $js['ThenParamBlock'] .= "$prefix res$blockNum" ;
+    if( count(Tools::params('hosts')) === 1 ) {
+        $js['ThenCodeBlock'] = "myCallback( $blockNum, res$blockNum )" ;
+    } else {
+        $js['ThenCodeBlock'] .= "\n            \$.each(res$blockNum, myCallback) ;" ;
+    }
 }
 
 /**

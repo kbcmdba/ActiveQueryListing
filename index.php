@@ -69,11 +69,11 @@ if ( $reloadSeconds < $minRefresh ) {
     $reloadSeconds = $minRefresh ;
 }
 
-$js = [] ;
-$js['Blocks'] = 0;
-$js['WhenBlock'] = '';
-$js['ThenParamBlock'] = '';
-$js['ThenCodeBlock'] = '';
+$js = [ 'Blocks' => 0
+      , 'WhenBlock' => ''
+      , 'ThenParamBlock' => ''
+      , 'ThenCodeBlock' => ''
+      ] ;
 try {
     $config = new Config();
 }
@@ -95,7 +95,9 @@ SELECT h.hostname
    AND h.decommissioned = 0
  
 SQL;
-$in = "'" . implode("', '", array_map( [ $dbh, 'real_escape_string' ], $hostList ) ) . "'";
+$in = "'"
+    . implode("', '", array_map( [ $dbh, 'real_escape_string' ], $hostList ) )
+    . "'" ;
 $someHostsQuery = <<<SQL
 SELECT h.hostname
      , h.alert_crit_secs
@@ -147,11 +149,10 @@ var reloadSeconds = $reloadSeconds * 1000 ;
 function loadPage() {
     \$("#tbodyid").html( '<tr id="figment"><td colspan="14"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
-        function ($thenParamBlock ) {
-            $thenCodeBlock
+        function ($thenParamBlock ) { $thenCodeBlock
             \$("#figment").remove() ;
-            \$("#dataTable").tablesorter( {sortList: [[1,1], [7, 1]]} ); 
-            displayCharts();
+            \$("#dataTable").tablesorter( {sortList: [[1,1], [7, 1]]} ) ; 
+            displayCharts() ; 
         }
     );
     \$('#tbodyid').on('click', '.morelink', flipFlop) ;
