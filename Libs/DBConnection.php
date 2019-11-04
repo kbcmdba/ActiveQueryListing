@@ -55,12 +55,12 @@ class DBConnection
      * @SuppressWarnings cyclomaticComplexity
      */
     public function __construct(
-        $connType = null,
-        $dbHost = null,
-        $dbName = null,
-        $dbUser = null,
-        $dbPass = null,
-        $dbPort = null,
+        $connType  = null,
+        $dbHost    = null,
+        $dbName    = null,
+        $dbUser    = null,
+        $dbPass    = null,
+        $dbPort    = null,
         $connClass = 'mysqli',
         $createDb = false
     ) {
@@ -143,9 +143,11 @@ class DBConnection
                 break;
             case 'PDO':
                 // May throw PDOException by itself.
-                $this->dbh = new \PDO($oConfig->getDsn(), $oConfig->getDbPass(),
-                                       [\PDO::ATTR_TIMEOUT=>self::CONNECT_TIMEOUT_SECONDS, \PDO::ATTR_ERRMODE=>\PDO::ERRMODE_EXCEPTION]
-                                      );
+                $this->dbh = new \PDO($oConfig->getDsn(), $oConfig->getDbUser(), $oConfig->getDbPass(),
+                                       [\PDO::ATTR_TIMEOUT=>self::CONNECT_TIMEOUT_SECONDS,
+                                        \PDO::ATTR_ERRMODE=>\PDO::ERRMODE_EXCEPTION
+                                       ]
+                                     );
                 if (! $this->dbh) {
                     throw new DaoException('Error connecting to database server(' . $oConfig->getDbHost() . ')!');
                 }

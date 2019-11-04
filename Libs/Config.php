@@ -65,6 +65,7 @@ class Config
     private $timeZone = null;
     private $issueTrackerBaseUrl = null;
     private $roQueryPart = null;
+    private $killStatement = null;
     /**
      * #@-
      */
@@ -91,21 +92,22 @@ class Config
      * @throws ConfigurationException
      * @SuppressWarnings indentation
      */
-    public function __construct($dbHost = null, $dbPort = null, $dbName = null, $dbUser = null, $dbPass = null)
+    public function __construct( $dbHost = null, $dbPort = null, $dbName = null, $dbUser = null, $dbPass = null )
     {
-        if (! is_readable('config.xml')) {
-            throw new ConfigurationException("Unable to load configuration from config.xml!");
+        if ( ! is_readable( 'config.xml' ) ) {
+            throw new ConfigurationException( "Unable to load configuration from config.xml!" ) ;
         }
-        $xml = simplexml_load_file('config.xml');
-        if (! $xml) {
-            throw new ConfigurationException("Invalid syntax in config.xml!");
+        $xml = simplexml_load_file( 'config.xml' ) ;
+        if ( ! $xml ) {
+            throw new ConfigurationException( "Invalid syntax in config.xml!" ) ;
         }
-        $errors = "";
+        $errors = "" ;
         $cfgValues = [
             'minRefresh' => 15,
             'defaultRefresh' => 60,
-            'roQueryPart' => '@@global.read_only'
-        ];
+            'roQueryPart' => '@@global.read_only',
+            'killStatement' => 'kill :pid'
+        ] ;
         $paramList = [
             'dbHost' => [
                 'isRequired' => 1,
@@ -150,46 +152,51 @@ class Config
             'roQueryPart' => [
                 'isRequired' => 1,
                 'value' => 0
+            ],
+            'killStatement' => [
+                'isRequired' => 0,
+                'value' => 0
             ]
-        ];
+        ] ;
 
         // verify that all the parameters are present and just once.
-        foreach ($xml as $v) {
-            $key = (string) $v['name'];
-            if ((! isset($paramList[$key])) || ($paramList[$key]['value'] != 0)) {
-                $errors .= "Unset or multiply set name: " . $key . "\n";
+        foreach ( $xml as $v ) {
+            $key = (string) $v[ 'name' ] ;
+            if ( ( ! isset($paramList[ $key ] ) ) || ( $paramList[ $key ][ 'value' ] != 0 ) ) {
+                $errors .= "Unset or multiply set name: " . $key . "\n" ;
             } else {
-                $paramList[$key]['value'] ++;
-                switch ($key) {
-                    case 'minRefresh':
-                    case 'defaultRefresh':
-                        $cfgValues[$key] = (int) $v;
-                        break;
-                    default:
-                        $cfgValues[$key] = (string) $v;
+                $paramList[ $key ][ 'value' ] ++ ;
+                switch ( $key ) {
+                    case 'minRefresh' :
+                    case 'defaultRefresh' :
+                        $cfgValues[$key] = (int) $v ;
+                        break ;
+                    default :
+                        $cfgValues[$key] = (string) $v ;
                 }
             }
         }
         foreach ($paramList as $key => $x) {
-            if ((1 === $x['isRequired']) && (0 === $x['value'])) {
-                $errors .= "Missing parameter: " . $key . "\n";
+            if ( ( 1 === $x[ 'isRequired' ] ) && ( 0 === $x[ 'value' ] ) ) {
+                $errors .= "Missing parameter: " . $key . "\n" ;
             }
         }
         if ($errors !== '') {
-            throw new \Exception("\nConfiguration problem!\n\n" . $errors . "\n");
+            throw new \Exception( "\nConfiguration problem!\n\n" . $errors . "\n" ) ;
         }
-        $this->baseUrl = $cfgValues['baseUrl'];
-        $this->dbHost = (! isset($dbHost)) ? $cfgValues['dbHost'] : $dbHost;
-        $this->dbPort = (! isset($dbPort)) ? $cfgValues['dbPort'] : $dbPort;
-        $this->dbName = (! isset($dbName)) ? $cfgValues['dbName'] : $dbName;
-        $this->dbUser = (! isset($dbUser)) ? $cfgValues['dbUser'] : $dbUser;
-        $this->dbPass = (! isset($dbPass)) ? $cfgValues['dbPass'] : $dbPass;
-        $this->minRefresh = $cfgValues['minRefresh'];
-        $this->defaultRefresh = $cfgValues['defaultRefresh'];
-        $this->timeZone = $cfgValues['timeZone'];
-        ini_set('date.timezone', $this->timeZone);
-        $this->issueTrackerBaseUrl = $cfgValues['issueTrackerBaseUrl'];
-        $this->roQueryPart = $cfgValues['roQueryPart'];
+        $this->baseUrl = $cfgValues[ 'baseUrl' ] ;
+        $this->dbHost = (! isset( $dbHost ) ) ? $cfgValues[ 'dbHost' ] : $dbHost ;
+        $this->dbPort = (! isset( $dbPort ) ) ? $cfgValues[ 'dbPort' ] : $dbPort ;
+        $this->dbName = (! isset( $dbName ) ) ? $cfgValues[ 'dbName' ] : $dbName ;
+        $this->dbUser = (! isset( $dbUser ) ) ? $cfgValues[ 'dbUser' ] : $dbUser ;
+        $this->dbPass = (! isset( $dbPass ) ) ? $cfgValues[ 'dbPass' ] : $dbPass ;
+        $this->minRefresh = $cfgValues[ 'minRefresh' ] ;
+        $this->defaultRefresh = $cfgValues[ 'defaultRefresh' ] ;
+        $this->timeZone = $cfgValues[ 'timeZone' ] ;
+        ini_set( 'date.timezone', $this->timeZone ) ;
+        $this->issueTrackerBaseUrl = $cfgValues[ 'issueTrackerBaseUrl' ] ;
+        $this->roQueryPart = $cfgValues[ 'roQueryPart' ] ;
+        $this->killStatement = $cfgValues[ 'killStatement' ] ;
     }
 
     /**
@@ -309,6 +316,15 @@ class Config
      */
     public function getRoQueryPart() {
         return $this->roQueryPart;
+    }
+
+    /**
+     * Getter
+     *
+     * @return string
+     */
+    public function getKillStatement() {
+        return $this->killStatement;
     }
 
     /**

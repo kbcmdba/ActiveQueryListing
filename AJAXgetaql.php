@@ -163,10 +163,11 @@ SQL;
           , 'info'         => htmlspecialchars( $safeInfo )
           , 'actions'      => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid ) ; return false ;\">Kill Thread</button>"
                             . "<button type=\"button\" onclick=\"fileIssue( '$hostname', '$readOnly', '$host', '$uid', '$db', $time, '$safeUrl' ) ; return false ;\">File Issue</button>"
-          , 'readOnly'     => $readOnly
+          , 'readOnly'    => $readOnly
         ] ;
     }
-} catch (\Exception $e) {
+}
+catch (\Exception $e) {
     echo json_encode([ 'hostname' => $hostname, 'error_output' => $e->getMessage() ]) ;
     exit(1) ;
 }
