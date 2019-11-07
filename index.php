@@ -192,6 +192,63 @@ JS
   </tr>
 </table>
 
+<p />
+<div class="container">
+  <!-- Modal -->
+  <div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal Content -->
+      <div class="modal-content">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 style="color: red;"<span class="glyphicon glyphicon-lock"></span>Login</h4>
+      </div>
+      <div class="modal-body" style="background-color: white;">
+        <h2>Active Query Listing: Kill Thread Login</h2>
+        <form method="post" id="modalForm">
+            <input type="hidden" name="server" id="i_server" value="" />
+            <input type="hidden" name="pid" id="i_pid" value="" />
+            Login: <input type="text" name="login" placeholder="Required" /><br />
+            Password: <input type="password" name="password" placeholder="Required" /><br />
+            Reason for thread termination: <textarea name="reason" cols="60" rows="5" maxlength="255" placeholder="Required"></textarea><br />
+            <p />
+            <input type=submit value="Kill Thread" />
+          </form>
+          <div id="kill-results"></div>
+          <table>
+            <tr><th>Server</th><td id="m_server">Server</td></tr>
+            <tr><th>Thread ID</th><td id="m_pid">Thread ID</td></tr>
+            <tr><th>User</th><td id="m_user">User</td></tr>
+            <tr><th>From Host</th><td id="m_host">From Host</td></tr>
+            <tr><th>Schema</th><td id="m_db">Schema</td></tr>
+            <tr><th>Command</th><td id="m_command">Command</td></tr>
+            <tr><th>Time</th><td id="m_time">Time</td></tr>
+            <tr><th>State</th><td id="m_state">State</td></tr>
+            <tr><th>Info</th><td id="m_info">Info</td></tr>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-default btn-default pull-left" data-dismiss="modal">
+            <span class="glyphicon glyphicon-remove"></span> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+  $(function() {
+      $('#modalForm').on('submit', function(e){
+          e.preventDefault();
+          $.post( 'AJAXKillProc.php'
+                , $('#modalForm').serialize()
+                , function(data, status, xhr){
+                      alert(JSON.parse(data).result);
+                });
+      });
+  });
+</script>
+<p />
+
 <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
 <table border=1 cellspacing=0 cellpadding=2 id="dataTable" width="100%" class="tablesorter">
   <thead>

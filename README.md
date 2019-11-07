@@ -62,11 +62,14 @@ instances that AQL will manage (I'll assume you'll use aql_app for the user):
 -- You should adjust these lines to meet your needs.
 -- Minimally, you shoud at least change the password. I recommend also changing
 -- the user and host mask (%) so you don't leave yourself overly vulnerable to
--- a denial of service attack.
-create user 'aql_app'@'%' identified by 'SomethingComplicated' ; 
-grant process on *.* to 'aql_app'@'%' ;
-grant all on aql_db.* to 'aql_app'@'%' ;
-create database if not exists aql_db ;
+-- a denial of service attack. Note that some more recent systems require
+-- SUPER privilege in order to kill processes that are owned by others. This
+-- doesn't prevent the application from killing processes when the authorized
+-- user has the appropriate privileges.
+CREATE USER 'aql_app'@'%' IDENTIFIED BY 'SomethingComplicated' ; 
+GRANT PROCESS ON *.* TO 'aql_app'@'%' ;
+GRANT ALL ON aql_db.* TO 'aql_app'@'%' ;
+CREATE DATABASE IF NOT EXISTS aql_db ;
 ```
 
 ## SELinux Installation Tips for Fedora/Redhat/CentOS

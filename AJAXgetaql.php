@@ -148,6 +148,7 @@ SQL;
                 $level = 1 ;
         }
         $summaryData[ "level$level" ] ++ ;
+        $safeInfoJS   = urlencode( $safeInfo ) ;
         $outputList[] = [
             'level'        => $level
           , 'time'         => $time
@@ -161,7 +162,7 @@ SQL;
           , 'state'        => $state
           , 'dupeState'    => $dupeState
           , 'info'         => htmlspecialchars( $safeInfo )
-          , 'actions'      => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid ) ; return false ;\">Kill Thread</button>"
+          , 'actions'      => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid, '$uid', '$host', '$db', '$command', $time, '$state', '$safeInfoJS' ) ; return false ;\">Kill Thread</button>"
                             . "<button type=\"button\" onclick=\"fileIssue( '$hostname', '$readOnly', '$host', '$uid', '$db', $time, '$safeUrl' ) ; return false ;\">File Issue</button>"
           , 'readOnly'    => $readOnly
         ] ;

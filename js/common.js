@@ -314,10 +314,32 @@ function myCallback( i, item ) {
         myRow.prependTo( "#tbodyid" ) ;
     }
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
-function killProcOnHost( hostname, pid ) {
-    alert( "Not yet implemented.\n\nhostname=" + hostname + "\npid=" + pid ) ;
+function urldecode(url) {
+	if ( typeof url != "string" ) {
+		return url ;
+	}
+	return decodeURIComponent( url.replace( /\+/g, ' ' ) ) ;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function killProcOnHost( hostname, pid, user, fromHost, db, command, time, state, info ) {
+    document.getElementById( 'm_server' ).innerHTML = hostname ;
+    document.getElementById( 'm_pid' ).innerHTML = pid ;
+    document.getElementById( 'm_user' ).innerHTML = user ;
+    document.getElementById( 'm_host' ).innerHTML = fromHost ;
+    document.getElementById( 'm_db' ).innerHTML = db ;
+    document.getElementById( 'm_command' ).innerHTML = command ;
+    document.getElementById( 'm_time' ).innerHTML = time ;
+    document.getElementById( 'm_state' ).innerHTML = state ;
+    document.getElementById( 'm_info' ).innerHTML = urldecode( info ) ;
+    document.getElementById( 'i_server' ).value = hostname ;
+    document.getElementById( 'i_pid' ).value = pid ;
+    $( "#myModal" ).modal( 'show' ) ;
+    return false ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
