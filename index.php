@@ -93,6 +93,7 @@ SELECT h.hostname
   FROM aql_db.host AS h
  WHERE h.should_monitor = 1
    AND h.decommissioned = 0
+ ORDER BY h.hostname
  
 SQL;
 $in = "'"
