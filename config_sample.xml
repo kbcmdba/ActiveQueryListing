@@ -1,5 +1,5 @@
 <config>
-    <param name="baseUrl">http://localhost/aql/AJAXgetaql.php</param>
+    <param name="baseUrl">https://localhost.localdomain/ActiveQueryListing/AJAXgetaql.php</param>
     <param name="dbHost">127.0.0.1</param>
     <param name="dbName">aql_db</param>
     <param name="dbPort">3306</param>
