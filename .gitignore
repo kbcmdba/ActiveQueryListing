@@ -10,3 +10,5 @@ build/
 config.xml
 deploy/appspec.yml
 vendor/
+aql_config.xml
+composer.lock
