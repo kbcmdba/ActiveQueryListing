@@ -143,8 +143,7 @@ class Tools
 
     /**
      *
-     * Return a time-like string of seconds, minutes:seconds or hours:minutes:se
-conds
+     * Return a time-like string of seconds, minutes:seconds or hours:minutes:seconds
      *
      * @param integer $in_seconds
      *            @fixme Comparison to is_integer isn't working as expected.
