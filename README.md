@@ -72,6 +72,16 @@ GRANT ALL ON aql_db.* TO 'aql_app'@'%' ;
 CREATE DATABASE IF NOT EXISTS aql_db ;
 ```
 
+## Note about the "second" instance
+
+During testing, we use row four from the host table as a replication slave of
+row 1.
+
+While setting up a replication instance is beyond the scope of these
+instructions, row four of the host database assumes that you have a
+replication slave set up on port 3307. If you want to ignore that "system,"
+simply change the decommissioned setting to 1 and should_monitor to 0.
+
 ## SELinux Installation Tips for Fedora/Redhat/CentOS
 
 In order to allow this program to run under Fedora-based systems, it's

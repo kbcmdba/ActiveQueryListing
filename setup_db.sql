@@ -31,6 +31,7 @@ USE aql_db ;
 CREATE TABLE host (
        host_id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
      , hostname          VARCHAR( 64 ) NOT NULL
+     , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
      , description       TEXT NULL DEFAULT NULL
      , should_monitor    BOOLEAN NOT NULL DEFAULT 1
      , should_backup     BOOLEAN NOT NULL DEFAULT 1
@@ -52,6 +53,7 @@ CREATE TABLE host (
 INSERT host
 VALUES ( 1                 -- id
        , 'localhost'       -- hostname
+       , 3306              -- port_number
        , 'This host'       -- description
        , 1                 -- should_monitor
        , 1                 -- should_backup
@@ -66,6 +68,7 @@ VALUES ( 1                 -- id
        , NULL              -- last_audited
     ), ( 2                 -- id
        , '127.0.0.1'       -- hostname
+       , 3306              -- port_number
        , 'localhostx2'     -- description
        , 1                 -- should_monitor
        , 1                 -- should_backup
@@ -80,7 +83,23 @@ VALUES ( 1                 -- id
        , NULL              -- last_audited
     ), ( 3                 -- id
        , '192.168.256.256' -- hostname
+       , 3306              -- port_number
        , 'Bad host'        -- description
+       , 1                 -- should_monitor
+       , 1                 -- should_backup
+       , 1                 -- revenue_impacting
+       , 0                 -- decommissioned
+       , 10                -- alert_crit_secs
+       , 5                 -- alert_warn_secs
+       , 2                 -- alert_info_secs
+       , -1                -- alert_low_secs
+       , NULL              -- created
+       , NULL              -- updated
+       , NULL              -- last_audited
+    ), ( 4                 -- id
+       , 'localhost'       -- hostname
+       , 3307              -- port_number
+       , 'Second instance on this host' -- description
        , 1                 -- should_monitor
        , 1                 -- should_backup
        , 1                 -- revenue_impacting

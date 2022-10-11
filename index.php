@@ -46,7 +46,7 @@ $headerFooterRow = <<<HTML
       <th>Alert<br />Level</th>
       <th>Thread<br />ID</th>
       <th>User</th>
-      <th>From<br />Host</th>
+      <th>From<br />Host:Port</th>
       <th>DB</th>
       <th>Command <a href="https://dev.mysql.com/doc/refman/5.6/en/thread-commands.html" target="_blank">?</a></th>
       <th>Time<br />Secs</th>
@@ -85,7 +85,7 @@ $dbc = new DBConnection();
 $dbh = $dbc->getConnection();
 $dbh->set_charset('utf8');
 $allHostsQuery = <<<SQL
-SELECT h.hostname
+SELECT CONCAT( h.hostname, ':', h.port_number )
      , h.alert_crit_secs
      , h.alert_warn_secs
      , h.alert_info_secs
@@ -100,7 +100,7 @@ $in = "'"
     . implode("', '", array_map( [ $dbh, 'real_escape_string' ], $hostList ) )
     . "'" ;
 $someHostsQuery = <<<SQL
-SELECT h.hostname
+SELECT CONCAT( h.hostname, ':', h.port_number )
      , h.alert_crit_secs
      , h.alert_warn_secs
      , h.alert_info_secs
