@@ -85,8 +85,8 @@ SELECT id
      , $roQueryPart as read_only
   FROM INFORMATION_SCHEMA.PROCESSLIST
  WHERE 1 = 1
-$debugComment   AND COMMAND NOT IN $notIn
-$debugComment   AND id <> CONNECTION_ID()
+ $debugComment  AND COMMAND NOT IN $notIn
+ $debugComment  AND id <> CONNECTION_ID()
  ORDER BY time DESC
 
 SQL;
