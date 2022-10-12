@@ -42,6 +42,9 @@ if ( ! is_array( $hostList ) ) {
 
 $headerFooterRow = <<<HTML
 <tr>
+      <th colspan="14">Process Listing</th>
+    </tr>
+    <tr>
       <th>Server</th>
       <th>Alert<br />Level</th>
       <th>Thread<br />ID</th>
@@ -58,6 +61,27 @@ $headerFooterRow = <<<HTML
       <th>Actions</th>
     </tr>
 
+HTML;
+$replHeaderFooterRow = <<<HTML
+<tr>
+      <th colspan="15">Host Status</th>
+    </tr>
+    <tr>
+      <th>Server</th>
+      <th>Version</th>
+      <th>Threads</th>
+      <th>Doing<br />SE/IN/UP/DE/RE/SL</th>
+      <th>Longest<br />Active</th>
+      <th>aQPS</th>
+      <th>Connection<br />Name</th>
+      <th>Slave Of</th>
+      <th>Alert<br />Level</th>
+      <th>Seconds<br />Behind</th>
+      <th>IO Thread<br />Running</th>
+      <th>SQL Thread<br />Running</th>
+      <th>IO Thread<br />Last Error</th>
+      <th>SQL Thread<br />Last Error</th>
+    </tr>
 HTML;
 $debug = Tools::param('debug') === "1" ;
 $page = new WebPage('Active Queries List');
@@ -149,6 +173,7 @@ var reloadSeconds = $reloadSeconds * 1000 ;
 ///////////////////////////////////////////////////////////////////////////////
 
 function loadPage() {
+    \$("#repltbodyid").html( '<tr id="replfigment"><td colspan="15"><center>Data loading</center></td></tr>' ) ;
     \$("#tbodyid").html( '<tr id="figment"><td colspan="14"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
         function ($thenParamBlock ) { $thenCodeBlock
@@ -157,6 +182,7 @@ function loadPage() {
             displayCharts() ; 
         }
     );
+    \$('#repltbodyid').on('click', '.morelink', flipFlop) ;
     \$('#tbodyid').on('click', '.morelink', flipFlop) ;
     timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
 }
@@ -188,12 +214,14 @@ JS
           <input type="checkbox" name="debug" value="1" $debugChecked/> Debug Mode<br />
           <input type="submit" value="Update" />
         </form>
+        <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
       </center>
     </td>
     <td id="updatedAt">Page last updated at $now</td>
   </tr>
 </table>
 
+&nbsp;
 <p />
 <div class="container">
   <!-- Modal -->
@@ -249,9 +277,24 @@ JS
       });
   });
 </script>
+&nbsp;
 <p />
 
-<button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
+<table border=1 cellspacing=0 cellpadding=2 id="replTable" width="100%" class="tablesorter">
+  <thead>
+    $replHeaderFooterRow
+  </thead>
+  <tbody id="repltbodyid">
+    <tr id="replfigment">
+      <td colspan="15">
+        <center>Data loading</center>
+      </td>
+    </tr>
+  </tbody>
+</table>
+&nbsp;
+<p />
+
 <table border=1 cellspacing=0 cellpadding=2 id="dataTable" width="100%" class="tablesorter">
   <thead>
     $headerFooterRow
