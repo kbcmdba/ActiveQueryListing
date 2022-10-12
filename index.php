@@ -91,9 +91,9 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
      , h.alert_info_secs
      , h.alert_low_secs
   FROM aql_db.host AS h
- WHERE h.should_monitor = 1
-   AND h.decommissioned = 0
- ORDER BY h.hostname
+ WHERE h.decommissioned = 0
+   AND h.should_monitor = 1
+ ORDER BY h.hostname, h.port_number
  
 SQL;
 $in = "'"
@@ -107,19 +107,20 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
      , h.alert_low_secs
   FROM aql_db.host AS h
  WHERE h.decommissioned = 0
-   AND h.hostname IN ( $in )
+   AND CONCAT( h.hostname, ':', h.port_number ) IN ( $in )
+   ORDER BY h.hostname, h.port_number
 
 SQL;
 $allHostsList = '';
 $baseUrl = $config->getBaseUrl();
-$showAllHosts = ( 0 === count($hostList) );
+$showAllHosts = ( 0 === count( $hostList ) );
 try {
-    $result = $dbh->query($allHostsQuery);
-    if (! $result) {
+    $result = $dbh->query( $allHostsQuery );
+    if ( ! $result ) {
         throw new \ErrorException( "Query failed: $allHostsQuery\n Error: " . $dbh->error );
     }
-    while ($row = $result->fetch_row()) {
-        $serverName = htmlentities($row[0]);
+    while ( $row = $result->fetch_row() ) {
+        $serverName = htmlentities( $row[0] );
         $selected = ( in_array( $row[0], $hostList ) ) ? 'selected="selected"' : '' ;
         $allHostsList .= "  <option value=\"$serverName\" $selected>$serverName</option>\n";
         if ( $showAllHosts ) {
@@ -127,7 +128,7 @@ try {
         }
     }
     if ( ! $showAllHosts ) {
-        $result = $dbh->query($someHostsQuery);
+        $result = $dbh->query( $someHostsQuery );
         if (! $result) {
             throw new \ErrorException( "Query failed: $someHostsQuery\n Error: " . $dbh->error );
         }

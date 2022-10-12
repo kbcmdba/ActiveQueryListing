@@ -58,6 +58,9 @@ $summaryData = [
 $queries = [] ;
 $safeQueries = [] ;
 
+$hostData = [] ;
+$slaveData = [] ;
+
 try {
     $config        = new Config() ;
     $roQueryPart   = $config->getRoQueryPart() ;
