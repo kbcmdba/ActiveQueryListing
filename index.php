@@ -41,10 +41,10 @@ if ( ! is_array( $hostList ) ) {
 }
 
 $headerFooterRow = <<<HTML
-<tr>
+<tr class="mytr">
       <th colspan="14">Process Listing</th>
     </tr>
-    <tr>
+    <tr class="mytr">
       <th>Server</th>
       <th>Alert<br />Level</th>
       <th>Thread<br />ID</th>
@@ -63,10 +63,10 @@ $headerFooterRow = <<<HTML
 
 HTML;
 $replHeaderFooterRow = <<<HTML
-<tr>
+<tr class="mytr">
       <th colspan="15">Host Status</th>
     </tr>
-    <tr>
+    <tr class="mytr">
       <th>Server</th>
       <th>Version</th>
       <th>Threads</th>
