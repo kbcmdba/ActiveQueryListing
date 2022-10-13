@@ -66,6 +66,7 @@ class Config
     private $issueTrackerBaseUrl = null;
     private $roQueryPart = null;
     private $killStatement = null;
+    private $showSlaveStatement = null;
     /**
      * #@-
      */
@@ -106,7 +107,8 @@ class Config
             'minRefresh' => 15,
             'defaultRefresh' => 60,
             'roQueryPart' => '@@global.read_only',
-            'killStatement' => 'kill :pid'
+            'killStatement' => 'kill :pid',
+            'showSlaveStatement' => 'show all slaves status'
         ] ;
         $paramList = [
             'dbHost' => [
@@ -156,6 +158,10 @@ class Config
             'killStatement' => [
                 'isRequired' => 0,
                 'value' => 0
+            ],
+            'showSlaveStatement' => [
+                'isRequired' => 0,
+                'value' => 0
             ]
         ] ;
 
@@ -197,6 +203,7 @@ class Config
         $this->issueTrackerBaseUrl = $cfgValues[ 'issueTrackerBaseUrl' ] ;
         $this->roQueryPart = $cfgValues[ 'roQueryPart' ] ;
         $this->killStatement = $cfgValues[ 'killStatement' ] ;
+        $this->showSlaveStatement = $cfgValues[ 'showSlaveStatement' ] ;
     }
 
     /**
@@ -328,6 +335,15 @@ class Config
     }
 
     /**
+     * Getter
+     *
+     * @return string
+     */
+    public function getShowSlaveStatement() {
+        return $this->showSlaveStatement;
+    }
+
+    /**
      * Return the DSN for this connection
      *
      * @param string $dbType
@@ -336,6 +352,8 @@ class Config
      */
     public function getDsn($dbType = 'mysql')
     {
-        return $dbType . ':host=' . $this->getDbHost() . ':' . $this->getDbPort() . ';dbname=' . $this->getDbName();
+        return $dbType
+             . ':host=' . $this->getDbHost() . ':' . $this->getDbPort()
+             . ';dbname=' . $this->getDbName();
     }
 }

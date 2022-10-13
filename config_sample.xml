@@ -12,4 +12,5 @@
     <param name="roQueryPart">@@global.read_only OR @@global.innodb_read_only</param>
     <!-- In AWS - this would be "CALL mysql.rds_kill( :pid )" -->
     <param name="killStatement">kill :pid</param>
+    <param name="showSlaveStatement">show all slaves status</param>
 </config>
