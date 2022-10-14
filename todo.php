@@ -24,7 +24,6 @@
 
 namespace com\kbcmdba\aql ;
 
-// @FIXME 01 Clicking on a link with a hostname:portnumber causes the UI to show no data.
 // @todo 01 Implement Host/Group Limiter
 // @todo 02 Protect code from SQL injection
 // @todo 02 Sort results table

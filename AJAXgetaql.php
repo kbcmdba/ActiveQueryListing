@@ -54,11 +54,10 @@ $summaryData = [
   , 'threads'   => 0
   , 'time'      => 0
   , 'unique'    => 0
+  , 'version'   => ''
 ];
 $queries = [] ;
 $safeQueries = [] ;
-
-$hostData = [] ;
 $slaveData = [] ;
 
 try {
@@ -76,6 +75,16 @@ try {
     $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump'"
                    . ", 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
+    $versionQuery  = <<<SQL
+SELECT VERSION() FROM DUAL
+SQL;
+    $versionResult = $dbh->query( $versionQuery ) ;
+    if ( $versionResult === false ) {
+        throw new \ErrorException( "Error running query: $versionQuery (" . $dbh->error . ")\n" ) ;
+    }
+    $row = $versionResult->fetch_row() ;
+    $summaryData[ 'version' ] = $row[ 0 ] ;
+    $versionResult->close() ;
     $processQuery  = <<<SQL
 SELECT id
      , user
@@ -93,11 +102,11 @@ SELECT id
  ORDER BY time DESC
 
 SQL;
-    $result = $dbh->query($processQuery) ;
-    if ( $result === false ) {
+    $processResult = $dbh->query($processQuery) ;
+    if ( $processResult === false ) {
         throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
     }
-    while ($row = $result->fetch_row()) {
+    while ($row = $processResult->fetch_row()) {
         $summaryData[ 'threads' ] ++ ;
         $dupeState    = '' ;
         $pid          = $row[ 0 ] ;
@@ -170,9 +179,29 @@ SQL;
           , 'readOnly'    => $readOnly
         ] ;
     }
+    $processResult->close() ;
+    $showSlaveStatement = $config->getShowSlaveStatement() ;
+    $slaveResult = $dbh->query( $showSlaveStatement ) ;
+    if ( $slaveResult === false ) {
+        throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
+    }
+    while ($row = $slaveResult->fetch_assoc()) {
+        $thisResult = array() ;
+        foreach (['Connection_name', 'Master_Host', 'Master_Port', 'Slave_IO_Running'
+                 , 'Slave_SQL_Running', 'Seconds_Behind_Master', 'Last_IO_Error'
+                 , 'Last_SQL_Error'] as $i) {
+          $thisResult[ $i ] = $row[ $i ] ;
+        }
+        $slaveData[] = $thisResult ;
+    }
+    $slaveResult->close() ;
 }
 catch (\Exception $e) {
     echo json_encode([ 'hostname' => $hostname, 'error_output' => $e->getMessage() ]) ;
     exit(1) ;
 }
-echo json_encode([ 'hostname' => $hostname, 'result' => $outputList, 'summaryData' => $summaryData] ) . "\n" ;
+echo json_encode([ 'hostname'    => $hostname
+                 , 'result'      => $outputList
+                 , 'summaryData' => $summaryData
+                 , 'slaveData'   => $slaveData
+                 ]) . "\n" ;
