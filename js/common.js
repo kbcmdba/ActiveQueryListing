@@ -161,9 +161,9 @@ function deleteRow( rowId ) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-function sortTable() {
+function sortProcessTable() {
     var table, rows, switching, i, x, y, shouldSwitch ;
-    table = document.getElementById("tbodyid") ;
+    table = document.getElementById("processtbodyid") ;
     switching = true ;
     rows = table.getElementsByTagName("tr") ;
     rowcount = rows.length;
@@ -246,73 +246,75 @@ function myCallback( i, item ) {
     var summaryData       = item[ 'summaryData' ] ;
     var slaveData         = item[ 'slaveData' ] ;
     // We get other types of responses here as well. Ignore the noise.
-    if (    ( typeof item[ 'result' ] !== 'undefined' )
-         && ( typeof item[ 'result' ][ 0 ] !== 'undefined' )
-         && ( typeof item[ 'result' ][ 0 ][ 'level' ] !== 'undefined' )
-       ) {
-        // Assumption - if we can get any rows from the server, we should be able to get all of the rows.
-        server            = item[ 'result' ][ 0 ][ 'server' ] ;
-        serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
-        if ( typeof host_count[ server ] === 'undefined' ) {
-            host_count[ server ] = 0 ;
-        }
-        for ( itemNo=0; itemNo<item[ 'result' ].length; itemNo++ ) {
-            host_count[ server ] ++ ;
-            level = item[ 'result' ][ itemNo ][ 'level' ] ;
-            if ( 9 == level ) {
-                base_counts['Error'] ++ ;
-            }
-            else {
-                base_counts['Level' + level] ++ ;
-            }
-            if (item['result'][itemNo]['readOnly'] == "0") {
-                base_counts[ 'RW' ] ++ ;
-            }
-            else {
-                base_counts[ 'RO' ] ++ ;
-            }
-            dupeState = item[ 'result' ][ itemNo ][ 'dupeState' ] ;
-            base_counts[ dupeState ] ++ ;
-            info      = item[ 'result' ][ itemNo ][ 'info' ] ;
-            db        = item[ 'result' ][ itemNo ][ 'db' ] ;
-            if ( typeof db_count[ db ] === 'undefined' ) {
-                db_count[ db ] = 0 ;
-            }
-            db_count[ db ] ++ ;
-            if ( info.length > showChars + 8 ) {
-                var first = info.substr( 0, showChars ) ;
-                var last  = info.substr( showChars, info.length - showChars ) ;
-                info      = first
-                          + '<span class="moreelipses">...</span>'
-                          + '<span class="morecontent"><span>'
-                          + last
-                          + '</span>&nbsp;&nbsp;<a href="" class="morelink">'
-                          + 'more</a></span>' ;
-            }
-            var myRow = $("<tr class=\"level" + level + "\">"
-                         +      "<td class=\"comment more\">" + serverLinkAddress
-                         + "</td><td align=\"center\">" + level
-                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'           ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'         ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'host'         ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'db'           ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'command'      ]
-                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'         ]
-                         + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'friendlyTime' ]
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'        ]
-                         + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly'     ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
-                         + "</td><td class=\"" + dupeState + "\">" + dupeState
-                         + "</td><td class=\"comment more\">" + info
-                         + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
-                         + "</td></tr>") ;
-            myRow.appendTo( "#tbodyid" ) ;
-        }
-    }
-    else if ( typeof item[ 'error_output' ] !== 'undefined' ) {
+    // If we have an error, assume it's critical and show it at the top of the process listing.
+    if ( typeof item[ 'error_output' ] !== 'undefined' ) {
         var myRow = $("<tr><td class=\"errorNotice\">" + item[ 'hostname' ]
                      + "</td><td class=\"errorNotice\">9</td><td colspan=\"12\" class=\"errorNotice\">" + item[ 'error_output' ]
                      + "</td></tr>") ;
-        myRow.prependTo( "#tbodyid" ) ;
+        myRow.prependTo( "#processtbodyid" ) ;
+    } else {
+        if (    ( typeof item[ 'result' ] !== 'undefined' )
+             && ( typeof item[ 'result' ][ 0 ] !== 'undefined' )
+             && ( typeof item[ 'result' ][ 0 ][ 'level' ] !== 'undefined' )
+           ) {
+            // Assumption - if we can get any rows from the server, we should be able to get all of the rows.
+            server            = item[ 'result' ][ 0 ][ 'server' ] ;
+            serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
+            if ( typeof host_count[ server ] === 'undefined' ) {
+                host_count[ server ] = 0 ;
+            }
+            for ( itemNo=0; itemNo<item[ 'result' ].length; itemNo++ ) {
+                host_count[ server ] ++ ;
+                level = item[ 'result' ][ itemNo ][ 'level' ] ;
+                if ( 9 == level ) {
+                    base_counts['Error'] ++ ;
+                }
+                else {
+                    base_counts['Level' + level] ++ ;
+                }
+                if (item['result'][itemNo]['readOnly'] == "0") {
+                    base_counts[ 'RW' ] ++ ;
+                }
+                else {
+                    base_counts[ 'RO' ] ++ ;
+                }
+                dupeState = item[ 'result' ][ itemNo ][ 'dupeState' ] ;
+                base_counts[ dupeState ] ++ ;
+                info      = item[ 'result' ][ itemNo ][ 'info' ] ;
+                db        = item[ 'result' ][ itemNo ][ 'db' ] ;
+                if ( typeof db_count[ db ] === 'undefined' ) {
+                    db_count[ db ] = 0 ;
+                }
+                db_count[ db ] ++ ;
+                if ( info.length > showChars + 8 ) {
+                    var first = info.substr( 0, showChars ) ;
+                    var last  = info.substr( showChars, info.length - showChars ) ;
+                    info      = first
+                            + '<span class="moreelipses">...</span>'
+                            + '<span class="morecontent"><span>'
+                            + last
+                            + '</span>&nbsp;&nbsp;<a href="" class="morelink">'
+                            + 'more</a></span>' ;
+                }
+                var myRow = $("<tr class=\"level" + level + "\">"
+                            +      "<td class=\"comment more\">" + serverLinkAddress
+                            + "</td><td align=\"center\">" + level
+                            + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'           ]
+                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'         ]
+                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'host'         ]
+                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'db'           ]
+                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'command'      ]
+                            + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'         ]
+                            + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'friendlyTime' ]
+                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'        ]
+                            + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly'     ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
+                            + "</td><td class=\"" + dupeState + "\">" + dupeState
+                            + "</td><td class=\"comment more\">" + info
+                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
+                            + "</td></tr>") ;
+                myRow.appendTo( "#processtbodyid" ) ;
+            }
+        }
     }
 }
 

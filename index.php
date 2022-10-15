@@ -40,9 +40,10 @@ if ( ! is_array( $hostList ) ) {
     $hostList = [ Tools::params('hosts') ] ;
 }
 
-$headerFooterRow = <<<HTML
+$processCols = 14 ;
+$processHeaderFooter = <<<HTML
 <tr class="mytr">
-      <th colspan="14">Process Listing</th>
+      <th colspan="$processCols">Process Listing</th>
     </tr>
     <tr class="mytr">
       <th>Server</th>
@@ -62,25 +63,48 @@ $headerFooterRow = <<<HTML
     </tr>
 
 HTML;
-$replHeaderFooterRow = <<<HTML
+
+$slaveCols = 8 ;
+$slaveHeaderFooter = <<<HTML
 <tr class="mytr">
-      <th colspan="15">Host Status</th>
+      <th colspan="$slaveCols">Slave Status</th>
     </tr>
     <tr class="mytr">
       <th>Server</th>
-      <th>Version</th>
-      <th>Threads</th>
-      <th>Doing<br />SE/IN/UP/DE/RE/SL</th>
-      <th>Longest<br />Active</th>
-      <th>aQPS</th>
       <th>Connection<br />Name</th>
       <th>Slave Of</th>
-      <th>Alert<br />Level</th>
       <th>Seconds<br />Behind</th>
       <th>IO Thread<br />Running</th>
       <th>SQL Thread<br />Running</th>
       <th>IO Thread<br />Last Error</th>
       <th>SQL Thread<br />Last Error</th>
+    </tr>
+HTML;
+
+$summaryCols = 18 ;
+$summaryHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$summaryCols">Status Summary</th>
+    </tr>
+    <tr class="mytr">
+      <th>Server</th>
+      <th>Version</th>
+      <th>Longest<br />Running</th>
+      <th>aQPS</th>
+      <th>Uptime</th>
+      <th>L0</th>
+      <th>L1</th>
+      <th>L2</th>
+      <th>L3</th>
+      <th>L4</th>
+      <th>L9</th>
+      <th>RO</th>
+      <th>RW</th>
+      <th>Blank</th>
+      <th>Duplicate</th>
+      <th>Similar</th>
+      <th>Threads</th>
+      <th>Unique</th>
     </tr>
 HTML;
 $debug = Tools::param('debug') === "1" ;
@@ -173,17 +197,19 @@ var reloadSeconds = $reloadSeconds * 1000 ;
 ///////////////////////////////////////////////////////////////////////////////
 
 function loadPage() {
-    \$("#repltbodyid").html( '<tr id="replfigment"><td colspan="15"><center>Data loading</center></td></tr>' ) ;
-    \$("#tbodyid").html( '<tr id="figment"><td colspan="14"><center>Data loading</center></td></tr>' ) ;
+    \$("#slavetbodyid").html( '<tr id="slavefigment"><td colspan="$slaveCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#summarytbodyid").html( '<tr id="summaryfigment"><td colspan="$summaryCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#processtbodyid").html( '<tr id="processfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
         function ($thenParamBlock ) { $thenCodeBlock
-            \$("#figment").remove() ;
-            \$("#dataTable").tablesorter( {sortList: [[1,1], [7, 1]]} ) ; 
+            \$("#slavefigment").remove() ;
+            \$("#summaryfigment").remove() ;
+            \$("#processfigment").remove() ;
+            \$("#processTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ; 
             displayCharts() ; 
         }
     );
-    \$('#repltbodyid').on('click', '.morelink', flipFlop) ;
-    \$('#tbodyid').on('click', '.morelink', flipFlop) ;
+    \$('#processtbodyid').on('click', '.morelink', flipFlop) ;
     timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
 }
 
@@ -280,13 +306,13 @@ JS
 &nbsp;
 <p />
 
-<table border=1 cellspacing=0 cellpadding=2 id="replTable" width="100%" class="tablesorter">
+<table border=1 cellspacing=0 cellpadding=2 id="slaveTable" width="100%" class="tablesorter">
   <thead>
-    $replHeaderFooterRow
+    $slaveHeaderFooter
   </thead>
-  <tbody id="repltbodyid">
-    <tr id="replfigment">
-      <td colspan="15">
+  <tbody id="slavetbodyid">
+    <tr id="slavefigment">
+      <td colspan="$slaveCols">
         <center>Data loading</center>
       </td>
     </tr>
@@ -295,13 +321,28 @@ JS
 &nbsp;
 <p />
 
-<table border=1 cellspacing=0 cellpadding=2 id="dataTable" width="100%" class="tablesorter">
+<table border=1 cellspacing=0 cellpadding=2 id="summaryTable" width="100%" class="tablesorter">
   <thead>
-    $headerFooterRow
+    $summaryHeaderFooter
   </thead>
-  <tbody id="tbodyid">
-    <tr id="figment">
-      <td colspan="14">
+  <tbody id="summarytbodyid">
+    <tr id="summaryfigment">
+      <td colspan="$summaryCols">
+        <center>Data loading</center>
+      </td>
+    </tr>
+  </tbody>
+</table>
+&nbsp;
+<p />
+
+<table border=1 cellspacing=0 cellpadding=2 id="processTable" width="100%" class="tablesorter">
+  <thead>
+    $processHeaderFooter
+  </thead>
+  <tbody id="processtbodyid">
+    <tr id="processfigment">
+      <td colspan="$processCols">
         <center>Data loading</center>
       </td>
     </tr>
