@@ -280,17 +280,19 @@ function myCallback( i, item ) {
         if ( ( typeof slaveData !== 'undefined' ) && ( typeof slaveData[ 0 ] !== 'undefined' ) ) {
             var server            = item[ 'hostname' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
-            var myRow             = $("<tr><td>" + serverLinkAddress
-                                  + "</td><td>" + slaveData[ 0 ][ 'Connection_Name']
-                                  + "</td><td>" + slaveData[ 0 ][ 'Master_Host' ]
-                                  + ':' + slaveData[ 0 ][ 'Master_Port' ]
-                                  + "</td><td>" + slaveData[ 0 ][ 'Seconds_Behind_Master']
-                                  + "</td><td>" + slaveData[ 0 ][ 'Slave_IO_Running']
-                                  + "</td><td>" + slaveData[ 0 ][ 'Slave_SQL_Running']
-                                  + "</td><td>" + slaveData[ 0 ][ 'Last_IO_Error']
-                                  + "</td><td>" + slaveData[ 0 ][ 'Last_SQL_Error']
-                                  + "</td></tr>") ;
-                                  myRow.appendTo( "#slavetbodyid" ) ;
+            for ( itemNo=0; itemNo<slaveData.length; itemNo++ ) {
+                var myRow             = $("<tr><td>" + serverLinkAddress
+                                      + "</td><td>" + slaveData[ itemNo ][ 'Connection_Name']
+                                      + "</td><td>" + slaveData[ itemNo ][ 'Master_Host' ]
+                                      + ':' + slaveData[ itemNo ][ 'Master_Port' ]
+                                      + "</td><td>" + slaveData[ itemNo ][ 'Seconds_Behind_Master']
+                                      + "</td><td>" + slaveData[ itemNo ][ 'Slave_IO_Running']
+                                      + "</td><td>" + slaveData[ itemNo ][ 'Slave_SQL_Running']
+                                      + "</td><td>" + slaveData[ itemNo ][ 'Last_IO_Error']
+                                      + "</td><td>" + slaveData[ itemNo ][ 'Last_SQL_Error']
+                                      + "</td></tr>") ;
+                                      myRow.appendTo( "#slavetbodyid" ) ;
+          }
         }
         if (    ( typeof item[ 'result' ] !== 'undefined' )
              && ( typeof item[ 'result' ][ 0 ] !== 'undefined' )
