@@ -306,6 +306,13 @@ JS
 &nbsp;
 <p />
 
+<hr />
+<a href="#slaveStatus">Slave Status</a> &nbsp; &nbsp; 
+<a href="#statusSummary">Status Summary</a> &nbsp; &nbsp; 
+<a href="#processListing">Process Listing</a>
+<hr />
+
+<a id="slaveStatus" />
 <table border=1 cellspacing=0 cellpadding=2 id="slaveTable" width="100%" class="tablesorter">
   <thead>
     $slaveHeaderFooter
@@ -321,6 +328,7 @@ JS
 &nbsp;
 <p />
 
+<a id="statusSummary" />
 <table border=1 cellspacing=0 cellpadding=2 id="summaryTable" width="100%" class="tablesorter">
   <thead>
     $summaryHeaderFooter
@@ -336,6 +344,7 @@ JS
 &nbsp;
 <p />
 
+<a id="processListing" />
 <table border=1 cellspacing=0 cellpadding=2 id="processTable" width="100%" class="tablesorter">
   <thead>
     $processHeaderFooter
