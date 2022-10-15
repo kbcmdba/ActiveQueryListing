@@ -193,21 +193,21 @@ SQL;
         ] ;
     }
     $processResult->close() ;
-    $showSlaveStatement = $config->getShowSlaveStatement() ;
-    $slaveResult = $dbh->query( $showSlaveStatement ) ;
-    if ( $slaveResult === false ) {
-        throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
-    }
-    while ($row = $slaveResult->fetch_assoc()) {
-        $thisResult = array() ;
-        foreach (['Connection_Name', 'Master_Host', 'Master_Port', 'Slave_IO_Running'
-                 , 'Slave_SQL_Running', 'Seconds_Behind_Master', 'Last_IO_Error'
-                 , 'Last_SQL_Error'] as $i) {
-          $thisResult[ $i ] = $row[ $i ] ;
-        }
-        $slaveData[] = $thisResult ;
-    }
-    $slaveResult->close() ;
+    // $showSlaveStatement = $config->getShowSlaveStatement() ;
+    // $slaveResult = $dbh->query( $showSlaveStatement ) ;
+    // if ( $slaveResult === false ) {
+    //     throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
+    // }
+    // while ($row = $slaveResult->fetch_assoc()) {
+    //     $thisResult = array() ;
+    //     foreach (['Connection_Name', 'Master_Host', 'Master_Port', 'Slave_IO_Running'
+    //              , 'Slave_SQL_Running', 'Seconds_Behind_Master', 'Last_IO_Error'
+    //              , 'Last_SQL_Error'] as $i) {
+    //       $thisResult[ $i ] = $row[ $i ] ;
+    //     }
+    //     $slaveData[] = $thisResult ;
+    // }
+    // $slaveResult->close() ;
 }
 catch (\Exception $e) {
     echo json_encode([ 'hostname' => $hostname, 'error_output' => $e->getMessage() ]) ;
