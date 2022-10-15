@@ -40,25 +40,29 @@ header('Cache-Control: post-check=0, pre-check=0', false) ;
 header('Pragma: no-cache') ;
 
 $summaryData = [
-    'blank'     => 0
-  , 'duplicate' => 0
-  , 'level0'    => 0
-  , 'level1'    => 0
-  , 'level2'    => 0
-  , 'level3'    => 0
-  , 'level4'    => 0
-  , 'level9'    => 0
-  , 'ro'        => 0
-  , 'rw'        => 0
-  , 'similar'   => 0
-  , 'threads'   => 0
-  , 'time'      => 0
-  , 'unique'    => 0
-  , 'version'   => ''
+    'aQPS'            => -1
+  , 'blank'           => 0
+  , 'duplicate'       => 0
+  , 'level0'          => 0
+  , 'level1'          => 0
+  , 'level2'          => 0
+  , 'level3'          => 0
+  , 'level4'          => 0
+  , 'level9'          => 0
+  , 'longest_running' => -1
+  , 'ro'              => 0
+  , 'rw'              => 0
+  , 'similar'         => 0
+  , 'threads'         => 0
+  , 'time'            => 0
+  , 'unique'          => 0
+  , 'uptime'          => 0
+  , 'version'         => ''
 ];
 $queries = [] ;
 $safeQueries = [] ;
 $slaveData = [] ;
+$longestRunning = -1 ;
 
 try {
     $config        = new Config() ;
@@ -75,16 +79,22 @@ try {
     $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump'"
                    . ", 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
-    $versionQuery  = <<<SQL
-SELECT VERSION() FROM DUAL
+    $aQuery     = <<<SQL
+SELECT Q / T Queries_per_second_avg, VERSION(), T FROM
+(SELECT variable_value Q FROM information_schema.global_status
+WHERE variable_name = 'Questions') A,
+(SELECT variable_value T FROM information_schema.global_status
+WHERE variable_name = 'Uptime') B
 SQL;
-    $versionResult = $dbh->query( $versionQuery ) ;
-    if ( $versionResult === false ) {
-        throw new \ErrorException( "Error running query: $versionQuery (" . $dbh->error . ")\n" ) ;
+    $aResult    = $dbh->query( $aQuery ) ;
+    if ( $aResult === false ) {
+        throw new \ErrorException( "Error running query: $aQuery (" . $dbh->error . ")\n" ) ;
     }
-    $row = $versionResult->fetch_row() ;
-    $summaryData[ 'version' ] = $row[ 0 ] ;
-    $versionResult->close() ;
+    $row = $aResult->fetch_row() ;
+    $summaryData[ 'aQPS' ] = $row[ 0 ] ;
+    $summaryData[ 'version' ] = $row[ 1 ] ;
+    $summaryData[ 'uptime' ] = $row[ 2 ] ;
+    $aResult->close() ;
     $processQuery  = <<<SQL
 SELECT id
      , user
@@ -120,6 +130,9 @@ SQL;
         $info         = $row[ 7 ] ;
         $safeInfo     = Tools::makeQuotedStringPIISafe( $info ) ;
         if ( isset($info) && ($info !== '') ) {
+            if ( ( $command === 'Query' ) && ( $longestRunning < $time ) ) {
+                $longestRunning = $time ;
+            }
             if ( isset( $queries[ $info ] ) ) {
                 $dupeState = 'Duplicate' ;
                 $summaryData[ 'duplicate' ] ++ ;
@@ -200,6 +213,7 @@ catch (\Exception $e) {
     echo json_encode([ 'hostname' => $hostname, 'error_output' => $e->getMessage() ]) ;
     exit(1) ;
 }
+$summaryData[ 'longest_running' ] = $longestRunning ;
 echo json_encode([ 'hostname'    => $hostname
                  , 'result'      => $outputList
                  , 'summaryData' => $summaryData

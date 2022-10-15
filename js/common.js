@@ -253,6 +253,30 @@ function myCallback( i, item ) {
                      + "</td></tr>") ;
         myRow.prependTo( "#processtbodyid" ) ;
     } else {
+        if ( typeof summaryData !== 'undefined' ) {
+            var server            = item[ 'hostname' ] ;
+            var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
+            var myRow             = $("<tr><td>" + serverLinkAddress
+                                  + "</td><td>" + summaryData[ 'version' ]
+                                  + "</td><td>" + summaryData[ 'longest_running' ]
+                                  + "</td><td>" + summaryData[ 'aQPS' ]
+                                  + "</td><td>" + summaryData[ 'uptime' ]
+                                  + "</td><td>" + summaryData[ 'level0' ]
+                                  + "</td><td>" + summaryData[ 'level1' ]
+                                  + "</td><td>" + summaryData[ 'level2' ]
+                                  + "</td><td>" + summaryData[ 'level3' ]
+                                  + "</td><td>" + summaryData[ 'level4' ]
+                                  + "</td><td>" + summaryData[ 'level9' ]
+                                  + "</td><td>" + summaryData[ 'ro' ]
+                                  + "</td><td>" + summaryData[ 'rw' ]
+                                  + "</td><td>" + summaryData[ 'blank' ]
+                                  + "</td><td>" + summaryData[ 'duplicate' ]
+                                  + "</td><td>" + summaryData[ 'similar' ]
+                                  + "</td><td>" + summaryData[ 'threads' ]
+                                  + "</td><td>" + summaryData[ 'unique' ]
+                                  + "</td></tr>") ;
+            myRow.appendTo( "#summarytbodyid" ) ;
+        }
         if (    ( typeof item[ 'result' ] !== 'undefined' )
              && ( typeof item[ 'result' ][ 0 ] !== 'undefined' )
              && ( typeof item[ 'result' ][ 0 ][ 'level' ] !== 'undefined' )
