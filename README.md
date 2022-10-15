@@ -67,7 +67,7 @@ instances that AQL will manage (I'll assume you'll use aql_app for the user):
 -- doesn't prevent the application from killing processes when the authorized
 -- user has the appropriate privileges.
 CREATE USER 'aql_app'@'%' IDENTIFIED BY 'SomethingComplicated' ; 
-GRANT PROCESS ON *.* TO 'aql_app'@'%' ;
+GRANT PROCESS, REPLICATION CLIENT ON *.* TO 'aql_app'@'%' ;
 GRANT ALL ON aql_db.* TO 'aql_app'@'%' ;
 CREATE DATABASE IF NOT EXISTS aql_db ;
 ```
