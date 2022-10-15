@@ -220,8 +220,18 @@ JS
     );
     $now          = Tools::currentTimestamp();
     $debugChecked = ( $debug ) ? 'checked="checked"' : '' ;
+    $navBar = <<<HTML
+<hr />
+Navigate: &nbsp; &nbsp;
+<a href="#graphs">Top / Graphs</a> &nbsp; &nbsp;
+<a href="#slaveStatus">Slave Status</a> &nbsp; &nbsp; 
+<a href="#statusSummary">Status Summary</a> &nbsp; &nbsp; 
+<a href="#processListing">Process Listing</a>
+<hr />
+HTML;
     $page->setBody(
         <<<HTML
+<a id="graphs"></a>
 <table id="top" width="100%" border="1">
   <tr>
     <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1></td>
@@ -247,11 +257,11 @@ JS
   </tr>
 </table>
 
-&nbsp;
-<p />
 <div class="container">
   <!-- Modal -->
   <div class="modal fade" id="myModal" role="dialog">
+    &nbsp;
+    <p />
     <div class="modal-dialog">
       <!-- Modal Content -->
       <div class="modal-content">
@@ -303,16 +313,10 @@ JS
       });
   });
 </script>
-&nbsp;
-<p />
 
-<hr />
-<a href="#slaveStatus">Slave Status</a> &nbsp; &nbsp; 
-<a href="#statusSummary">Status Summary</a> &nbsp; &nbsp; 
-<a href="#processListing">Process Listing</a>
-<hr />
+$navBar
 
-<a id="slaveStatus" />
+<a id="slaveStatus"></a>
 <table border=1 cellspacing=0 cellpadding=2 id="slaveTable" width="100%" class="tablesorter">
   <thead>
     $slaveHeaderFooter
@@ -325,10 +329,10 @@ JS
     </tr>
   </tbody>
 </table>
-&nbsp;
-<p />
 
-<a id="statusSummary" />
+$navBar
+
+<a id="statusSummary"></a>
 <table border=1 cellspacing=0 cellpadding=2 id="summaryTable" width="100%" class="tablesorter">
   <thead>
     $summaryHeaderFooter
@@ -341,10 +345,10 @@ JS
     </tr>
   </tbody>
 </table>
-&nbsp;
-<p />
 
-<a id="processListing" />
+$navBar
+
+<a id="processListing"></a>
 <table border=1 cellspacing=0 cellpadding=2 id="processTable" width="100%" class="tablesorter">
   <thead>
     $processHeaderFooter
@@ -357,7 +361,9 @@ JS
     </tr>
   </tbody>
 </table>
-<p />
+
+$navBar
+
 <table border=1 cellspacing=0 cellpadding=2 id="legend" width="100%">
   <caption>Legend</caption>
   <tr><th>Level</th><th>Description</th></tr>
