@@ -282,7 +282,7 @@ function myCallback( i, item ) {
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
             for ( itemNo=0; itemNo<slaveData.length; itemNo++ ) {
                 var myRow             = $("<tr><td>" + serverLinkAddress
-                                      + "</td><td>" + slaveData[ itemNo ][ 'Connection_Name']
+                                      + "</td><td>" + slaveData[ itemNo ][ 'Connection_name']
                                       + "</td><td>" + slaveData[ itemNo ][ 'Master_Host' ]
                                       + ':' + slaveData[ itemNo ][ 'Master_Port' ]
                                       + "</td><td>" + slaveData[ itemNo ][ 'Seconds_Behind_Master']

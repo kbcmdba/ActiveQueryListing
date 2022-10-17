@@ -195,7 +195,7 @@ SQL;
     $processResult->close() ;
     $version = $summaryData[ 'version' ] ;
     switch ( true ) {
-        case preg_grep( '10\.[2-9]\..*-MariaDB-log$', [$version] ) !== false:
+        case preg_grep( '^10\.[2-9]\..*-MariaDB-log$', [$version] ) !== false:
             $showSlaveStatement = 'SHOW ALL SLAVES STATUS' ;
             break ;
         case preg_grep( '^[345]\..*', [$version] ) !== false:
@@ -214,7 +214,7 @@ SQL;
     }
     while ($row = $slaveResult->fetch_assoc()) {
         $thisResult = array() ;
-        foreach (['Connection_Name', 'Master_Host', 'Master_Port', 'Slave_IO_Running'
+        foreach (['Connection_name', 'Master_Host', 'Master_Port', 'Slave_IO_Running'
                  , 'Slave_SQL_Running', 'Seconds_Behind_Master', 'Last_IO_Error'
                  , 'Last_SQL_Error'] as $i) {
           $thisResult[ $i ] = $row[ $i ] ;
