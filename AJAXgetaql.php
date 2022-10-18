@@ -195,13 +195,13 @@ SQL;
     $processResult->close() ;
     $version = $summaryData[ 'version' ] ;
     switch ( true ) {
-        case preg_grep( '^10\.[2-9]\..*-MariaDB-log$', [$version] ) !== false:
+        case preg_grep( '/^10\.[2-9]\..*-MariaDB-log$/', [$version] ) !== false:
             $showSlaveStatement = 'SHOW ALL SLAVES STATUS' ;
             break ;
-        case preg_grep( '^[345]\..*', [$version] ) !== false:
+        case preg_grep( '/^[345]\..*/', [$version] ) !== false:
             $showSlaveStatement = 'SHOW SLAVE STATUS' ;
             break ;
-        case preg_grep( '^[8]\..*', [$version] ) !== false:
+        case preg_grep( '/^[8]\..*/', [$version] ) !== false:
             $showSlaveStatement = 'SHOW REPLICA STATUS' ;
             break ;
         default:
