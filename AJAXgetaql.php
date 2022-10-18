@@ -95,6 +95,22 @@ SQL;
     $summaryData[ 'version' ] = $row[ 1 ] ;
     $summaryData[ 'uptime' ] = $row[ 2 ] ;
     $aResult->close() ;
+    $showSlaveStatement = $config->getShowSlaveStatement() ;
+    $version = $summaryData[ 'version' ] ;
+    switch ( true ) {
+        case preg_match( '/^10\.[2-9]\..*-MariaDB-log$/', $version ) === 1:
+            $showSlaveStatement = 'SHOW ALL SLAVES STATUS' ;
+            $roQueryPart = '@@global.read_only OR @@global.innodb_read_only' ;
+            break ;
+        case preg_match( '/^[345]\..*$/', $version ) === 1:
+            $showSlaveStatement = 'SHOW SLAVE STATUS' ;
+            $roQueryPart = '@@global.read_only' ;
+            break ;
+        case preg_match( '/^[8]\..*$/', $version ) === 1:
+            $showSlaveStatement = 'SHOW REPLICA STATUS' ;
+            $roQueryPart = '@@global.read_only' ;
+            break ;
+    } ;
     $processQuery  = <<<SQL
 SELECT id
      , user
@@ -193,21 +209,6 @@ SQL;
         ] ;
     }
     $processResult->close() ;
-    $version = $summaryData[ 'version' ] ;
-    switch ( true ) {
-        case preg_grep( '/^10\.[2-9]\..*-MariaDB-log$/', [$version] ) !== false:
-            $showSlaveStatement = 'SHOW ALL SLAVES STATUS' ;
-            break ;
-        case preg_grep( '/^[345]\..*$/', [$version] ) !== false:
-            $showSlaveStatement = 'SHOW SLAVE STATUS' ;
-            break ;
-        case preg_grep( '/^[8]\..*$/', [$version] ) !== false:
-            $showSlaveStatement = 'SHOW REPLICA STATUS' ;
-            break ;
-        default:
-            $showSlaveStatement = $config->getShowSlaveStatement() ;
-            break ;
-    } ;
     $slaveResult = $dbh->query( $showSlaveStatement ) ;
     if ( $slaveResult === false ) {
         throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
