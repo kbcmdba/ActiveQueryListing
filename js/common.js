@@ -370,6 +370,9 @@ function myCallback( i, item ) {
                             + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
                             + "</td></tr>") ;
                 myRow.appendTo( "#fullprocesstbodyid" ) ;
+                if ( level > 2 ) {
+                    myRow.appendTo( "#nwprocesstbodyid" ) ;
+                }
             }
         }
     }
