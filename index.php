@@ -34,6 +34,40 @@ use com\kbcmdba\aql\Libs\Exceptions\DaoException;
 use com\kbcmdba\aql\Libs\Tools ;
 use com\kbcmdba\aql\Libs\WebPage ;
 
+$navBar = <<<HTML
+<br clear="all" />
+Navigate: &nbsp; &nbsp;
+<a href="#graphs">Top / Graphs</a> &nbsp; &nbsp;
+<a href="#nwSlaveStatus">Noteworthy Slave Status</a> &nbsp; &nbsp;
+<a href="#nwStatusOverview">Noteworthy Status Overview</a> &nbsp; &nbsp; 
+<a href="#nwProcessListing">Noteworthy Process Listing</a>
+<a href="#fullSlaveStatus">Full Slave Status</a> &nbsp; &nbsp; 
+<a href="#fullStatusOverview">Full Status Overview</a> &nbsp; &nbsp; 
+<a href="#fullProcessListing">Full Process Listing</a>
+<br clear="all" />
+HTML;
+
+function xTable( $prefix, $linkId, $tableId, $headerFooter, $id, $cols ) {
+    global $navBar;
+    return <<<HTML
+$navBar
+
+<a id="${prefix}$linkId"></a>
+<table border=1 cellspacing=0 cellpadding=2 id="${prefix}${tableId}Table" width="100%" class="tablesorter">
+<thead>
+  $headerFooter
+</thead>
+<tbody id="${prefix}${id}tbodyid">
+  <tr id="${prefix}${id}figment">
+    <td colspan="$cols">
+      <center>Data loading</center>
+    </td>
+  </tr>
+</tbody>
+</table>
+HTML;
+}
+
 $hostList = Tools::params( 'hosts' ) ;
 
 if ( ! is_array( $hostList ) ) {
@@ -41,11 +75,8 @@ if ( ! is_array( $hostList ) ) {
 }
 
 $processCols = 14 ;
-$processHeaderFooter = <<<HTML
+$processHeaderFooterCols = <<<HTML
 <tr class="mytr">
-      <th colspan="$processCols">Process Listing</th>
-    </tr>
-    <tr class="mytr">
       <th>Server</th>
       <th>Alert<br />Level</th>
       <th>Thread<br />ID</th>
@@ -61,15 +92,23 @@ $processHeaderFooter = <<<HTML
       <th>Info</th>
       <th>Actions</th>
     </tr>
-
+HTML;
+$fullProcessHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$processCols">Full Process Listing</th>
+    </tr>
+    $processHeaderFooterCols
+HTML;
+$NWProcessHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$processCols">Noteworthy Process Listing</th>
+    </tr>
+    $processHeaderFooterCols
 HTML;
 
 $slaveCols = 8 ;
-$slaveHeaderFooter = <<<HTML
+    $slaveHeaderFooterCols = <<<HTML
 <tr class="mytr">
-      <th colspan="$slaveCols">Slave Status</th>
-    </tr>
-    <tr class="mytr">
       <th>Server</th>
       <th>Connection<br />Name</th>
       <th>Slave Of</th>
@@ -80,13 +119,22 @@ $slaveHeaderFooter = <<<HTML
       <th>SQL Thread<br />Last Error</th>
     </tr>
 HTML;
-
-$summaryCols = 18 ;
-$summaryHeaderFooter = <<<HTML
+$fullSlaveHeaderFooter = <<<HTML
 <tr class="mytr">
-      <th colspan="$summaryCols">Status Summary</th>
+      <th colspan="$slaveCols">Full Slave Status</th>
     </tr>
-    <tr class="mytr">
+    $slaveHeaderFooterCols
+HTML;
+$NWSlaveHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$slaveCols">Noteworthy Slave Status</th>
+    </tr>
+    $slaveHeaderFooterCols
+HTML;
+
+$overviewCols = 18 ;
+$overviewHeaderFooterCols = <<<HTML
+<tr class="mytr">
       <th>Server</th>
       <th>Version</th>
       <th>Longest<br />Running</th>
@@ -107,6 +155,19 @@ $summaryHeaderFooter = <<<HTML
       <th>Unique</th>
     </tr>
 HTML;
+$fullOverviewHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$overviewCols">Full Status Overview</th>
+    </tr>
+    $overviewHeaderFooterCols
+HTML;
+$NWOverviewHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$overviewCols">Noteworthy Status Overview</th>
+    </tr>
+    $overviewHeaderFooterCols
+HTML;
+
 $debug = Tools::param('debug') === "1" ;
 $page = new WebPage('Active Queries List');
 $config = new Config();
@@ -197,19 +258,25 @@ var reloadSeconds = $reloadSeconds * 1000 ;
 ///////////////////////////////////////////////////////////////////////////////
 
 function loadPage() {
-    \$("#slavetbodyid").html( '<tr id="slavefigment"><td colspan="$slaveCols"><center>Data loading</center></td></tr>' ) ;
-    \$("#summarytbodyid").html( '<tr id="summaryfigment"><td colspan="$summaryCols"><center>Data loading</center></td></tr>' ) ;
-    \$("#processtbodyid").html( '<tr id="processfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#nwslavetbodyid").html( '<tr id="nwSlavefigment"><td colspan="$slaveCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#nwoverviewtbodyid").html( '<tr id="nwOverviewfigment"><td colspan="$overviewCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#nwprocesstbodyid").html( '<tr id="nwProcessfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullslavetbodyid").html( '<tr id="fullSlavefigment"><td colspan="$slaveCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fulloverviewtbodyid").html( '<tr id="fullOverviewfigment"><td colspan="$overviewCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullprocesstbodyid").html( '<tr id="fullProcessfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
     \$.when($whenBlock).then(
         function ($thenParamBlock ) { $thenCodeBlock
-            \$("#slavefigment").remove() ;
-            \$("#summaryfigment").remove() ;
-            \$("#processfigment").remove() ;
-            \$("#processTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ; 
+            \$("#nwSlavefigment").remove() ;
+            \$("#nwOverviewfigment").remove() ;
+            \$("#nwProcessfigment").remove() ;
+            \$("#fullSlavefigment").remove() ;
+            \$("#fullPverviewfigment").remove() ;
+            \$("#fullProcessfigment").remove() ;
+            \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ; 
             displayCharts() ; 
         }
     );
-    \$('#processtbodyid').on('click', '.morelink', flipFlop) ;
+    \$('#fullprocesstbodyid').on('click', '.morelink', flipFlop) ;
     timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
 }
 
@@ -220,15 +287,7 @@ JS
     );
     $now          = Tools::currentTimestamp();
     $debugChecked = ( $debug ) ? 'checked="checked"' : '' ;
-    $navBar = <<<HTML
-<hr />
-Navigate: &nbsp; &nbsp;
-<a href="#graphs">Top / Graphs</a> &nbsp; &nbsp;
-<a href="#slaveStatus">Slave Status</a> &nbsp; &nbsp; 
-<a href="#statusSummary">Status Summary</a> &nbsp; &nbsp; 
-<a href="#processListing">Process Listing</a>
-<hr />
-HTML;
+    $cb = function ($fn) { return $fn; };
     $page->setBody(
         <<<HTML
 <a id="graphs"></a>
@@ -314,53 +373,12 @@ HTML;
   });
 </script>
 
-$navBar
-
-<a id="slaveStatus"></a>
-<table border=1 cellspacing=0 cellpadding=2 id="slaveTable" width="100%" class="tablesorter">
-  <thead>
-    $slaveHeaderFooter
-  </thead>
-  <tbody id="slavetbodyid">
-    <tr id="slavefigment">
-      <td colspan="$slaveCols">
-        <center>Data loading</center>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-$navBar
-
-<a id="statusSummary"></a>
-<table border=1 cellspacing=0 cellpadding=2 id="summaryTable" width="100%" class="tablesorter">
-  <thead>
-    $summaryHeaderFooter
-  </thead>
-  <tbody id="summarytbodyid">
-    <tr id="summaryfigment">
-      <td colspan="$summaryCols">
-        <center>Data loading</center>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-$navBar
-
-<a id="processListing"></a>
-<table border=1 cellspacing=0 cellpadding=2 id="processTable" width="100%" class="tablesorter">
-  <thead>
-    $processHeaderFooter
-  </thead>
-  <tbody id="processtbodyid">
-    <tr id="processfigment">
-      <td colspan="$processCols">
-        <center>Data loading</center>
-      </td>
-    </tr>
-  </tbody>
-</table>
+{$cb(xTable( 'nw', 'SlaveStatus', 'Slave', $NWSlaveHeaderFooter, 'slave', $slaveCols ))}
+{$cb(xTable( 'nw', 'StatusOverview', 'Overview', $NWOverviewHeaderFooter, 'overview', $overviewCols ))}
+{$cb(xTable( 'nw', 'ProcessListing', 'Process', $NWProcessHeaderFooter, 'process', $processCols ))}
+{$cb(xTable( 'full', 'SlaveStatus', 'Slave', $fullSlaveHeaderFooter, 'slave', $slaveCols ))}
+{$cb(xTable( 'full', 'StatusOverview', 'Overview', $fullOverviewHeaderFooter, 'overview', $overviewCols ))}
+{$cb(xTable( 'full', 'ProcessListing', 'Process', $fullProcessHeaderFooter, 'process', $processCols ))}
 
 $navBar
 

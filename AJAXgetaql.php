@@ -39,7 +39,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0') ;
 header('Cache-Control: post-check=0, pre-check=0', false) ;
 header('Pragma: no-cache') ;
 
-$summaryData = [
+$overviewData = [
     'aQPS'            => -1
   , 'blank'           => 0
   , 'duplicate'       => 0
@@ -91,12 +91,12 @@ SQL;
         throw new \ErrorException( "Error running query: $aQuery (" . $dbh->error . ")\n" ) ;
     }
     $row = $aResult->fetch_row() ;
-    $summaryData[ 'aQPS' ] = $row[ 0 ] ;
-    $summaryData[ 'version' ] = $row[ 1 ] ;
-    $summaryData[ 'uptime' ] = $row[ 2 ] ;
+    $overviewData[ 'aQPS' ] = $row[ 0 ] ;
+    $overviewData[ 'version' ] = $row[ 1 ] ;
+    $overviewData[ 'uptime' ] = $row[ 2 ] ;
     $aResult->close() ;
     $showSlaveStatement = $config->getShowSlaveStatement() ;
-    $version = $summaryData[ 'version' ] ;
+    $version = $overviewData[ 'version' ] ;
     switch ( true ) {
         case preg_match( '/^10\.[2-9]\..*-MariaDB-log$/', $version ) === 1:
             $showSlaveStatement = 'SHOW ALL SLAVES STATUS' ;
@@ -133,7 +133,7 @@ SQL;
         throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
     }
     while ($row = $processResult->fetch_row()) {
-        $summaryData[ 'threads' ] ++ ;
+        $overviewData[ 'threads' ] ++ ;
         $dupeState    = '' ;
         $pid          = $row[ 0 ] ;
         $uid          = $row[ 1 ] ;
@@ -151,27 +151,27 @@ SQL;
             }
             if ( isset( $queries[ $info ] ) ) {
                 $dupeState = 'Duplicate' ;
-                $summaryData[ 'duplicate' ] ++ ;
+                $overviewData[ 'duplicate' ] ++ ;
             }
             elseif ( isset( $safeQueries[ $safeInfo ] ) ) {
                 $dupeState = 'Similar' ;
-                $summaryData[ 'similar' ] ++ ;
+                $overviewData[ 'similar' ] ++ ;
             }
             else {
                 $dupeState = 'Unique' ;
-                $summaryData[ 'unique' ] ++ ;
+                $overviewData[ 'unique' ] ++ ;
             }
         }
         else {
             $dupeState = 'Blank' ;
-            $summaryData[ 'blank' ] ++ ;
+            $overviewData[ 'blank' ] ++ ;
         }
         $queries[ $info ] = 1 ;
         $safeQueries[ $safeInfo ] = 1 ;
         $safeUrl = urlencode( $safeInfo ) ;
         $readOnly = $row[ 8 ] ;
-        $summaryData[ 'time' ] += $time ;
-        $summaryData[ ( $readOnly ) ? 'ro' : 'rw' ] ++ ;
+        $overviewData[ 'time' ] += $time ;
+        $overviewData[ ( $readOnly ) ? 'ro' : 'rw' ] ++ ;
         switch (true) {
             case $time >= $alertCritSecs:
                 $level = 4 ;
@@ -188,7 +188,7 @@ SQL;
             default:
                 $level = 1 ;
         }
-        $summaryData[ "level$level" ] ++ ;
+        $overviewData[ "level$level" ] ++ ;
         $safeInfoJS   = urlencode( $safeInfo ) ;
         $outputList[] = [
             'level'        => $level
@@ -228,9 +228,9 @@ catch (\Exception $e) {
     echo json_encode([ 'hostname' => $hostname, 'error_output' => $e->getMessage() ]) ;
     exit(1) ;
 }
-$summaryData[ 'longest_running' ] = $longestRunning ;
-echo json_encode([ 'hostname'    => $hostname
-                 , 'result'      => $outputList
-                 , 'summaryData' => $summaryData
-                 , 'slaveData'   => $slaveData
+$overviewData[ 'longest_running' ] = $longestRunning ;
+echo json_encode([ 'hostname'     => $hostname
+                 , 'result'       => $outputList
+                 , 'overviewData' => $overviewData
+                 , 'slaveData'    => $slaveData
                  ]) . "\n" ;

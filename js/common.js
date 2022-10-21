@@ -163,7 +163,7 @@ function deleteRow( rowId ) {
 
 function sortProcessTable() {
     var table, rows, switching, i, x, y, shouldSwitch ;
-    table = document.getElementById("processtbodyid") ;
+    table = document.getElementById("fullprocesstbodyid") ;
     switching = true ;
     rows = table.getElementsByTagName("tr") ;
     rowcount = rows.length;
@@ -241,9 +241,9 @@ function myCallback( i, item ) {
     var first             = '' ;
     var last              = '' ;
     var myRow             = '' ;
-    var summaryRow        = '' ;
+    var overviewRow        = '' ;
     var myUrl             = '' ;
-    var summaryData       = item[ 'summaryData' ] ;
+    var overviewData       = item[ 'overviewData' ] ;
     var slaveData         = item[ 'slaveData' ] ;
     // We get other types of responses here as well. Ignore the noise.
     // If we have an error, assume it's critical and show it at the top of the process listing.
@@ -251,31 +251,40 @@ function myCallback( i, item ) {
         var myRow = $("<tr><td class=\"errorNotice\">" + item[ 'hostname' ]
                      + "</td><td class=\"errorNotice\">9</td><td colspan=\"12\" class=\"errorNotice\">" + item[ 'error_output' ]
                      + "</td></tr>") ;
-        myRow.prependTo( "#processtbodyid" ) ;
+        myRow.prependTo( "#fullprocesstbodyid" ) ;
+        myRow.prependTo( "#nwprocesstbodyid" ) ;
     } else {
-        if ( typeof summaryData !== 'undefined' ) {
+        if ( typeof overviewData !== 'undefined' ) {
             var server            = item[ 'hostname' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
             var myRow             = $("<tr><td>" + serverLinkAddress
-                                  + "</td><td>" + summaryData[ 'version' ]
-                                  + "</td><td>" + summaryData[ 'longest_running' ]
-                                  + "</td><td>" + summaryData[ 'aQPS' ]
-                                  + "</td><td>" + summaryData[ 'uptime' ]
-                                  + "</td><td>" + summaryData[ 'level0' ]
-                                  + "</td><td>" + summaryData[ 'level1' ]
-                                  + "</td><td>" + summaryData[ 'level2' ]
-                                  + "</td><td>" + summaryData[ 'level3' ]
-                                  + "</td><td>" + summaryData[ 'level4' ]
-                                  + "</td><td>" + summaryData[ 'level9' ]
-                                  + "</td><td>" + summaryData[ 'ro' ]
-                                  + "</td><td>" + summaryData[ 'rw' ]
-                                  + "</td><td>" + summaryData[ 'blank' ]
-                                  + "</td><td>" + summaryData[ 'duplicate' ]
-                                  + "</td><td>" + summaryData[ 'similar' ]
-                                  + "</td><td>" + summaryData[ 'threads' ]
-                                  + "</td><td>" + summaryData[ 'unique' ]
+                                  + "</td><td>" + overviewData[ 'version' ]
+                                  + "</td><td>" + overviewData[ 'longest_running' ]
+                                  + "</td><td>" + overviewData[ 'aQPS' ]
+                                  + "</td><td>" + overviewData[ 'uptime' ]
+                                  + "</td><td>" + overviewData[ 'level0' ]
+                                  + "</td><td>" + overviewData[ 'level1' ]
+                                  + "</td><td>" + overviewData[ 'level2' ]
+                                  + "</td><td>" + overviewData[ 'level3' ]
+                                  + "</td><td>" + overviewData[ 'level4' ]
+                                  + "</td><td>" + overviewData[ 'level9' ]
+                                  + "</td><td>" + overviewData[ 'ro' ]
+                                  + "</td><td>" + overviewData[ 'rw' ]
+                                  + "</td><td>" + overviewData[ 'blank' ]
+                                  + "</td><td>" + overviewData[ 'duplicate' ]
+                                  + "</td><td>" + overviewData[ 'similar' ]
+                                  + "</td><td>" + overviewData[ 'threads' ]
+                                  + "</td><td>" + overviewData[ 'unique' ]
                                   + "</td></tr>") ;
-            myRow.appendTo( "#summarytbodyid" ) ;
+            myRow.appendTo( "#fulloverviewtbodyid" ) ;
+            var sum = overviewData[ 'level2' ]
+                    + overviewData[ 'level3' ]
+                    + overviewData[ 'level4' ]
+                    + overviewData[ 'level9' ]
+                    ;
+            if ( sum > 0 ) {
+                myRow.appendTo( '#nwoverviewtbodyid' ) ;
+            }
         }
         if ( ( typeof slaveData !== 'undefined' ) && ( typeof slaveData[ 0 ] !== 'undefined' ) ) {
             var server            = item[ 'hostname' ] ;
@@ -291,7 +300,14 @@ function myCallback( i, item ) {
                                       + "</td><td>" + slaveData[ itemNo ][ 'Last_IO_Error']
                                       + "</td><td>" + slaveData[ itemNo ][ 'Last_SQL_Error']
                                       + "</td></tr>") ;
-                                      myRow.appendTo( "#slavetbodyid" ) ;
+                                      myRow.appendTo( "#fullslavetbodyid" ) ;
+                if ( ( slaveData[ itemNo ][ 'Seconds_Behind_Master' ] > 0 )
+                  || ( slaveData[ itemNo ][ 'Slave_IO_Running' ] !== 'Yes' )
+                  || ( slaveData[ itemNo ][ 'Slave_SQL_Running' ] !== 'Yes' )
+                  || ( slaveData[ itemNo ][ 'Last_IO_Error' ] !== '' )
+                  || ( slaveData[ itemNo ][ 'Last_SQL_Error' ] !== '' ) ) {
+                    myRow.appendTo( '#nwslavetbodyid' ) ;
+                  }
           }
         }
         if (    ( typeof item[ 'result' ] !== 'undefined' )
@@ -353,7 +369,7 @@ function myCallback( i, item ) {
                             + "</td><td class=\"comment more\">" + info
                             + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
                             + "</td></tr>") ;
-                myRow.appendTo( "#processtbodyid" ) ;
+                myRow.appendTo( "#fullprocesstbodyid" ) ;
             }
         }
     }
@@ -533,7 +549,7 @@ function drawPieChartByReadWrite() {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
-* This will update the summary table and display the pie charts.
+* This will update the overview table and display the pie charts.
 *
 * @returns void
 */
