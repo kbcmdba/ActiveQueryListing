@@ -40,7 +40,7 @@ Navigate: &nbsp; &nbsp;
 <a href="#graphs">Top / Graphs</a> &nbsp; &nbsp;
 <a href="#nwSlaveStatus">Noteworthy Slave Status</a> &nbsp; &nbsp;
 <a href="#nwStatusOverview">Noteworthy Status Overview</a> &nbsp; &nbsp; 
-<a href="#nwProcessListing">Noteworthy Process Listing</a>
+<a href="#nwProcessListing">Noteworthy Process Listing</a> &nbsp; &nbsp;
 <a href="#fullSlaveStatus">Full Slave Status</a> &nbsp; &nbsp; 
 <a href="#fullStatusOverview">Full Status Overview</a> &nbsp; &nbsp; 
 <a href="#fullProcessListing">Full Process Listing</a>
@@ -373,9 +373,11 @@ JS
   });
 </script>
 
+<h2>Noteworty Data</h2>
 {$cb(xTable( 'nw', 'SlaveStatus', 'Slave', $NWSlaveHeaderFooter, 'slave', $slaveCols ))}
 {$cb(xTable( 'nw', 'StatusOverview', 'Overview', $NWOverviewHeaderFooter, 'overview', $overviewCols ))}
 {$cb(xTable( 'nw', 'ProcessListing', 'Process', $NWProcessHeaderFooter, 'process', $processCols ))}
+<h2>Full Data</h2>
 {$cb(xTable( 'full', 'SlaveStatus', 'Slave', $fullSlaveHeaderFooter, 'slave', $slaveCols ))}
 {$cb(xTable( 'full', 'StatusOverview', 'Overview', $fullOverviewHeaderFooter, 'overview', $overviewCols ))}
 {$cb(xTable( 'full', 'ProcessListing', 'Process', $fullProcessHeaderFooter, 'process', $processCols ))}
