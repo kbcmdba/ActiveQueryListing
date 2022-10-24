@@ -68,9 +68,14 @@
   color: black ;
 }
 
-.mytr>th {
+th {
   background-color: #eee ;
-  text-align: center;
+  text-align: center !important /* Override bootstrap */;
+  padding: 2px !important /* Override bootstrap */;
+}
+
+td {
+  padding: 2px !important /* Override bootstrap */;
 }
 
 .comment {
