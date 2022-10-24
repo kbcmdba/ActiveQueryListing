@@ -84,7 +84,8 @@ HTML
     {
         if ('text/html' === $this->getMimeType()) {
             //@formatter:off
-            return ("<html>\n"
+            return ("<!DOCTYPE HTML>\n"
+                   . "<html>\n"
                    . "<head>\n"
                    . "<!-- StartOfPage -->\n"
                    . '  <title>' . $this->getPageTitle() . "</title>\n"
