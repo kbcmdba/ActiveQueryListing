@@ -47,6 +47,8 @@ Navigate: &nbsp; &nbsp;
 <br clear="all" />
 HTML;
 
+// ///////////////////////////////////////////////////////////////////////////
+
 function xTable( $prefix, $linkId, $tableId, $headerFooter, $id, $cols ) {
     global $navBar;
     return <<<HTML
@@ -67,6 +69,8 @@ $navBar
 </table>
 HTML;
 }
+
+// ///////////////////////////////////////////////////////////////////////////
 
 $hostList = Tools::params( 'hosts' ) ;
 
