@@ -115,6 +115,7 @@ class DBConnection
                         . $mysqli->connect_error
                     );
                 }
+                $mysqli->autocommit( true ) ;
                 $this->dbh = $mysqli;
                 if ($this->dbh->connect_error) {
                     throw new DaoException(

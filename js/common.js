@@ -569,3 +569,30 @@ function displayCharts() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+function fillHostForm( host_id
+                     , hostname
+                     , port_number
+                     , description
+                     , should_monitor
+                     , should_backup
+                     , revenue_impacting
+                     , decommissioned
+                     , alert_crit_secs
+                     , alert_warn_secs
+                     , alert_info_secs
+                     , alert_low_secs ) {
+    document.getElementById( 'hostId' ).value = host_id ;
+    document.getElementById( 'hostName' ).value = hostname ;
+    document.getElementById( 'portNumber' ).value = port_number ;
+    document.getElementById( 'description' ).value = description ;
+    document.getElementById( 'shouldMonitor' ).value = should_monitor ;
+    document.getElementById( 'shouldBackup' ).value = should_backup ;
+    document.getElementById( 'revenueImpacting' ).value = revenue_impacting ;
+    document.getElementById( 'decommissioned' ).value = decommissioned ;
+    document.getElementById( 'alertCritSecs' ).value = alert_crit_secs ;
+    document.getElementById( 'alertWarnSecs' ).value = alert_warn_secs ;
+    document.getElementById( 'alertInfoSecs' ).value = alert_info_secs ;
+    document.getElementById( 'alertLowSecs' ).value = alert_low_secs ;
+}
+
+///////////////////////////////////////////////////////////////////////////////
