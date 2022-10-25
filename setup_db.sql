@@ -21,14 +21,16 @@
 
 -- Script to drop and create aql_db
 
--- WARNING - using this script will wipe out any existing data in
+-- WARNING - using this script could wipe out any existing data in
 -- aql_db so make sure you take a backup first if it's needed.
+--
+-- The following line would destroy existing data if uncommented.
+-- DROP DATABASE IF EXISTS aql_db ;
 
-DROP DATABASE IF EXISTS aql_db ;
-CREATE DATABASE aql_db ;
+CREATE DATABASE IF NOT EXISTS aql_db DEFAULT CHARACTER SET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_bin' ;
 USE aql_db ;
 
-CREATE TABLE host (
+CREATE TABLE IF NOT EXISTS host (
        host_id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
      , hostname          VARCHAR( 64 ) NOT NULL
      , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
@@ -45,7 +47,7 @@ CREATE TABLE host (
      , updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                            ON UPDATE CURRENT_TIMESTAMP
      , last_audited      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-     , KEY idx_hostname ( hostname )
+     , UNIQUE udx_hostname_port_number ( hostname, port_number )
      , KEY idx_should_monitor ( should_monitor, decommissioned )
      , KEY idx_decommissioned ( decommissioned )
      ) ENGINE=InnoDB ;
@@ -63,10 +65,11 @@ VALUES ( 1                 -- id
        , 5                 -- alert_warn_secs
        , 2                 -- alert_info_secs
        , -1                -- alert_low_secs
-       , NULL              -- created
-       , NULL              -- updated
-       , NULL              -- last_audited
-    ), ( 2                 -- id
+       , CURRENT_TIMESTAMP -- created
+       , CURRENT_TIMESTAMP -- updated
+       , CURRENT_TIMESTAMP -- last_audited
+     )
+     , ( 2                 -- id
        , '127.0.0.1'       -- hostname
        , 3306              -- port_number
        , 'localhostx2'     -- description
@@ -78,10 +81,11 @@ VALUES ( 1                 -- id
        , 5                 -- alert_warn_secs
        , 2                 -- alert_info_secs
        , -1                -- alert_low_secs
-       , NULL              -- created
-       , NULL              -- updated
-       , NULL              -- last_audited
-    ), ( 3                 -- id
+       , CURRENT_TIMESTAMP -- created
+       , CURRENT_TIMESTAMP -- updated
+       , CURRENT_TIMESTAMP -- last_audited
+     )
+     , ( 3                 -- id
        , '192.168.256.256' -- hostname
        , 3306              -- port_number
        , 'Bad host'        -- description
@@ -93,9 +97,9 @@ VALUES ( 1                 -- id
        , 5                 -- alert_warn_secs
        , 2                 -- alert_info_secs
        , -1                -- alert_low_secs
-       , NULL              -- created
-       , NULL              -- updated
-       , NULL              -- last_audited
+       , CURRENT_TIMESTAMP -- created
+       , CURRENT_TIMESTAMP -- updated
+       , CURRENT_TIMESTAMP -- last_audited
     ), ( 4                 -- id
        , 'localhost'       -- hostname
        , 3307              -- port_number
@@ -111,9 +115,12 @@ VALUES ( 1                 -- id
        , NULL              -- created
        , NULL              -- updated
        , NULL              -- last_audited
-     ) ;
+     )
+    ON DUPLICATE KEY
+UPDATE updated = CURRENT_TIMESTAMP
+     ;
 
-CREATE TABLE host_group (
+CREATE TABLE IF NOT EXISTS host_group (
        host_group_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
      , tag               VARCHAR( 16 ) NOT NULL DEFAULT ''
      , short_description VARCHAR( 255 ) NOT NULL DEFAULT ''
@@ -125,15 +132,18 @@ CREATE TABLE host_group (
      ) ENGINE=InnoDB ;
 
 INSERT host_group
-VALUES ( 1, 'localhost', 'localhost', 'localhost in all forms', NULL, NULL )
-     , ( 2, 'prod'     , 'prod'     , 'Production'            , NULL, NULL )
-     , ( 3, 'pilot'    , 'pilot'    , 'Pilot'                 , NULL, NULL )
-     , ( 4, 'stage'    , 'stage'    , 'Staging'               , NULL, NULL )
-     , ( 5, 'qa'       , 'qa'       , 'QA'                    , NULL, NULL )
-     , ( 6, 'dev'      , 'dev'      , 'Development'           , NULL, NULL )
+VALUES ( 1, 'localhost', 'localhost', 'localhost in all forms', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+     , ( 2, 'prod'     , 'prod'     , 'Production'            , CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+     , ( 3, 'pilot'    , 'pilot'    , 'Pilot'                 , CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+     , ( 4, 'stage'    , 'stage'    , 'Staging'               , CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+     , ( 5, 'qa'       , 'qa'       , 'QA'                    , CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+     , ( 6, 'dev'      , 'dev'      , 'Development'           , CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+    ON DUPLICATE KEY
+UPDATE updated = CURRENT_TIMESTAMP
      ;
 
-CREATE TABLE host_group_map (
+
+CREATE TABLE IF NOT EXISTS host_group_map (
        host_group_id INT UNSIGNED NOT NULL
      , host_id       INT UNSIGNED NOT NULL
      , created       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -148,7 +158,9 @@ CREATE TABLE host_group_map (
      ) ENGINE=InnoDB COMMENT='Many-many relationship of groups and host' ;
 
 INSERT host_group_map
-VALUES ( 1, 1, NULL, NULL, NULL )
-     , ( 1, 2, NULL, NULL, NULL )
+VALUES ( 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+     , ( 1, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+     , ( 1, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
+    ON DUPLICATE KEY
+UPDATE updated = CURRENT_TIMESTAMP
      ;
-
