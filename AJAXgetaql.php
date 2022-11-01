@@ -30,8 +30,6 @@ use com\kbcmdba\aql\Libs\Config ;
 use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\Tools ;
 
-require_once('vendor/autoload.php') ;
-
 header('Content-type: application/json') ;
 header('Access-Control-Allow-Origin: *') ;
 header('Expires: Thu, 01 Mar 2018 00:00:00 GMT') ;

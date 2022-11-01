@@ -67,6 +67,11 @@ class Config
     private $roQueryPart = null;
     private $killStatement = null;
     private $showSlaveStatement = null;
+    private $ldapHost = null;
+    private $ldapDomainName = null;
+    private $ldapUserGroup = null;
+    private $ldapUserDomain = null;
+
     /**
      * #@-
      */
@@ -162,6 +167,22 @@ class Config
             'showSlaveStatement' => [
                 'isRequired' => 0,
                 'value' => 0
+            ],
+            'ldapHost' => [
+                'isRequired' => 0,
+                'value' => 0
+            ],
+            'ldapDomainName' => [
+                'isRequired' => 0,
+                'value' => 0
+            ],
+            'ldapUserGroup' => [
+                'isRequired' => 0,
+                'value' => 0
+            ],
+            'ldapUserDomain' => [
+                'isRequired' => 0,
+                'value' => 0
             ]
         ] ;
 
@@ -204,6 +225,10 @@ class Config
         $this->roQueryPart = $cfgValues[ 'roQueryPart' ] ;
         $this->killStatement = $cfgValues[ 'killStatement' ] ;
         $this->showSlaveStatement = $cfgValues[ 'showSlaveStatement' ] ;
+        $this->ldapHost = $cfgValues[ 'ldapHost' ] ;
+        $this->ldapDomainName = $cfgValues[ 'ldapDomainName' ] ;
+        $this->ldapUserGroup = $cfgValues[ 'ldapUserGroup' ] ;
+        $this->ldapUserDomain = $cfgValues[ 'ldapUserDomain' ] ;
     }
 
     /**
@@ -355,5 +380,33 @@ class Config
         return $dbType
              . ':host=' . $this->getDbHost() . ':' . $this->getDbPort()
              . ';dbname=' . $this->getDbName();
+    }
+
+    /**
+     * Return the LDAP Host for this configuration
+     */
+    public function getLDAPHost() {
+        return ( null === $this->ldapHost ) ? $this->ldapHost : '' ;
+    }
+
+    /**
+     * Return the LDAP Host for this configuration
+     */
+    public function getLDAPDomainName() {
+        return ( null === $this->ldapDomainName ) ? $this->ldapDomainName : '' ;
+    }
+
+    /**
+     * Return the LDAP User Group for this configuration
+     */
+    public function getLDAPUserGroup() {
+        return ( null === $this->ldapUserGroup ) ? $this->ldapUserGroup : '' ;
+    }
+
+    /**
+     * Return the LDAP User Domain for this configuration
+     */
+    public function getLDAPUserDomain() {
+        return ( null === $this->ldapUserDomain ) ? $this->ldapUserDomain : '' ;
     }
 }

@@ -24,6 +24,8 @@
 
 namespace com\kbcmdba\aql ;
 
+session_start() ;
+
 require('vendor/autoload.php');
 require('utility.php');
 
@@ -224,6 +226,16 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
    ORDER BY h.hostname, h.port_number
 
 SQL;
+$allHostGroupsQuery = "SELECT host_group_id, tag FROM host_group";
+$hostGroupMapQuery = <<<SQL
+SELECT CONCAT( hostname, ':', port_number )
+     , tag
+  FROM host_group_map
+  JOIN host USING( host_id )
+  JOIN host_group USING( host_group_id )
+
+SQL;
+$allGroupsList = '';
 $allHostsList = '';
 $baseUrl = $config->getBaseUrl();
 $showAllHosts = ( 0 === count( $hostList ) );
@@ -314,6 +326,17 @@ JS
           <input type="submit" value="Update" />
         </form>
         <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
+      </center>
+    </td>
+    <td class="headerTableTd">
+      <center>
+        Group Toggle
+        <form method="get">
+          <select name="group" size=10>
+            $allGroupsList
+          </select><br />
+          <button id="groupSelect" onclick="toggleGroup(); return false;">Choose Group</button>
+        </form>
       </center>
     </td>
     <td id="updatedAt">Page last updated at $now</td>

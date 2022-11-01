@@ -570,17 +570,17 @@ function displayCharts() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function fillHostForm( host_id
-                     , hostname
-                     , port_number
-                     , description
-                     , should_monitor
-                     , should_backup
-                     , revenue_impacting
-                     , decommissioned
-                     , alert_crit_secs
-                     , alert_warn_secs
-                     , alert_info_secs
-                     , alert_low_secs ) {
+    , hostname
+    , port_number
+    , description
+    , should_monitor
+    , should_backup
+    , revenue_impacting
+    , decommissioned
+    , alert_crit_secs
+    , alert_warn_secs
+    , alert_info_secs
+    , alert_low_secs ) {
     document.getElementById( 'hostId' ).value = host_id ;
     document.getElementById( 'hostName' ).value = hostname ;
     document.getElementById( 'portNumber' ).value = port_number ;
@@ -593,6 +593,28 @@ function fillHostForm( host_id
     document.getElementById( 'alertWarnSecs' ).value = alert_warn_secs ;
     document.getElementById( 'alertInfoSecs' ).value = alert_info_secs ;
     document.getElementById( 'alertLowSecs' ).value = alert_low_secs ;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function fillGroupForm( group_id
+                      , group_tag
+                      , short_desc
+                      , full_desc
+                      , host_list ) {
+    document.getElementById( 'groupId' ).value = group_id ;
+    document.getElementById( 'groupTag' ).value = group_tag ;
+    document.getElementById( 'shortDescription' ).value = short_desc ;
+    document.getElementById( 'fullDescription' ).value = full_desc ;
+    elements = document.getElementById( 'groupSelect' ) ;
+    elements.value = '' ;
+    for ( var i = 0 ; i < elements.length ; i++ ) {
+        for ( var j = 0 ; j < host_list.length ; j++ ) {
+            if ( elements[ i ].value == host_list[ j ] ) {
+                elements[ i ].selected = true ;
+            }
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

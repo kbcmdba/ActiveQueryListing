@@ -24,6 +24,13 @@
 
 namespace com\kbcmdba\aql ;
 
+session_start() ;
+
+if ( ! isset( $_SESSION[ 'user' ] ) ) {
+    header( "Location: login.php" ) ;
+    die() ;
+}
+
 require('vendor/autoload.php');
 require('utility.php');
 
@@ -70,14 +77,14 @@ $alertWarnSecs = Tools::param( 'alertWarnSecs' ) ;
 $alertInfoSecs = Tools::param( 'alertInfoSecs' ) ;
 $alertLowSecs = Tools::param( 'alertLowSecs' ) ;
 
-if (  ( ( $action === 'Update' ) || ( $action === 'Delete' ) )
+if (  ( ( 'Update' === $action ) || ( 'Delete' === $action ) )
      && ! Tools::isNumeric( $hostId )
    ) {
     $errors .= "Invalid ID\n" ;
 }
-if ( $action !== 'Delete' ) {
+if ( 'Delete' !== $action ) {
     if ( Tools::isNullOrEmptyString( $hostName ) ) {
-      $errors .= "Host Name cannot be empty.<br />\n" ;
+        $errors .= "Host Name cannot be empty.<br />\n" ;
     }  
     checkIsNumeric( $portNumber, "Invalid Port Number.\n", $errors ) ;
     checkIs1or0( $shouldMonitor, "Should Monitor", $errors ) ;
@@ -152,7 +159,7 @@ switch ( $action ) {
     $body .= ( $stmt->execute() ) ? "Success.<br />\n" : "Failed.<br />\n" ;
     break ;
   default:
-    $page->setBody( $body ) ;
+    $page->setBody( 'Huh?' ) ;
     $page->displayPage() ;
     exit( 0 ) ;
 }

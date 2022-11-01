@@ -13,4 +13,8 @@
     <!-- In AWS - this would be "CALL mysql.rds_kill( :pid )" -->
     <param name="killStatement">kill :pid</param>
     <param name="showSlaveStatement">show all slaves status</param>
+    <param name="ldapHost"></param>
+    <param name="ldapDomainName"></param>
+    <param name="ldapUserGroup"></param>
+    <param name="ldapUserDomain"></param>
 </config>
