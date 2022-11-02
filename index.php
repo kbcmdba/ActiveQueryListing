@@ -38,14 +38,15 @@ use com\kbcmdba\aql\Libs\WebPage ;
 
 $navBar = <<<HTML
 <br clear="all" />
-Navigate: &nbsp; &nbsp;
-<a href="#graphs">Top / Graphs</a> &nbsp; &nbsp;
-<a href="#nwSlaveStatus">Noteworthy Slave Status</a> &nbsp; &nbsp;
-<a href="#nwStatusOverview">Noteworthy Status Overview</a> &nbsp; &nbsp; 
-<a href="#nwProcessListing">Noteworthy Process Listing</a> &nbsp; &nbsp;
-<a href="#fullSlaveStatus">Full Slave Status</a> &nbsp; &nbsp; 
-<a href="#fullStatusOverview">Full Status Overview</a> &nbsp; &nbsp; 
-<a href="#fullProcessListing">Full Process Listing</a>
+Navigate:
+ &nbsp; &nbsp; <nobr><a href="#graphs">Top / Graphs</a></nobr>
+ &nbsp; &nbsp; <nobr><a href="#nwSlaveStatus">Noteworthy Slave Status</a></nobr>
+ &nbsp; &nbsp; <nobr><a href="#nwStatusOverview">Noteworthy Status Overview</a></nobr>
+ &nbsp; &nbsp; <nobr><a href="#nwProcessListing">Noteworthy Process Listing</a></nobr>
+ &nbsp; &nbsp; <nobr><a href="#fullSlaveStatus">Full Slave Status</a></nobr>
+ &nbsp; &nbsp; <nobr><a href="#fullStatusOverview">Full Status Overview</a></nobr>
+ &nbsp; &nbsp; <nobr><a href="#fullProcessListing">Full Process Listing</a></nobr>
+ &nbsp; &nbsp; <nobr><a href="manageData.php">Manage Data</a></nobr>
 <br clear="all" />
 HTML;
 

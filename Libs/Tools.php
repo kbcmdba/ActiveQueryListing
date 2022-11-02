@@ -48,7 +48,7 @@ class Tools
      * @param String $default
      * @return String
      */
-    public static function param($key, $default = '')
+    public static function param($key, $default = '', $debug = 0)
     {
         return (isset($key) && (isset($_REQUEST[ $key ]))) ? trim($_REQUEST[ $key ]) : $default ;
     }
@@ -61,7 +61,7 @@ class Tools
      * @param array $default
      * @return mixed
      */
-    public static function params($key, $default = [])
+    public static function params($key, $default = [], $debug = 0)
     {
         return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
     }
@@ -74,8 +74,11 @@ class Tools
      * @param String $default
      * @return String
      */
-    public static function get($key, $default = '')
+    public static function get($key, $default = '', $debug = 0)
     {
+        if (1 === $debug ) {
+            return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        }
         return (isset($key) && (isset($_GET[ $key ]))) ? $_GET[ $key ] : $default ;
     }
 
@@ -87,8 +90,11 @@ class Tools
      * @param array $default
      * @return mixed
      */
-    public static function gets($key, $default = [])
+    public static function gets($key, $default = [], $debug = 0)
     {
+        if (1 === $debug ) {
+            return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        }
         return(isset($key) && isset($_GET[ $key ]) ? $_GET[ $key ] : $default) ;
     }
 
@@ -100,8 +106,11 @@ class Tools
      * @param String $default
      * @return String
      */
-    public static function post($key, $default = '')
+    public static function post($key, $default = '', $debug = 0)
     {
+        if (1 === $debug ) {
+            return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        }
         return (isset($key) && (isset($_POST[ $key ]))) ? $_POST[ $key ] : $default ;
     }
 
@@ -113,8 +122,11 @@ class Tools
      * @param array $default
      * @return mixed
      */
-    public static function posts($key, $default = [])
+    public static function posts($key, $default = [], $debug = 0)
     {
+        if (1 === $debug ) {
+            return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        }
         return(isset($key) && isset($_POST[ $key ]) ? $_POST[ $key ] : $default) ;
     }
 

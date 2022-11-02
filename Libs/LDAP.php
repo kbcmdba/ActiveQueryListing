@@ -48,11 +48,11 @@ class LDAP
      *
      * @return boolean When user authentication is accepted, returns true.
      */
-    function authenticate( $user, $password ) {
+    static function authenticate( $user, $password ) {
         $oConfig = null ;
         try {
             $oConfig = new Config() ;
-            if ( '' === Config::getLDAPHost() ) {
+            if ( ! $oConfig->getDoLDAPAuthentication() ) {
                 return true ;
             }
         }
@@ -62,33 +62,39 @@ class LDAP
         if ( empty( $user ) || empty( $password ) ) {
             return false;
         }
-        $ldap = ldap_connect( $oConfig->getLDAPHost() ) ;
+        $adServer = $oConfig->getLDAPHost() ;
+        $adUser = $oConfig->getLDAPUserDomain() . '\\' . $user ;
+        $ldap = ldap_connect( $adServer ) ;
+        if ( false === $ldap ) {
+            echo "LDAP is mis-configured or blocked.\n" ;
+            die() ;
+        }
         ldap_set_option( $ldap, LDAP_OPT_PROTOCOL_VERSION, 3 ) ;
         ldap_set_option( $ldap, LDAP_OPT_REFERRALS, 0 ) ;
-        if ( $bind = @ldap_bind( $ldap, $user, $oConfig->getLDAPUserDomain(), $password ) ) {
-            // check group(s)
-            $filter = "(sAMAccountName=" . $user . ")" ;
-            $attr = array( "memberof" ) ;
-            $result = ldap_search( $ldap, $oConfig->getLDAPDomainName(), $filter, $attr )
-                    or exit( "Unable to search LDAP server" ) ;
-            $entries = ldap_get_entries( $ldap, $result ) ;
-            ldap_unbind( $ldap ) ;
-            // check groups
-            $canAccess = 0;
-            foreach ( $entries[ 0 ][ 'memberof' ] as $grps ) {
-                if ( strpos($grps, $oConfig->getLDAPUserGroup() ) ) {
-                    $canAccess = 1;
-                }
-            }
-            if ( 1 === $canAccess) {
-                $_SESSION[ 'user' ] = $user ;
-                $_SESSION[ 'access' ] = $access ;
-                return true ;
-            }
+        ldap_set_option( $ldap, LDAP_OPT_NETWORK_TIMEOUT, 10 ) ;
+        $bind = @ldap_bind( $ldap, $adUser, $password ) ;
+        if ( false === $bind ) {
             return false ;
         }
-        // invalid configuration, connection, name or password
-        return false;
+        // check group(s)
+        $filter = "(sAMAccountName=" . $user . ")" ;
+        $attr = array( "memberof" ) ;
+        $result = ldap_search( $ldap, $oConfig->getLDAPDomainName(), $filter, $attr )
+                or exit( "Unable to search LDAP server" ) ;
+        $entries = ldap_get_entries( $ldap, $result ) ;
+        ldap_unbind( $ldap ) ;
+        $canAccess = 0;
+        foreach ( $entries[ 0 ][ 'memberof' ] as $grps ) {
+            if ( strpos($grps, $oConfig->getLDAPUserGroup() ) ) {
+                $canAccess = 1;
+            }
+        }
+        if ( 1 === $canAccess) {
+            $_SESSION[ 'AuthUser' ] = $user ;
+            $_SESSION[ 'AuthCanAccess' ] = $canAccess ;
+            return true ;
+        }
+        return false ;
     } // END OF authenticate( $user, $password )
 
 }
