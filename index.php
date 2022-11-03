@@ -224,31 +224,49 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
   FROM aql_db.host AS h
  WHERE h.decommissioned = 0
    AND CONCAT( h.hostname, ':', h.port_number ) IN ( $in )
-   ORDER BY h.hostname, h.port_number
+ ORDER BY h.hostname, h.port_number
 
-SQL;
-$allHostGroupsQuery = "SELECT host_group_id, tag FROM host_group";
-$hostGroupMapQuery = <<<SQL
-SELECT CONCAT( hostname, ':', port_number )
-     , tag
-  FROM host_group_map
-  JOIN host USING( host_id )
-  JOIN host_group USING( host_group_id )
+SQL ;
+$allHostGroupsQuery = <<<SQL
+SELECT hg.host_group_id, hg.tag, CONCAT( '"', GROUP_CONCAT( CONCAT( h.hostname, ':', h.port_number ) SEPARATOR '", "' ), '"' )
+  FROM host_group AS hg
+  LEFT
+  JOIN host_group_map AS hgm
+ USING ( host_group_id )
+  LEFT
+  JOIN host AS h
+ USING ( host_id )
+ GROUP BY hg.host_group_id
+ ORDER BY hg.tag
 
-SQL;
-$allGroupsList = '';
-$allHostsList = '';
-$baseUrl = $config->getBaseUrl();
-$showAllHosts = ( 0 === count( $hostList ) );
+SQL ;
+$allGroupsList = '' ;
+$allHostsList = '' ;
+$baseUrl = $config->getBaseUrl() ;
+$showAllHosts = ( 0 === count( $hostList ) ) ;
+$hgjson = 'hostGroupMap = { ' ;
 try {
-    $result = $dbh->query( $allHostsQuery );
+    $hgResult = $dbh->query( $allHostGroupsQuery ) ;
+    if ( ! $hgResult ) {
+        throw new \ErrorException( "Query failed: $allHostGroupsQuery\n Error: " . $dbh->error ) ;
+    }
+    while ( $row = $hgResult->fetch_row() ) {
+        $hostGroupId = $row[ 0 ] ;
+        $hostGroupTag = $row[ 1 ] ;
+        $hostGroupHostList = ( '""' === $row[ 2 ] ) ? '' : $row[ 2 ] ;
+        $allGroupsList .= "  <option value=\"$hostGroupTag\">$hostGroupTag</option>\n" ;
+        $hgjson .= "\"$hostGroupTag\": [$hostGroupHostList]," ;
+    }
+    $hgResult->close() ;
+    $hgjson .= ' }' ;
+    $result = $dbh->query( $allHostsQuery ) ;
     if ( ! $result ) {
-        throw new \ErrorException( "Query failed: $allHostsQuery\n Error: " . $dbh->error );
+        throw new \ErrorException( "Query failed: $allHostsQuery\n Error: " . $dbh->error ) ;
     }
     while ( $row = $result->fetch_row() ) {
-        $serverName = htmlentities( $row[0] );
+        $serverName = htmlentities( $row[0] ) ;
         $selected = ( in_array( $row[0], $hostList ) ) ? 'selected="selected"' : '' ;
-        $allHostsList .= "  <option value=\"$serverName\" $selected>$serverName</option>\n";
+        $allHostsList .= "  <option value=\"$serverName\" $selected>$serverName</option>\n" ;
         if ( $showAllHosts ) {
             processHost($js, $row[0], $baseUrl, $row[1], $row[2], $row[3], $row[4]);
         }
@@ -298,6 +316,13 @@ function loadPage() {
 }
 
 \$(document).ready( loadPage ) ;
+var $hgjson;
+
+function addGroupSelection() {
+    alert( 'Not implemented yet. Hang in there.' ) ; return;
+    element = document.getElementById( 'groupSelection' ) ;
+    console.log( element ) ;
+}
 </script>
 
 JS
@@ -331,12 +356,12 @@ JS
     </td>
     <td class="headerTableTd">
       <center>
-        Group Toggle
+        <nobr>Add Group</nobr> <nobr>To Selection</nobr>
         <form method="get">
-          <select name="group" size=10>
+          <select id="groupSelection" name="groupSelection" size=10>
             $allGroupsList
           </select><br />
-          <button id="groupSelect" onclick="toggleGroup(); return false;">Choose Group</button>
+          <button id="groupSelect" onclick="addGroupSelection(); return false;">Add Group Selection</button>
         </form>
       </center>
     </td>
