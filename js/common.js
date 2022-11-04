@@ -204,6 +204,9 @@ function flipFlop() {
     }
     $(this).parent().prev().toggle() ;
     $(this).prev().toggle() ;
+
+    e = window.event ;
+    e.preventDefault() ;
     return false ;
 }
 
