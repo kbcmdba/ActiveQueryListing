@@ -308,7 +308,7 @@ function loadPage() {
             \$("#fullPverviewfigment").remove() ;
             \$("#fullProcessfigment").remove() ;
             \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ; 
-            displayCharts() ; 
+            displayCharts() ;
         }
     );
     \$('#fullprocesstbodyid').on('click', '.morelink', flipFlop) ;
@@ -316,12 +316,22 @@ function loadPage() {
 }
 
 \$(document).ready( loadPage ) ;
+
 var $hgjson;
 
 function addGroupSelection() {
-    alert( 'Not implemented yet. Hang in there.' ) ; return;
-    element = document.getElementById( 'groupSelection' ) ;
-    console.log( element ) ;
+    var elements = document.getElementById( 'groupSelection' ).options ;
+    var selectedIndex = elements.selectedIndex ;
+    var hostGroupName = elements[ selectedIndex ].attributes[ 0 ].value ;
+    var selectedHostList = hostGroupMap[ hostGroupName ] ;
+    var hostList = document.getElementById( 'hostList' ) ;
+    for ( var i = 0 ; i < selectedHostList.length ; i++ ) {
+        for ( var j = 0 ; j < hostList.length ; j++ ) {
+            if ( hostList[ j ].attributes[ 0 ].value == selectedHostList[ i ] ) {
+                hostList[ j ].selected = true ;
+            }
+        }
+    }
 }
 </script>
 
@@ -344,7 +354,7 @@ JS
     <td class="headerTableTd">
       <center>
         <form method="get">
-          <select name="hosts[]" multiple="multiple" size=10>
+          <select id="hostList" name="hosts[]" multiple="multiple" size=10>
             $allHostsList
           </select><br />
           Refresh every <input type="text" name="refresh" value="$reloadSeconds" size="3" /> seconds<br />
