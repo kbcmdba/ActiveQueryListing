@@ -244,24 +244,23 @@ function myCallback( i, item ) {
     var first             = '' ;
     var last              = '' ;
     var myRow             = '' ;
-    var overviewRow        = '' ;
+    var overviewRow       = '' ;
     var myUrl             = '' ;
-    var overviewData       = item[ 'overviewData' ] ;
+    var overviewData      = item[ 'overviewData' ] ;
     var slaveData         = item[ 'slaveData' ] ;
     // We get other types of responses here as well. Ignore the noise.
     // If we have an error, assume it's critical and show it at the top of the process listing.
     if ( typeof item[ 'error_output' ] !== 'undefined' ) {
-        var myRow = $("<tr><td class=\"errorNotice\">" + item[ 'hostname' ]
-                     + "</td><td class=\"errorNotice\">9</td><td colspan=\"12\" class=\"errorNotice\">" + item[ 'error_output' ]
-                     + "</td></tr>") ;
-        var myRow2 = JSON.parse( JSON.stringify( myRow ) ) ;
-        myRow.prependTo( "#nwprocesstbodyid" ) ;
-        myRow2.prependTo( "#fullprocesstbodyid" ) ;
+        var myRow = "<tr><td class=\"errorNotice\">" + item[ 'hostname' ]
+                  + "</td><td class=\"errorNotice\">9</td><td colspan=\"12\" class=\"errorNotice\">" + item[ 'error_output' ]
+                  + "</td></tr>" ;
+        $(myRow).prependTo( "#nwprocesstbodyid" ) ;
+        $(myRow).prependTo( "#fullprocesstbodyid" ) ;
     } else {
         if ( typeof overviewData !== 'undefined' ) {
             var server            = item[ 'hostname' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
-            var myRow             = $("<tr><td>" + serverLinkAddress
+            var myRow             = "<tr><td>" + serverLinkAddress
                                   + "</td><td>" + overviewData[ 'version' ]
                                   + "</td><td>" + overviewData[ 'longest_running' ]
                                   + "</td><td>" + overviewData[ 'aQPS' ]
@@ -279,41 +278,39 @@ function myCallback( i, item ) {
                                   + "</td><td>" + overviewData[ 'similar' ]
                                   + "</td><td>" + overviewData[ 'threads' ]
                                   + "</td><td>" + overviewData[ 'unique' ]
-                                  + "</td></tr>") ;
-            var myRow2 = JSON.parse( JSON.stringify( myRow ) ) ;
-            myRow.appendTo( "#fulloverviewtbodyid" ) ;
+                                  + "</td></tr>" ;
+            $(myRow).appendTo( "#fulloverviewtbodyid" ) ;
             var sum = overviewData[ 'level2' ]
                     + overviewData[ 'level3' ]
                     + overviewData[ 'level4' ]
                     + overviewData[ 'level9' ]
                     ;
             if ( sum > 0 ) {
-                myRow2.appendTo( '#nwoverviewtbodyid' ) ;
+                $(myRow).appendTo( '#nwoverviewtbodyid' ) ;
             }
         }
         if ( ( typeof slaveData !== 'undefined' ) && ( typeof slaveData[ 0 ] !== 'undefined' ) ) {
             var server            = item[ 'hostname' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
             for ( itemNo=0; itemNo<slaveData.length; itemNo++ ) {
-                var myRow             = $("<tr><td>" + serverLinkAddress
-                                      + "</td><td>" + slaveData[ itemNo ][ 'Connection_name']
-                                      + "</td><td>" + slaveData[ itemNo ][ 'Master_Host' ]
-                                      + ':' + slaveData[ itemNo ][ 'Master_Port' ]
-                                      + "</td><td>" + slaveData[ itemNo ][ 'Seconds_Behind_Master']
-                                      + "</td><td>" + slaveData[ itemNo ][ 'Slave_IO_Running']
-                                      + "</td><td>" + slaveData[ itemNo ][ 'Slave_SQL_Running']
-                                      + "</td><td>" + slaveData[ itemNo ][ 'Last_IO_Error']
-                                      + "</td><td>" + slaveData[ itemNo ][ 'Last_SQL_Error']
-                                      + "</td></tr>") ;
-                var myRow2 = JSON.parse( JSON.stringify( myRow ) ) ;
-                myRow.appendTo( "#fullslavetbodyid" ) ;
+                var myRow = "<tr><td>" + serverLinkAddress
+                          + "</td><td>" + slaveData[ itemNo ][ 'Connection_name']
+                          + "</td><td>" + slaveData[ itemNo ][ 'Master_Host' ]
+                          + ':' + slaveData[ itemNo ][ 'Master_Port' ]
+                          + "</td><td>" + slaveData[ itemNo ][ 'Seconds_Behind_Master']
+                          + "</td><td>" + slaveData[ itemNo ][ 'Slave_IO_Running']
+                          + "</td><td>" + slaveData[ itemNo ][ 'Slave_SQL_Running']
+                          + "</td><td>" + slaveData[ itemNo ][ 'Last_IO_Error']
+                          + "</td><td>" + slaveData[ itemNo ][ 'Last_SQL_Error']
+                          + "</td></tr>" ;
+                $(myRow).appendTo( "#fullslavetbodyid" ) ;
                 if ( ( slaveData[ itemNo ][ 'Seconds_Behind_Master' ] > 0 )
                   || ( slaveData[ itemNo ][ 'Slave_IO_Running' ] !== 'Yes' )
                   || ( slaveData[ itemNo ][ 'Slave_SQL_Running' ] !== 'Yes' )
                   || ( slaveData[ itemNo ][ 'Last_IO_Error' ] !== '' )
                   || ( slaveData[ itemNo ][ 'Last_SQL_Error' ] !== '' )
                    ) {
-                    myRow2.appendTo( '#nwslavetbodyid' ) ;
+                    $(myRow).appendTo( '#nwslavetbodyid' ) ;
                 }
           }
         }
@@ -360,26 +357,25 @@ function myCallback( i, item ) {
                             + '</span>&nbsp;&nbsp;<a href="" class="morelink">'
                             + 'more</a></span>' ;
                 }
-                var myRow = $("<tr class=\"level" + level + "\">"
-                            +      "<td class=\"comment more\">" + serverLinkAddress
-                            + "</td><td align=\"center\">" + level
-                            + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'           ]
-                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'         ]
-                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'host'         ]
-                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'db'           ]
-                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'command'      ]
-                            + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'         ]
-                            + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'friendlyTime' ]
-                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'        ]
-                            + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly'     ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
-                            + "</td><td class=\"" + dupeState + "\">" + dupeState
-                            + "</td><td class=\"comment more\">" + info
-                            + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
-                            + "</td></tr>") ;
-                var myRow2 = JSON.parse( JSON.stringify( myRow ) ) ;
-                myRow.appendTo( "#fullprocesstbodyid" ) ;
+                var myRow = "<tr class=\"level" + level + "\">"
+                          +      "<td class=\"comment more\">" + serverLinkAddress
+                          + "</td><td align=\"center\">" + level
+                          + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'           ]
+                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'user'         ]
+                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'host'         ]
+                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'db'           ]
+                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'command'      ]
+                          + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'time'         ]
+                          + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'friendlyTime' ]
+                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'        ]
+                          + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly'     ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
+                          + "</td><td class=\"" + dupeState + "\">" + dupeState
+                          + "</td><td class=\"comment more\">" + info
+                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
+                          + "</td></tr>" ;
+                $(myRow).appendTo( "#fullprocesstbodyid" ) ;
                 if ( level > 1 ) {
-                    myRow2.appendTo( "#nwprocesstbodyid" ) ;
+                    $(myRow).appendTo( "#nwprocesstbodyid" ) ;
                 }
             }
         }
