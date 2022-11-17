@@ -436,7 +436,7 @@ JS
   });
 </script>
 
-<h2>Noteworty Data</h2>
+<h2>Noteworthy Data</h2>
 {$cb(xTable( 'nw', 'SlaveStatus', 'Slave', $NWSlaveHeaderFooter, 'slave', $slaveCols ))}
 {$cb(xTable( 'nw', 'StatusOverview', 'Overview', $NWOverviewHeaderFooter, 'overview', $overviewCols ))}
 {$cb(xTable( 'nw', 'ProcessListing', 'Process', $NWProcessHeaderFooter, 'process', $processCols ))}
