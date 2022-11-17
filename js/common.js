@@ -254,8 +254,9 @@ function myCallback( i, item ) {
         var myRow = $("<tr><td class=\"errorNotice\">" + item[ 'hostname' ]
                      + "</td><td class=\"errorNotice\">9</td><td colspan=\"12\" class=\"errorNotice\">" + item[ 'error_output' ]
                      + "</td></tr>") ;
-        myRow.prependTo( "#fullprocesstbodyid" ) ;
+        var myRow2 = JSON.parse( JSON.stringify( myRow ) ) ;
         myRow.prependTo( "#nwprocesstbodyid" ) ;
+        myRow2.prependTo( "#fullprocesstbodyid" ) ;
     } else {
         if ( typeof overviewData !== 'undefined' ) {
             var server            = item[ 'hostname' ] ;
@@ -279,6 +280,7 @@ function myCallback( i, item ) {
                                   + "</td><td>" + overviewData[ 'threads' ]
                                   + "</td><td>" + overviewData[ 'unique' ]
                                   + "</td></tr>") ;
+            var myRow2 = JSON.parse( JSON.stringify( myRow ) ) ;
             myRow.appendTo( "#fulloverviewtbodyid" ) ;
             var sum = overviewData[ 'level2' ]
                     + overviewData[ 'level3' ]
@@ -286,7 +288,7 @@ function myCallback( i, item ) {
                     + overviewData[ 'level9' ]
                     ;
             if ( sum > 0 ) {
-                myRow.appendTo( '#nwoverviewtbodyid' ) ;
+                myRow2.appendTo( '#nwoverviewtbodyid' ) ;
             }
         }
         if ( ( typeof slaveData !== 'undefined' ) && ( typeof slaveData[ 0 ] !== 'undefined' ) ) {
@@ -303,14 +305,16 @@ function myCallback( i, item ) {
                                       + "</td><td>" + slaveData[ itemNo ][ 'Last_IO_Error']
                                       + "</td><td>" + slaveData[ itemNo ][ 'Last_SQL_Error']
                                       + "</td></tr>") ;
-                                      myRow.appendTo( "#fullslavetbodyid" ) ;
+                var myRow2 = JSON.parse( JSON.stringify( myRow ) ) ;
+                myRow.appendTo( "#fullslavetbodyid" ) ;
                 if ( ( slaveData[ itemNo ][ 'Seconds_Behind_Master' ] > 0 )
                   || ( slaveData[ itemNo ][ 'Slave_IO_Running' ] !== 'Yes' )
                   || ( slaveData[ itemNo ][ 'Slave_SQL_Running' ] !== 'Yes' )
                   || ( slaveData[ itemNo ][ 'Last_IO_Error' ] !== '' )
-                  || ( slaveData[ itemNo ][ 'Last_SQL_Error' ] !== '' ) ) {
-                    myRow.appendTo( '#nwslavetbodyid' ) ;
-                  }
+                  || ( slaveData[ itemNo ][ 'Last_SQL_Error' ] !== '' )
+                   ) {
+                    myRow2.appendTo( '#nwslavetbodyid' ) ;
+                }
           }
         }
         if (    ( typeof item[ 'result' ] !== 'undefined' )
@@ -372,9 +376,10 @@ function myCallback( i, item ) {
                             + "</td><td class=\"comment more\">" + info
                             + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
                             + "</td></tr>") ;
+                var myRow2 = JSON.parse( JSON.stringify( myRow ) ) ;
                 myRow.appendTo( "#fullprocesstbodyid" ) ;
                 if ( level > 1 ) {
-                    myRow.appendTo( "#nwprocesstbodyid" ) ;
+                    myRow2.appendTo( "#nwprocesstbodyid" ) ;
                 }
             }
         }
