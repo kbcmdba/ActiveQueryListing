@@ -70,6 +70,7 @@ $navBar
   </tr>
 </tbody>
 </table>
+
 HTML;
 }
 
