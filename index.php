@@ -312,6 +312,7 @@ function loadPage() {
             displayCharts() ;
         }
     );
+    \$('#nwprocesstbodyid').on('click', '.morelink', flipFlop) ;
     \$('#fullprocesstbodyid').on('click', '.morelink', flipFlop) ;
     timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
 }
