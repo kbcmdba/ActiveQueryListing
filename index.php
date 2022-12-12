@@ -348,11 +348,7 @@ JS
 <table id="top" width="100%" border="1">
   <tr>
     <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1></td>
-    <td class="headerTableTd"><div id="pieChartByLevel" class="chartImage"></div></td>
-    <td class="headerTableTd"><div id="pieChartByHost" class="chartImage"></div></td>
-    <td class="headerTableTd"><div id="pieChartByDB" class="chartImage"></div></td>
-    <td class="headerTableTd"><div id="pieChartByDupeState" class="chartImage"></div></td>
-    <td class="headerTableTd"><div id="pieChartByReadWrite" class="chartImage"></div></td>
+    <td id="updatedAt">Page last updated at $now</td>
     <td class="headerTableTd">
       <center>
         <form method="get">
@@ -377,7 +373,11 @@ JS
         </form>
       </center>
     </td>
-    <td id="updatedAt">Page last updated at $now</td>
+    <td class="headerTableTd"><div id="pieChartByLevel" class="chartImage"></div></td>
+    <td class="headerTableTd"><div id="pieChartByHost" class="chartImage"></div></td>
+    <td class="headerTableTd"><div id="pieChartByDB" class="chartImage"></div></td>
+    <td class="headerTableTd"><div id="pieChartByDupeState" class="chartImage"></div></td>
+    <td class="headerTableTd"><div id="pieChartByReadWrite" class="chartImage"></div></td>
   </tr>
 </table>
 
