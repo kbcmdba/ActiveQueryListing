@@ -260,24 +260,36 @@ function myCallback( i, item ) {
         if ( typeof overviewData !== 'undefined' ) {
             var server            = item[ 'hostname' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
+            var l0                = ( overviewData[ 'level0' ] > 0 ) ? ' class="level0"' : '' ;
+            var l1                = ( overviewData[ 'level1' ] > 0 ) ? ' class="level1"' : '' ;
+            var l2                = ( overviewData[ 'level2' ] > 0 ) ? ' class="level2"' : '' ;
+            var l3                = ( overviewData[ 'level3' ] > 0 ) ? ' class="level3"' : '' ;
+            var l4                = ( overviewData[ 'level4' ] > 0 ) ? ' class="level4"' : '' ;
+            var l9                = ( overviewData[ 'level9' ] > 0 ) ? ' class="level9"' : '' ;
+            var ro                = ( overviewData[ 'ro' ] > 0 ) ? ' class="readOnly"' : '' ;
+            var rw                = ( overviewData[ 'rw' ] > 0 ) ? ' class="readWrite"' : '' ;
+            var bl                = ( overviewData[ 'blank' ] > 0 ) ? ' class="Blank"' : '' ;
+            var un                = ( overviewData[ 'unique' ] > 0 ) ? ' class="Unique"' : '' ;
+            var si                = ( overviewData[ 'similar' ] > 0 ) ? ' class="Similar"' : '' ;
+            var du                = ( overviewData[ 'dupe' ] > 0 ) ? ' class="Duplicate"' : '' ;
             var myRow             = "<tr><td>" + serverLinkAddress
                                   + "</td><td>" + overviewData[ 'version' ]
                                   + "</td><td>" + overviewData[ 'longest_running' ]
                                   + "</td><td>" + overviewData[ 'aQPS' ]
                                   + "</td><td>" + overviewData[ 'uptime' ]
-                                  + "</td><td>" + overviewData[ 'level0' ]
-                                  + "</td><td>" + overviewData[ 'level1' ]
-                                  + "</td><td>" + overviewData[ 'level2' ]
-                                  + "</td><td>" + overviewData[ 'level3' ]
-                                  + "</td><td>" + overviewData[ 'level4' ]
-                                  + "</td><td>" + overviewData[ 'level9' ]
-                                  + "</td><td>" + overviewData[ 'ro' ]
-                                  + "</td><td>" + overviewData[ 'rw' ]
-                                  + "</td><td>" + overviewData[ 'blank' ]
-                                  + "</td><td>" + overviewData[ 'duplicate' ]
-                                  + "</td><td>" + overviewData[ 'similar' ]
+                                  + "</td><td" + l0 + ">" + overviewData[ 'level0' ]
+                                  + "</td><td" + l1 + ">" + overviewData[ 'level1' ]
+                                  + "</td><td" + l2 + ">" + overviewData[ 'level2' ]
+                                  + "</td><td" + l3 + ">" + overviewData[ 'level3' ]
+                                  + "</td><td" + l4 + ">" + overviewData[ 'level4' ]
+                                  + "</td><td" + l9 + ">" + overviewData[ 'level9' ]
+                                  + "</td><td" + ro + ">" + overviewData[ 'ro' ]
+                                  + "</td><td" + rw + ">" + overviewData[ 'rw' ]
+                                  + "</td><td" + bl + ">" + overviewData[ 'blank' ]
+                                  + "</td><td" + du + ">" + overviewData[ 'duplicate' ]
+                                  + "</td><td" + si + ">" + overviewData[ 'similar' ]
                                   + "</td><td>" + overviewData[ 'threads' ]
-                                  + "</td><td>" + overviewData[ 'unique' ]
+                                  + "</td><td" + un + ">" + overviewData[ 'unique' ]
                                   + "</td></tr>" ;
             $(myRow).appendTo( "#fulloverviewtbodyid" ) ;
             var sum = overviewData[ 'level2' ]
@@ -293,15 +305,20 @@ function myCallback( i, item ) {
             var server            = item[ 'hostname' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
             for ( itemNo=0; itemNo<slaveData.length; itemNo++ ) {
+                var sbmClass = '' ;
+                var sioClass = ( 'No' == slaveData[ itemNo ][ 'Slave_IO_Running'] ) ? ' class="errorNotice"' : '' ;
+                var sqlClass = ( 'No' == slaveData[ itemNo ][ 'Slave_SQL_Running'] ) ? ' class="errorNotice"' : '' ;
+                var sieClass = ( '' !== slaveData[ itemNo ][ 'Last_IO_Error'] ) ? ' class="errorNotice"' : '' ;
+                var sqeClass = ( '' !== slaveData[ itemNo ][ 'Last_SQL_Error'] ) ? ' class="errorNotice"' : '' ;
                 var myRow = "<tr><td>" + serverLinkAddress
                           + "</td><td>" + slaveData[ itemNo ][ 'Connection_name']
                           + "</td><td>" + slaveData[ itemNo ][ 'Master_Host' ]
                           + ':' + slaveData[ itemNo ][ 'Master_Port' ]
-                          + "</td><td>" + slaveData[ itemNo ][ 'Seconds_Behind_Master']
-                          + "</td><td>" + slaveData[ itemNo ][ 'Slave_IO_Running']
-                          + "</td><td>" + slaveData[ itemNo ][ 'Slave_SQL_Running']
-                          + "</td><td>" + slaveData[ itemNo ][ 'Last_IO_Error']
-                          + "</td><td>" + slaveData[ itemNo ][ 'Last_SQL_Error']
+                          + "</td><td " + sbmClass + ">" + slaveData[ itemNo ][ 'Seconds_Behind_Master']
+                          + "</td><td " + sioClass + ">" + slaveData[ itemNo ][ 'Slave_IO_Running']
+                          + "</td><td " + sqlClass + ">" + slaveData[ itemNo ][ 'Slave_SQL_Running']
+                          + "</td><td " + sieClass + ">" + slaveData[ itemNo ][ 'Last_IO_Error']
+                          + "</td><td " + sqeClass + ">" + slaveData[ itemNo ][ 'Last_SQL_Error']
                           + "</td></tr>" ;
                 $(myRow).appendTo( "#fullslavetbodyid" ) ;
                 if ( ( slaveData[ itemNo ][ 'Seconds_Behind_Master' ] > 0 )
