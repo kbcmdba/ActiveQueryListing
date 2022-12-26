@@ -321,11 +321,11 @@ function myCallback( i, item ) {
                           + "</td><td" + sqeClass + ">" + slaveData[ itemNo ][ 'Last_SQL_Error']
                           + "</td></tr>" ;
                 $(myRow).appendTo( "#fullslavetbodyid" ) ;
-                if ( ( slaveData[ itemNo ][ 'Seconds_Behind_Master' ] > 0 )
-                  || ( slaveData[ itemNo ][ 'Slave_IO_Running' ] !== 'Yes' )
-                  || ( slaveData[ itemNo ][ 'Slave_SQL_Running' ] !== 'Yes' )
-                  || ( slaveData[ itemNo ][ 'Last_IO_Error' ] !== 'Yes' )
-                  || ( slaveData[ itemNo ][ 'Last_SQL_Error' ] !== 'Yes' )
+                if ( ( 0 < slaveData[ itemNo ][ 'Seconds_Behind_Master' ] )
+                  || ( 'Yes' !== slaveData[ itemNo ][ 'Slave_IO_Running' ] )
+                  || ( 'Yes' !== slaveData[ itemNo ][ 'Slave_SQL_Running' ] )
+                  || ( '' !== slaveData[ itemNo ][ 'Last_IO_Error' ] )
+                  || ( '' !== slaveData[ itemNo ][ 'Last_SQL_Error' ] )
                    ) {
                     $(myRow).appendTo( '#nwslavetbodyid' ) ;
                 }
