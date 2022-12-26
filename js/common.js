@@ -305,7 +305,7 @@ function myCallback( i, item ) {
             var server            = item[ 'hostname' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
             for ( itemNo=0; itemNo<slaveData.length; itemNo++ ) {
-                var sbmClass = '' ;
+                var sbmClass = ( 0 < slaveData[ itemNo ][ 'Seconds_Behind_Master' ] ) ? ' class="level4"' : '' ;
                 var sioClass = ( 'No' == slaveData[ itemNo ][ 'Slave_IO_Running'] ) ? ' class="errorNotice"' : '' ;
                 var sqlClass = ( 'No' == slaveData[ itemNo ][ 'Slave_SQL_Running'] ) ? ' class="errorNotice"' : '' ;
                 var sieClass = ( '' !== slaveData[ itemNo ][ 'Last_IO_Error'] ) ? ' class="errorNotice"' : '' ;
@@ -314,18 +314,18 @@ function myCallback( i, item ) {
                           + "</td><td>" + slaveData[ itemNo ][ 'Connection_name']
                           + "</td><td>" + slaveData[ itemNo ][ 'Master_Host' ]
                           + ':' + slaveData[ itemNo ][ 'Master_Port' ]
-                          + "</td><td " + sbmClass + ">" + slaveData[ itemNo ][ 'Seconds_Behind_Master']
-                          + "</td><td " + sioClass + ">" + slaveData[ itemNo ][ 'Slave_IO_Running']
-                          + "</td><td " + sqlClass + ">" + slaveData[ itemNo ][ 'Slave_SQL_Running']
-                          + "</td><td " + sieClass + ">" + slaveData[ itemNo ][ 'Last_IO_Error']
-                          + "</td><td " + sqeClass + ">" + slaveData[ itemNo ][ 'Last_SQL_Error']
+                          + "</td><td" + sbmClass + ">" + slaveData[ itemNo ][ 'Seconds_Behind_Master']
+                          + "</td><td" + sioClass + ">" + slaveData[ itemNo ][ 'Slave_IO_Running']
+                          + "</td><td" + sqlClass + ">" + slaveData[ itemNo ][ 'Slave_SQL_Running']
+                          + "</td><td" + sieClass + ">" + slaveData[ itemNo ][ 'Last_IO_Error']
+                          + "</td><td" + sqeClass + ">" + slaveData[ itemNo ][ 'Last_SQL_Error']
                           + "</td></tr>" ;
                 $(myRow).appendTo( "#fullslavetbodyid" ) ;
-                if ( ( slaveData[ itemNo ][ 'Seconds_Behind_Master' ] > 0 )
-                  || ( slaveData[ itemNo ][ 'Slave_IO_Running' ] !== 'Yes' )
-                  || ( slaveData[ itemNo ][ 'Slave_SQL_Running' ] !== 'Yes' )
-                  || ( slaveData[ itemNo ][ 'Last_IO_Error' ] !== '' )
-                  || ( slaveData[ itemNo ][ 'Last_SQL_Error' ] !== '' )
+                if ( ( 0 < slaveData[ itemNo ][ 'Seconds_Behind_Master' ] )
+                  || ( 'Yes' !== slaveData[ itemNo ][ 'Slave_IO_Running' ] )
+                  || ( 'Yes' !== slaveData[ itemNo ][ 'Slave_SQL_Running' ] )
+                  || ( 'Yes' !== slaveData[ itemNo ][ 'Last_IO_Error' ] )
+                  || ( 'Yes' !== slaveData[ itemNo ][ 'Last_SQL_Error' ] )
                    ) {
                     $(myRow).appendTo( '#nwslavetbodyid' ) ;
                 }
