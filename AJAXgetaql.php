@@ -96,7 +96,7 @@ SQL;
     $showSlaveStatement = $config->getShowSlaveStatement() ;
     $version = $overviewData[ 'version' ] ;
     switch ( true ) {
-        case preg_match( '/^10\.[2-9]\..*-MariaDB-log$/', $version ) === 1:
+        case preg_match( '/^10\.[2-9]\..*-MariaDB.*/', $version ) === 1:
             $showSlaveStatement = 'SHOW ALL SLAVES STATUS' ;
             $roQueryPart = '@@global.read_only OR @@global.innodb_read_only' ;
             break ;
