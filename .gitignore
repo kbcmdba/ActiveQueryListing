@@ -5,6 +5,7 @@
 .project
 .settings
 .vscode/
+*~
 *.swp
 aql_config.xml
 bob.php
