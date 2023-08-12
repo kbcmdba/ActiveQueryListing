@@ -1,0 +1,8 @@
+<Files ".htaccess">
+  Require all denied
+</Files>
+
+<Files "config.xml">
+  Require all denied
+</Files>
+
