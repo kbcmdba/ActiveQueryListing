@@ -77,12 +77,11 @@ try {
     $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump'"
                    . ", 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
-    $aQuery     = <<<SQL
-SELECT Q / T Queries_per_second_avg, VERSION(), T FROM
-(SELECT variable_value Q FROM information_schema.global_status
-WHERE variable_name = 'Questions') A,
-(SELECT variable_value T FROM information_schema.global_status
-WHERE variable_name = 'Uptime') B
+    $globalStatusDb = $config->getGlobalStatusDb() ;
+    $aQuery        = <<<SQL
+SELECT Q / U AS aQPS, VERSION(), U
+  FROM ( SELECT variable_value AS Q FROM $globalStatusDb.global_status WHERE variable_name = 'Questions' ) AS A,
+       ( SELECT variable_value AS U FROM $globalStatusDb.global_status WHERE variable_name = 'Uptime' ) AS B
 SQL;
     $aResult    = $dbh->query( $aQuery ) ;
     if ( $aResult === false ) {

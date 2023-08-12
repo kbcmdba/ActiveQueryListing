@@ -9,6 +9,8 @@
     <param name="minRefresh">15</param>
     <param name="defaultRefresh">60</param>
     <param name="issueTrackerBaseUrl">https://somewhere.jira.com/</param>
+    <param name="globalStatusDb">performance_schema</param>
+    <!-- Which DB is the global_status table in? MySQL: performance_schema. MariaDB: information_schema -->
     <param name="roQueryPart">@@global.read_only OR @@global.innodb_read_only</param>
     <!-- In AWS - this would be "CALL mysql.rds_kill( :pid )" -->
     <param name="killStatement">kill :pid</param>
@@ -19,3 +21,4 @@
     <param name="ldapUserGroup"></param>
     <param name="ldapUserDomain"></param>
 </config>
+

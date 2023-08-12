@@ -114,81 +114,29 @@ class Config
             'defaultRefresh' => 60,
             'roQueryPart' => '@@global.read_only',
             'killStatement' => 'kill :pid',
-            'showSlaveStatement' => 'show all slaves status'
+            'showSlaveStatement' => 'show slave status',
+            'globalStatusDb' => 'performance_schema'
         ] ;
         $paramList = [
-            'dbHost' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'dbPass' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'dbName' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'dbPort' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'dbUser' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'baseUrl' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'timeZone' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'minRefresh' => [
-                'isRequired' => 0,
-                'value' => 0
-            ],
-            'defaultRefresh' => [
-                'isRequired' => 0,
-                'value' => 0
-            ],
-            'issueTrackerBaseUrl' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'roQueryPart' => [
-                'isRequired' => 1,
-                'value' => 0
-            ],
-            'killStatement' => [
-                'isRequired' => 0,
-                'value' => 0
-            ],
-            'showSlaveStatement' => [
-                'isRequired' => 0,
-                'value' => 0
-            ],
-            'doLDAPAuthentication' => [
-                'isRequired' => 0,
-                'value' => 0
-            ],
-            'ldapHost' => [
-                'isRequired' => 0,
-                'value' => 0
-            ],
-            'ldapDomainName' => [
-                'isRequired' => 0,
-                'value' => 0
-            ],
-            'ldapUserGroup' => [
-                'isRequired' => 0,
-                'value' => 0
-            ],
-            'ldapUserDomain' => [
-                'isRequired' => 0,
-                'value' => 0
-            ]
+            'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],
+            'dbPass'               => [ 'isRequired' => 1, 'value' => 0 ],
+            'dbName'               => [ 'isRequired' => 1, 'value' => 0 ],
+            'dbPort'               => [ 'isRequired' => 1, 'value' => 0 ],
+            'dbUser'               => [ 'isRequired' => 1, 'value' => 0 ],
+            'baseUrl'              => [ 'isRequired' => 1, 'value' => 0 ],
+            'timeZone'             => [ 'isRequired' => 1, 'value' => 0 ],
+            'minRefresh'           => [ 'isRequired' => 0, 'value' => 0 ],
+            'defaultRefresh'       => [ 'isRequired' => 0, 'value' => 0 ],
+            'issueTrackerBaseUrl'  => [ 'isRequired' => 1, 'value' => 0 ],
+            'roQueryPart'          => [ 'isRequired' => 1, 'value' => 0 ],
+            'killStatement'        => [ 'isRequired' => 0, 'value' => 0 ],
+            'showSlaveStatement'   => [ 'isRequired' => 0, 'value' => 0 ],
+            'doLDAPAuthentication' => [ 'isRequired' => 0, 'value' => 0 ],
+            'ldapHost'             => [ 'isRequired' => 0, 'value' => 0 ],
+            'ldapDomainName'       => [ 'isRequired' => 0, 'value' => 0 ],
+            'ldapUserGroup'        => [ 'isRequired' => 0, 'value' => 0 ],
+            'ldapUserDomain'       => [ 'isRequired' => 0, 'value' => 0 ],
+            'globalStatusDb'       => [ 'isRequired' => 0, 'value' => 0 ]
         ] ;
 
         // verify that all the parameters are present and just once.
@@ -235,6 +183,7 @@ class Config
         $this->ldapDomainName = $cfgValues[ 'ldapDomainName' ] ;
         $this->ldapUserGroup = $cfgValues[ 'ldapUserGroup' ] ;
         $this->ldapUserDomain = $cfgValues[ 'ldapUserDomain' ] ;
+        $this->globalStatusDb = $cfgValues[ 'globalStatusDb' ] ;
     }
 
     /**
@@ -422,4 +371,13 @@ class Config
     public function getLDAPUserDomain() {
         return ( null !== $this->ldapUserDomain ) ? $this->ldapUserDomain : '' ;
     }
+
+    /**
+     * Return the database that the global_status table lives in
+     */
+    public function getGlobalStatusDb() {
+        return ( null != $this->globalStatusDb ) ? $this->globalStatusDb : '' ;
+    }
+
 }
+
