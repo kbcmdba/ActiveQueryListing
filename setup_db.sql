@@ -112,9 +112,9 @@ VALUES ( 1                 -- id
        , 5                 -- alert_warn_secs
        , 2                 -- alert_info_secs
        , -1                -- alert_low_secs
-       , NULL              -- created
-       , NULL              -- updated
-       , NULL              -- last_audited
+       , CURRENT_TIMESTAMP -- created
+       , CURRENT_TIMESTAMP -- updated
+       , CURRENT_TIMESTAMP -- last_audited
      )
     ON DUPLICATE KEY
 UPDATE updated = CURRENT_TIMESTAMP
