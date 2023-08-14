@@ -89,7 +89,7 @@ class DBConnection
                 }
                 break;
             case 'mysqli':
-                $mysqli = mysqli_init();
+                $mysqli = \mysqli_init();
                 if (! $mysqli) {
                     throw new DaoException("Failed to allocate connection class!");
                 }
