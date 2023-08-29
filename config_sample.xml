@@ -15,10 +15,11 @@
     <!-- In AWS - this would be "CALL mysql.rds_kill( :pid )" -->
     <param name="killStatement">kill :pid</param>
     <param name="showSlaveStatement">show all slaves status</param>
-    <param name="doLDAPAuthentication">false</param>
-    <param name="ldapHost"></param>
-    <param name="ldapDomainName"></param>
-    <param name="ldapUserGroup"></param>
-    <param name="ldapUserDomain"></param>
+    <!-- Sample LDAP/AD config - check with your AD admin for the correct values for your company -->
+    <param name="doLDAPAuthentication">true</param>
+    <param name="ldapHost">ldaps://ad.mycompany.com/</param>
+    <param name="ldapDomainName">DC=mycompany,DC=com</param>
+    <param name="ldapUserGroup">Admins</param>
+    <param name="ldapUserDomain">mycompany</param>
 </config>
 
