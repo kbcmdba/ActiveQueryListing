@@ -76,6 +76,7 @@ try {
     $outputList    = [] ;
     $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump'"
                    . ", 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
+    $notInState    = "'Waiting for master to send event'" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
     $globalStatusDb = $config->getGlobalStatusDb() ;
     $aQuery        = <<<SQL
@@ -121,6 +122,7 @@ SELECT id
   FROM INFORMATION_SCHEMA.PROCESSLIST
  WHERE 1 = 1
  $debugComment  AND COMMAND NOT IN $notIn
+ $debugComment  AND STATE NOT IN $notInState
  $debugComment  AND id <> CONNECTION_ID()
  ORDER BY time DESC
 
