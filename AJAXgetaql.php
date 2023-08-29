@@ -76,7 +76,7 @@ try {
     $outputList    = [] ;
     $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump'"
                    . ", 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
-    $notInState    = "'Waiting for master to send event'" ;
+    $notInState    = "( 'Waiting for master to send event' )" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
     $globalStatusDb = $config->getGlobalStatusDb() ;
     $aQuery        = <<<SQL
