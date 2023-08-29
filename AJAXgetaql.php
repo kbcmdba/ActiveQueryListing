@@ -74,9 +74,8 @@ try {
     $dbc           = new DBConnection('process', $hostname) ;
     $dbh           = $dbc->getConnection() ;
     $outputList    = [] ;
-    $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump'"
-                   . ", 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
-    $notInState    = "( 'Waiting for master to send event' )" ;
+    $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
+    $notInState    = "( 'Waiting for master to send event', 'Slave has read all relay log; waiting for more updates' )" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
     $globalStatusDb = $config->getGlobalStatusDb() ;
     $aQuery        = <<<SQL
