@@ -272,8 +272,7 @@ HTML;
                       .  $row[9] . ", "
                       .  $row[10] . ", "
                       .  $row[11] . ", "
-                      .  $row[12] . ", "
-                      .  $row[13]
+                      .  $row[12]
                       .  "); return(false);\">Fill Host Form</button>"
                       .  "</td>"
                       ;
