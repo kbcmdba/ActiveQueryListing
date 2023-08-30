@@ -134,7 +134,7 @@ switch ( Tools::param( 'data' ) ) {
             checkIsNumeric( $portNumber, "Invalid Port Number.\n", $errors ) ;
             checkIs1or0( $shouldMonitor, "Should Monitor", $errors ) ;
             checkIs1or0( $shouldBackup, "Should Backup", $errors ) ;
-            checkIs1or0( $shoulSchemaspy, "Should Schemaspy", $errors ) ;
+            checkIs1or0( $shouldSchemaspy, "Should Schemaspy", $errors ) ;
             checkIs1or0( $revenueImpacting, "Revenue Impacting", $errors ) ;
             checkIs1or0( $decommissioned, "Decommissioned", $errors ) ;
             checkIsNumeric( $alertCritSecs, "Alert Seconds: Critical", $errors ) ;
