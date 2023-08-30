@@ -251,8 +251,6 @@ SQL;
   <tbody>
 
 HTML;
-        // function plainCell( $data ) { return "<td>$data</td>" } ;
-        // $cb = function ($fn) { return $fn; };
         try {
             $result = $dbh->query( $allHostsQuery );
             if ( ! $result ) {
@@ -274,11 +272,12 @@ HTML;
                       .  $row[9] . ", "
                       .  $row[10] . ", "
                       .  $row[11] . ", "
-                      .  $row[12]
+                      .  $row[12] . ", "
+                      .  $row[13]
                       .  "); return(false);\">Fill Host Form</button>"
                       .  "</td>"
                       ;
-                for ( $i = 0 ; $i < 12 ; $i++ ) {
+                for ( $i = 0 ; $i < 13 ; $i++ ) {
                     $body .= "<td>{$row[$i]}</td>" ;
                 }
                 $body .= "</tr>\n" ;
