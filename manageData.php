@@ -114,6 +114,7 @@ switch ( Tools::param( 'data' ) ) {
         $description = Tools::param( 'description' ) ;
         $shouldMonitor = Tools::param( 'shouldMonitor' ) ;
         $shouldBackup = Tools::param( 'shouldBackup' ) ;
+        $shouldSchemaspy = Tools::param( 'shouldSchemaspy' ) ;
         $revenueImpacting = Tools::param('revenueImpacting' ) ;
         $decommissioned = Tools::param( 'decommissioned' ) ;
         $alertCritSecs = Tools::param( 'alertCritSecs' ) ;
@@ -133,6 +134,7 @@ switch ( Tools::param( 'data' ) ) {
             checkIsNumeric( $portNumber, "Invalid Port Number.\n", $errors ) ;
             checkIs1or0( $shouldMonitor, "Should Monitor", $errors ) ;
             checkIs1or0( $shouldBackup, "Should Backup", $errors ) ;
+            checkIs1or0( $shoulSchemaspy, "Should Schemaspy", $errors ) ;
             checkIs1or0( $revenueImpacting, "Revenue Impacting", $errors ) ;
             checkIs1or0( $decommissioned, "Decommissioned", $errors ) ;
             checkIsNumeric( $alertCritSecs, "Alert Seconds: Critical", $errors ) ;
@@ -159,15 +161,15 @@ switch ( Tools::param( 'data' ) ) {
                 $body .= 'Add - ' ;
                 $sql = 'INSERT INTO host SET hostname = ?, port_number = ?'
                      . ', description = ?, should_monitor = ?, should_backup = ?'
-                     . ', revenue_impacting = ?, decommissioned = ?'
+                     . ', should_schemaspy = ?, revenue_impacting = ?, decommissioned = ?'
                      . ', alert_crit_secs = ?, alert_warn_secs = ?'
                      . ', alert_info_secs = ?, alert_low_secs = ?'
                      . ', created = NOW(), updated = NOW(), last_audited = NOW()'
                      ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sisiiiiiiii'
+                $stmt->bind_param( 'sisiiiiiiiii'
                                  , $hostName, $portNumber, $description, $shouldMonitor
-                                 , $shouldBackup, $revenueImpacting, $decommissioned
+                                 , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
                                  , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs
                                  ) ;
                 $body .= ( $stmt->execute() ) ? "Success.<br />\n" : "Failed.<br />\n" ;
@@ -175,7 +177,8 @@ switch ( Tools::param( 'data' ) ) {
             case 'Update':
                 $body .= 'Update - ' ;
                 $sql = 'UPDATE host SET hostname = ?, port_number = ?'
-                     . ', description = ?, should_monitor = ?, should_backup = ?'
+                     . ', description = ?, should_monitor = ?'
+                     . ', should_backup = ?, should_schemaspy = ?'
                      . ', revenue_impacting = ?, decommissioned = ?'
                      . ', alert_crit_secs = ?, alert_warn_secs = ?'
                      . ', alert_info_secs = ?, alert_low_secs = ?'
@@ -183,9 +186,9 @@ switch ( Tools::param( 'data' ) ) {
                      . ' WHERE host_id = ?'
                      ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sisiiiiiiiii'
+                $stmt->bind_param( 'sisiiiiiiiiii'
                                  , $hostName, $portNumber, $description, $shouldMonitor
-                                 , $shouldBackup, $revenueImpacting, $decommissioned
+                                 , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
                                  , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs
                                  , $hostId
                                  ) ;
@@ -211,6 +214,7 @@ SELECT host_id
      , description
      , should_monitor
      , should_backup
+     , should_schemaspy
      , revenue_impacting
      , decommissioned
      , alert_crit_secs
@@ -232,6 +236,7 @@ SQL;
       <th rowspan="2">Description</th>
       <th rowspan="2">Should Monitor</th>
       <th rowspan="2">Should Backup</th>
+      <th rowspan="2">Should Schemaspy</th>
       <th rowspan="2">Revenue Impacting</th>
       <th rowspan="2">Decommissioned</th>
       <th colspan="4">Alert Seconds</th>
@@ -268,7 +273,8 @@ HTML;
                       .  $row[8] . ", "
                       .  $row[9] . ", "
                       .  $row[10] . ", "
-                      .  $row[11]
+                      .  $row[11] . ", "
+                      .  $row[12]
                       .  "); return(false);\">Fill Host Form</button>"
                       .  "</td>"
                       ;
@@ -293,6 +299,7 @@ HTML;
     <tr><th colspan="2">Description</th><td><textarea id="description" name="description" rows="4" cols="60"></textarea></td></tr>
     <tr><th colspan="2">Should Monitor</th><td><select id="shouldMonitor" name="shouldMonitor"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Should Backup</th><td><select id="shouldBackup" name="shouldBackup"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
+    <tr><th colspan="2">Should Schemaspy</th><td><select id="shouldSchemaspy" name="shoulSchemaspy"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Revenue Impacting</th><td><select id="revenueImpacting" name="revenueImpacting"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Decommissioned</th><td><select id="decommissioned" name="decommissioned"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>
     <tr><th rowspan="4">Alert Seconds</th><th>Critical</th><td><input type="number" id="alertCritSecs" name="alertCritSecs" size="3" value="" /></td></tr>

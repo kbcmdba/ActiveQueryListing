@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS host (
      , description       TEXT NULL DEFAULT NULL
      , should_monitor    BOOLEAN NOT NULL DEFAULT 1
      , should_backup     BOOLEAN NOT NULL DEFAULT 1
+     , should_schemaspy  BOOLEAN NOT NULL DEFAULT 0
      , revenue_impacting BOOLEAN NOT NULL DEFAULT 1
      , decommissioned    BOOLEAN NOT NULL DEFAULT 0
      , alert_crit_secs   INT NOT NULL DEFAULT 0
@@ -59,6 +60,7 @@ VALUES ( 1                 -- id
        , 'This host'       -- description
        , 1                 -- should_monitor
        , 1                 -- should_backup
+       , 0                 -- should_schemaspy
        , 1                 -- revenue_impacting
        , 0                 -- decommissioned
        , 10                -- alert_crit_secs
@@ -75,6 +77,7 @@ VALUES ( 1                 -- id
        , 'localhostx2'     -- description
        , 1                 -- should_monitor
        , 1                 -- should_backup
+       , 0                 -- should_schemaspy
        , 1                 -- revenue_impacting
        , 0                 -- decommissioned
        , 10                -- alert_crit_secs
@@ -91,6 +94,7 @@ VALUES ( 1                 -- id
        , 'Bad host'        -- description
        , 1                 -- should_monitor
        , 1                 -- should_backup
+       , 0                 -- should_schemaspy
        , 1                 -- revenue_impacting
        , 0                 -- decommissioned
        , 10                -- alert_crit_secs
@@ -106,6 +110,7 @@ VALUES ( 1                 -- id
        , 'Second instance on this host' -- description
        , 1                 -- should_monitor
        , 1                 -- should_backup
+       , 0                 -- should_schemaspy
        , 1                 -- revenue_impacting
        , 0                 -- decommissioned
        , 10                -- alert_crit_secs
