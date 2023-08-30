@@ -252,7 +252,7 @@ function myCallback( i, item ) {
     // If we have an error, assume it's critical and show it at the top of the process listing.
     if ( typeof item[ 'error_output' ] !== 'undefined' ) {
         var myRow = "<tr><td class=\"errorNotice\">" + item[ 'hostname' ]
-                  + "</td><td class=\"errorNotice\">9</td><td colspan=\"12\" class=\"errorNotice\">" + item[ 'error_output' ]
+                  + "</td><td class=\"errorNotice\">9</td><td colspan=\"13\" class=\"errorNotice\">" + item[ 'error_output' ]
                   + "</td></tr>" ;
         $(myRow).prependTo( "#nwprocesstbodyid" ) ;
         $(myRow).prependTo( "#fullprocesstbodyid" ) ;
@@ -596,6 +596,7 @@ function fillHostForm( host_id
     , description
     , should_monitor
     , should_backup
+    , should_schemaspy
     , revenue_impacting
     , decommissioned
     , alert_crit_secs
@@ -608,6 +609,7 @@ function fillHostForm( host_id
     document.getElementById( 'description' ).value = description ;
     document.getElementById( 'shouldMonitor' ).value = should_monitor ;
     document.getElementById( 'shouldBackup' ).value = should_backup ;
+    document.getElementById( 'shouldSchemaspy' ).value = should_schemaspy ;
     document.getElementById( 'revenueImpacting' ).value = revenue_impacting ;
     document.getElementById( 'decommissioned' ).value = decommissioned ;
     document.getElementById( 'alertCritSecs' ).value = alert_crit_secs ;
