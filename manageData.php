@@ -299,7 +299,7 @@ HTML;
     <tr><th colspan="2">Description</th><td><textarea id="description" name="description" rows="4" cols="60"></textarea></td></tr>
     <tr><th colspan="2">Should Monitor</th><td><select id="shouldMonitor" name="shouldMonitor"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Should Backup</th><td><select id="shouldBackup" name="shouldBackup"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
-    <tr><th colspan="2">Should Schemaspy</th><td><select id="shouldSchemaspy" name="shoulSchemaspy"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
+    <tr><th colspan="2">Should Schemaspy</th><td><select id="shouldSchemaspy" name="shoulSchemaspy"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>
     <tr><th colspan="2">Revenue Impacting</th><td><select id="revenueImpacting" name="revenueImpacting"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Decommissioned</th><td><select id="decommissioned" name="decommissioned"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>
     <tr><th rowspan="4">Alert Seconds</th><th>Critical</th><td><input type="number" id="alertCritSecs" name="alertCritSecs" size="3" value="" /></td></tr>
