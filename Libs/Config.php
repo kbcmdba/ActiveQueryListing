@@ -72,6 +72,7 @@ class Config
     private $ldapDomainName = null;
     private $ldapUserGroup = null;
     private $ldapUserDomain = null;
+    private $globalStatusDb = null;
 
     /**
      * #@-

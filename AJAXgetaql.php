@@ -75,7 +75,13 @@ try {
     $dbh           = $dbc->getConnection() ;
     $outputList    = [] ;
     $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
-    $notInState    = "( 'Waiting for master to send event', 'Slave has read all relay log; waiting for more updates', 'Queueing master event to the relay log' )" ;
+    $notInState    = "( 'Waiting for master to send event'"
+                   . ", 'Slave has read all relay log; waiting for more updates'"
+                   . ", 'Queueing master event to the relay log'"
+                   . ", 'Waiting for an event from Coordinator'"
+                   . ", 'Waiting for source to send event'"
+                   . ", 'waiting for handler commit'"
+                   . ")" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
     $globalStatusDb = $config->getGlobalStatusDb() ;
     $aQuery        = <<<SQL

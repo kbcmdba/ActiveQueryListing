@@ -57,13 +57,13 @@ function xTable( $prefix, $linkId, $tableId, $headerFooter, $id, $cols ) {
     return <<<HTML
 $navBar
 
-<a id="${prefix}$linkId"></a>
-<table border=1 cellspacing=0 cellpadding=2 id="${prefix}${tableId}Table" width="100%" class="tablesorter">
+<a id="{$prefix}$linkId"></a>
+<table border=1 cellspacing=0 cellpadding=2 id="{$prefix}{$tableId}Table" width="100%" class="tablesorter">
 <thead>
   $headerFooter
 </thead>
-<tbody id="${prefix}${id}tbodyid">
-  <tr id="${prefix}${id}figment">
+<tbody id="{$prefix}{$id}tbodyid">
+  <tr id="{$prefix}{$id}figment">
     <td colspan="$cols">
       <center>Data loading</center>
     </td>
