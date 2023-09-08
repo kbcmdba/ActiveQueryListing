@@ -75,11 +75,15 @@ try {
     $dbh           = $dbc->getConnection() ;
     $outputList    = [] ;
     $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
-    $notInState    = "( 'Waiting for master to send event'"
+    $notInState    = "( 'Applying batch of row changes (update)'"
                    . ", 'Slave has read all relay log; waiting for more updates'"
                    . ", 'Queueing master event to the relay log'"
+                   . ", 'Queueing source event to the relay log'"
+                   . ", 'Replica has read all relay log; waiting for more updates'"
                    . ", 'Waiting for an event from Coordinator'"
+                   . ", 'Waiting for master to send event'"
                    . ", 'Waiting for source to send event'"
+                   . ", 'reading event from relay log'"
                    . ", 'waiting for handler commit'"
                    . ")" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
