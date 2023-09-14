@@ -106,7 +106,7 @@ SQL;
     $version = $overviewData[ 'version' ] ;
     $replica_labels = [ 'Connection_name' => 'Connection_name', 'Master_Host' => 'Master_Host'
                       , 'Master_Port' => 'Master_Port', 'Slave_IO_Running' => 'Slave_IO_Running'
-                      , 'Slave_SQL_Running' => 'Slave_SQL_Running', 'Seconds_Behind_Master' => 'Seconds Behind Master'
+                      , 'Slave_SQL_Running' => 'Slave_SQL_Running', 'Seconds_Behind_Master' => 'Seconds_Behind_Master'
                       , 'Last_IO_Error' => 'Last_IO_Error', 'Last_SQL_Error' => 'Last_SQL_Error ' ] ;
     switch ( true ) {
         case preg_match( '/^10\.[2-9]\..*-MariaDB.*/', $version ) === 1:
