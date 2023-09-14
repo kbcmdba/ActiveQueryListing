@@ -104,6 +104,10 @@ SQL;
     $aResult->close() ;
     $showSlaveStatement = $config->getShowSlaveStatement() ;
     $version = $overviewData[ 'version' ] ;
+    $replica_labels = array( ['Connection_name' => 'Connection_name', 'Master_Host' => 'Master_Host'
+                           , 'Master_Port' => 'Master_Port', 'Slave_IO_Running' => 'Slave_IO_Running'
+                           , 'Slave_SQL_Running' => 'Slave_SQL_Running', 'Seconds_Behind_Master' => 'Seconds Behind Master'
+                           , 'Last_IO_Error' => 'Last_IO_Error', 'Last_SQL_Error' => 'Last_SQL_Error ' ] ) ;
     switch ( true ) {
         case preg_match( '/^10\.[2-9]\..*-MariaDB.*/', $version ) === 1:
             $showSlaveStatement = 'SHOW ALL SLAVES STATUS' ;
@@ -114,6 +118,10 @@ SQL;
             $roQueryPart = '@@global.read_only' ;
             break ;
         case preg_match( '/^[8]\..*$/', $version ) === 1:
+            $replica_labels = array( ['Connection_name' => 'Channel_Name', 'Master_Host' => 'Source_Host'
+                                   , 'Master_Port' => 'Source_Port', 'Slave_IO_Running' => 'Replica_IO_Running'
+                                   , 'Slave_SQL_Running' => 'Replica_SQL_Running', 'Seconds_Behind_Master' => 'Seconds_Behind_Source'
+                                   , 'Last_IO_Error' => 'Last_IO_Error', 'Last_SQL_Error' => 'Last_SQL_Error'] ) ;
             $showSlaveStatement = 'SHOW REPLICA STATUS' ;
             $roQueryPart = '@@global.read_only' ;
             break ;
@@ -223,19 +231,8 @@ SQL;
     }
     while ($row = $slaveResult->fetch_assoc()) {
         $thisResult = array() ;
-        if ( preg_match( '/^[8]\..*$/', $version ) === 1 ) {
-            foreach (['Channel_name', 'Source_Host', 'Source_Port', 'Replica_IO_Running'
-                     , 'Replica_SQL_Running', 'Seconds_Behind_Source', 'Last_IO_Error'
-                     , 'Last_SQL_Error'] as $i) {
-              $thisResult[ $i ] = $row[ $i ] ;
-            }
-        }
-        else {
-            foreach (['Connection_name', 'Master_Host', 'Master_Port', 'Slave_IO_Running'
-                     , 'Slave_SQL_Running', 'Seconds_Behind_Master', 'Last_IO_Error'
-                     , 'Last_SQL_Error'] as $i) {
-              $thisResult[ $i ] = $row[ $i ] ;
-            }
+        foreach ($replica_labels as $k => $v) {
+            $thisResult[ $k ] = $row[ $v ] ;
         }
         $slaveData[] = $thisResult ;
     }
