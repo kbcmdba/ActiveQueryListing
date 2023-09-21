@@ -138,8 +138,11 @@ SQL;
         exit( 1 ) ;
     }
     // Log the query about to be killed
-    $log_sth = $log_dbh->prepare( "INSERT INTO kill_log VALUES ( NULL, :login, :server, :id, :user, :host, " .
-                                  ":db, :command, :time, :state, :info, :reason, NULL )" ) ;
+    $log_sth = $log_dbh->prepare( "INSERT INTO kill_log" .
+                                    . " ( killer, target_server, pid, user, host, db, command"
+                                     . ", time, state, info, reason )"
+                               . " VALUES ( :login, :server, :id, :user, :host, :db"
+                                        . ", :command, :time, :state, :info, :reason )" ) ;
     if ( ! $log_sth->execute( [ ':login' => $login
                               , ':server' => $server
                               , ':id' => $r_id
