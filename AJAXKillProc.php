@@ -138,7 +138,7 @@ SQL;
         exit( 1 ) ;
     }
     // Log the query about to be killed
-    $log_sth = $log_dbh->prepare( "INSERT INTO kill_log" .
+    $log_sth = $log_dbh->prepare( "INSERT INTO kill_log"
                                     . " ( killer, target_server, pid, user, host, db, command"
                                      . ", time, state, info, reason )"
                                . " VALUES ( :login, :server, :id, :user, :host, :db"
