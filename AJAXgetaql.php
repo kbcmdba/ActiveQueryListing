@@ -122,6 +122,10 @@ SQL;
             $showSlaveStatement = 'SHOW SLAVE STATUS' ;
             $roQueryPart = '@@global.read_only' ;
             break ;
+        case preg_match( '/^[8]\.0\.21.*$/', $version ) === 1:
+            $showSlaveStatement = 'SHOW SLAVE STATUS' ;
+            $roQueryPart = '@@global.read_only' ;
+            break ;
         case preg_match( '/^[8]\..*$/', $version ) === 1:
             $replica_labels = [ 'Connection_name' => 'Channel_Name'
                               , 'Master_Host' => 'Source_Host'
