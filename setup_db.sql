@@ -24,7 +24,7 @@
 -- WARNING - using this script could wipe out any existing data in
 -- aql_db so make sure you take a backup first if it's needed.
 --
--- The following line would destroy existing data if uncommented.
+-- The following line will destroy existing data if uncommented.
 -- DROP DATABASE IF EXISTS aql_db ;
 
 CREATE DATABASE IF NOT EXISTS aql_db DEFAULT CHARACTER SET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_bin' ;

@@ -52,6 +52,7 @@ class HostController extends ControllerBase
 CREATE TABLE IF NOT EXISTS host (
   host_id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
 , hostname          VARCHAR(64) NOT NULL
+, port_number       INT UNSIGNED NOT NULL DEFAULT 3306
 , description       TEXT DEFAULT NULL
 , should_monitor    BOOLEAN NOT NULL DEFAULT 1
 , should_backup     BOOLEAN NOT NULL DEFAULT 1
@@ -88,6 +89,7 @@ SQL;
         $sql = <<<SQL
 SELECT host_id
      , hostname
+     , port_number
      , description
      , should_monitor
      , should_backup
@@ -110,11 +112,13 @@ SQL;
         if (! $stmt->execute()) {
             throw new ControllerException('Failed to execute SELECT statement. (' . $this->_dbh->error . ')') ;
         }
-        $id = $hostName = $description = $shouldMonitor = $shouldBackup = $revenueImpacting = $decommissioned = null ;
-        $alertCritSecs = $alertWarnSecs = $alertInfoSecs = $alertLowSecs = $created = $updated = $lastAudited = null ;
+        $id = $hostName = $portNumber = $description = $shouldMonitor = $shouldBackup = null ;
+        $revenueImpacting = $decommissioned = $alertCritSecs = $alertWarnSecs = null ;
+        $alertInfoSecs = $alertLowSecs = $created = $updated = $lastAudited = null ;
         if (! $stmt->bind_result(
             $id,
             $hostName,
+            $portNumber,
             $description,
             $shouldMonitor,
             $shouldBackup,
@@ -134,6 +138,7 @@ SQL;
             $model = new HostModel() ;
             $model->setId($id) ;
             $model->setHostName($hostName) ;
+            $model->setPortNumber($portNumber) ;
             $model->setDescription($description) ;
             $model->setShouldMonitor($shouldMonitor) ;
             $model->setShouldBackup($shouldBackup) ;
@@ -157,6 +162,7 @@ SQL;
         $sql = <<<SQL
 SELECT host_id
      , hostname
+     , port_number
      , description
      , should_monitor
      , should_backup
@@ -180,11 +186,13 @@ SQL;
         if (! $stmt->execute()) {
             throw new ControllerException('Failed to execute SELECT statement. (' . $this->_dbh->error . ')') ;
         }
-        $id = $hostName = $description = $shouldMonitor = $shouldBackup = $revenueImpacting = $decommissioned = null ;
-        $alertCritSecs = $alertWarnSecs = $alertInfoSecs = $alertLowSecs = $created = $updated = $lastAudited = null ;
+        $id = $hostName = $portNumber = $description = $shouldMonitor = $shouldBackup = null ;
+        $revenueImpacting = $decommissioned = $alertCritSecs = $alertWarnSecs = null ;
+        $alertInfoSecs = $alertLowSecs = $created = $updated = $lastAudited = null ;
         if (! $stmt->bind_result(
             $id,
             $hostName,
+            $portNumber,
             $description,
             $shouldMonitor,
             $shouldBackup,
@@ -205,6 +213,7 @@ SQL;
             $model = new HostModel() ;
             $model->setId($id) ;
             $model->setHostName($hostName) ;
+            $model->setPortNumber($portNumber) ;
             $model->setDescription($description) ;
             $model->setShouldMonitor($shouldMonitor) ;
             $model->setShouldBackup($shouldBackup) ;
@@ -239,6 +248,7 @@ SQL;
 INSERT host
      ( hostname
      , description
+     , port_number
      , should_monitor
      , should_backup
      , revenue_impacting
@@ -249,9 +259,10 @@ INSERT host
      , alert_low_secs
      , lastAudited
      )
-VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
 SQL;
                 $hostName         = $model->getHostName() ;
+                $portNumber       = $model->getPortNumber() ;
                 $description      = $model->getDescription() ;
                 $shouldMonitor    = $model->getShouldMonitor() ;
                 $shouldBackup     = $model->getShouldBackup() ;
@@ -267,8 +278,9 @@ SQL;
                     throw new ControllerException('Prepared statement failed for ' . $query) ;
                 }
                 if (! ($stmt->bind_param(
-                    'ssiiiiiiiis',
+                    'sisiiiiiiiis',
                     $hostName,
+                    $portNumber,
                     $description,
                     $shouldMonitor,
                     $shouldBackup,
@@ -315,6 +327,7 @@ SQL;
                 $query = <<<SQL
 UPDATE host
    SET hostname = ?
+     , port_number = ?
      , description = ?
      , should_monitor = ?
      , should_backup = ?
@@ -329,6 +342,7 @@ UPDATE host
 SQL;
                 $id               = $model->getId() ;
                 $hostName         = $model->getHostName() ;
+                $portNumber       = $model->getPortNumber() ;
                 $description      = $model->getDescription() ;
                 $shouldMonitor    = $model->getShouldMonitor() ;
                 $shouldBackup     = $model->getShouldBackup() ;
@@ -344,8 +358,9 @@ SQL;
                     throw new ControllerException('Prepared statement failed for ' . $query) ;
                 }
                 if (! ($stmt->bind_param(
-                    'ssiiiiiiiisi',
+                    'sisiiiiiiiisi',
                     $hostName,
+                    $portNumber,
                     $description,
                     $shouldMonitor,
                     $shouldBackup,

@@ -32,6 +32,7 @@ class HostModel extends ModelBase
 {
     private $id ;
     private $hostName ;
+    private $portNumber ;
     private $description ;
     private $shouldMonitor ;
     private $shouldBackup ;
@@ -122,6 +123,7 @@ class HostModel extends ModelBase
     {
         $this->setHostId(Tools::param('id')) ;
         $this->setHostName(Tools::param('hostName')) ;
+        $this->setPortNumber(Tools::param('portNumber')) ;
         $this->setDescription(Tools::param('description')) ;
         $this->setShouldMonitor(Tools::param('shouldMonitor')) ;
         $this->setShouldBackup(Tools::param('shouldBackup')) ;
@@ -166,6 +168,22 @@ class HostModel extends ModelBase
     public function setHostName($hostName)
     {
         $this->hostName = $hostName ;
+    }
+
+    /**
+     * @return integer
+     */
+    public function getPortNumber()
+    {
+        return $this->portNumber ;
+    }
+
+    /**
+     * @param integer $id
+     */
+    public function setPortNumber($portNumber)
+    {
+        $this->portNumber = Tools::isNullOrEmptyString($portNumber) ? 3306 : $portNumber ;
     }
 
     /**

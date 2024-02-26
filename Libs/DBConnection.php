@@ -48,7 +48,7 @@ class DBConnection
      * @param String $dbPass
      * @param Integer $dbPort
      * @param String $connClass
-     *            Must be 'mysql', 'mysqli', or 'PDO' for now.
+     *            Must be 'mysql', 'mysqli', 'PDO', or 'MS-SQL'for now.
      * @return void
      * @throws \Exception
      * @SuppressWarnings indentation
