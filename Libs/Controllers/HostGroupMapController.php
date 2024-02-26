@@ -24,7 +24,7 @@
 namespace com\kbcmdba\aql\Libs\Controllers ;
 
 use com\kbcmdba\aql\Libs\Exceptions\ControllerException ;
-use com\kbcmdba\aql\Libs\Models\HostGroupModel ;
+use com\kbcmdba\aql\Libs\Models\HostGroupMapModel ;
 
 class HostGroupMapController extends ControllerBase
 {
@@ -49,15 +49,13 @@ class HostGroupMapController extends ControllerBase
     public function createTable()
     {
         $sql = <<<SQL
-CREATE TABLE host_group (
-  host_group_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
-, tag               VARCHAR( 16 ) NOT NULL DEFAULT ''
-, short_description VARCHAR( 255 ) NOT NULL DEFAULT ''
-, full_descripton   TEXT NULL DEFAULT NULL
+CREATE TABLE host_group_map (
+  host_group_id     INT UNSIGNED NOT NULL
+, host_id           INT UNSIGNED NOT NULL
 , created           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-, updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                      ON UPDATE CURRENT_TIMESTAMP
-, UNIQUE ux_tag ( tag )
+, updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+, last_audited      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+, UNIQUE ux_host_group_host_id ( host_group_id, host_id )
 ) ENGINE=InnoDB ;
 
 SQL;
@@ -74,59 +72,68 @@ SQL;
         return ;
     }
 
-    public function get($id)
+    /**
+     * @param   $hostGroupId
+     * @param   $hostId
+     * @returns HostGroupMapModel
+     * @throws  ControllerException
+     */
+    public function get($hostGroupId, $hostId)
     {
         $sql = <<<SQL
 SELECT host_group_id
-     , tag
-     , short_description
-     , full_description
+     , host_id
      , created
      , updated
-  FROM host_group
+     , last_audited
+  FROM host_group_map
  WHERE host_group_id = ?
+   AND host_id = ?
 SQL;
         $stmt = $this->_dbh->prepare($sql) ;
-        if ((! $stmt) || (! $stmt->bind_param('i', $id))) {
+        if ((! $stmt) || (! $stmt->bind_param('ii', $hostGroupId, $hostId))) {
             throw new ControllerException('Failed to prepare SELECT statement. (' . $this->_dbh->error . ')') ;
         }
         if (! $stmt->execute()) {
             throw new ControllerException('Failed to execute SELECT statement. (' . $this->_dbh->error . ')') ;
         }
-        $id = $tag = $shortDescription = $fullDescription = $created = $updated = null ;
+        $hostGroupId = $hostId = $created = $updated = $lastAudited = null ;
         if (! $stmt->bind_result(
-            $id,
-            $tag,
-            $shortDescription,
-            $fullDescription,
+            $hostGroupId,
+            $hostId,
             $created,
-            $updated
+            $updated,
+            $lastAudited
         )) {
             throw new ControllerException('Failed to bind to result: (' . $this->_dbh->error . ')') ;
         }
         if ($stmt->fetch()) {
             $model = new HostGroupModel() ;
-            $model->setId($id) ;
-            $model->setShortDescription($shortDescription) ;
-            $model->setFullDescription($fullDescription) ;
+            $model->setHostGroupId($hostGroupId) ;
+            $model->setHostId($hostId) ;
             $model->setCreated($created) ;
             $model->setUpdated($updated) ;
+            $model->setLastUpdated($lastUpdated) ;
         } else {
             $model = null ;
         }
         return($model) ;
     }
 
+    /**
+     * @param   $whereClause
+     * @returns HostGroupMapModel[]
+     * @throws  ControllerException
+     */
     public function getSome($whereClause = '1 = 1')
     {
         $sql = <<<SQL
 SELECT host_group_id
-     , tag
-     , short_description
-     , full_description
+     , host_id
      , created
      , updated
-  FROM host_group
+     , last_audited
+  FROM host_group_map
  WHERE $whereClause
 
 SQL;
@@ -137,64 +144,68 @@ SQL;
         if (! $stmt->execute()) {
             throw new ControllerException('Failed to execute SELECT statement. (' . $this->_dbh->error . ')') ;
         }
-        $id = $tag = $shortDescription = $fullDescription = $created = $updated = null ;
+        $hostGroupId = $hostId = $created = $updated = $lastAudited = null ;
         if (! $stmt->bind_result(
-            $id,
-            $tag,
-            $shortDescription,
-            $fullDescription,
+            $hostGroupId,
+            $hostId,
             $created,
-            $updated
+            $updated,
+            $lastAudited
         )) {
             throw new ControllerException('Failed to bind to result: (' . $this->_dbh->error . ')') ;
         }
         $models = [] ;
         while ($stmt->fetch()) {
             $model = new HostGroupModel() ;
-            $model->setId($id) ;
-            $model->setTag($tag) ;
-            $model->setShortDescription($shortDescription) ;
-            $model->setFullDescription($fullDescription) ;
+            $model->setHostGroupId($hostGroupId) ;
+            $model->setHostId($hostId) ;
             $model->setCreated($created) ;
             $model->setUpdated($updated) ;
+            $model->setLastUpdated($lastUpdated) ;
             $models[] = $model ;
         }
         return($models) ;
     }
 
+    /**
+     * @returns HostGroupMapModel[]
+     * @throws  ControllerException
+     */
     public function getAll()
     {
         return $this->getSome() ;
     }
 
     /**
-     * @param HostGroupModel $model
-     * @see ControllerBase::add()
+     * @param  HostGroupMapModel $model
+     * @return 0 on success
+     * @throws ControllerException
+     * @see    ControllerBase::add()
      */
     public function add($model)
     {
         if ($model->validateForAdd()) {
             try {
                 $query = <<<SQL
-INSERT host_group
-     ( tag
-     , short_description
-     , full_description
+INSERT host_group_map
+     ( host_group_id
+     , host_id
      )
-VALUES ( ?, ?, ? )
+VALUES ( ?, ? )
 SQL;
-                $tag              = $model->getTag() ;
-                $shortDescription = $model->getShortDescription() ;
-                $fullDescription  = $model->getFullDescription() ;
+                $hostGroupId      = $model->getHostGroupId() ;
+                $hostId           = $model->getHostId() ;
                 $stmt             = $this->_dbh->prepare($query) ;
                 if (! $stmt) {
                     throw new ControllerException('Prepared statement failed for ' . $query) ;
                 }
                 if (! ($stmt->bind_param(
-                    'sss',
-                    $tag,
-                    $shortDescription,
-                    $fullDescription
+                    'ii',
+                    $hostGroupId,
+                    $hostId,
+                    $created,
+                    $updated,
+                    $lastAudited
                 ))) {
                     throw new ControllerException('Binding parameters for prepared statement failed.') ;
                 }
@@ -220,35 +231,33 @@ SQL;
     }
 
     /**
-     * @param HostGroupModel $model
+     * @param  HostGroupModel $model
      * @throws ControllerException
-     * @return boolean
+     * @return 0 on success
+     * @see    ControllerBase::update()
      */
     public function update($model)
     {
         if ($model->validateForUpdate()) {
             try {
                 $query = <<<SQL
-UPDATE host_group
-   SET tag = ?
-     , short_description = ?
-     , full_description = ?
- WHERE id = ?
+UPDATE host_group_map
+   SET last_audited = ?
+ WHERE host_group_id = ?
+   AND host_id = ?
 SQL;
-                $id               = $model->getId() ;
-                $tag              = $model->getTag() ;
-                $shortDescription = $model->getShortDescription() ;
-                $fullDescription  = $model->getFullDescription() ;
+                $hostGroupId  = $model->getHostGroupId() ;
+                $hostId       = $model->getHostId() ;
+                $lastAudited  = $model->getLastAudited() ;
                 $stmt       = $this->_dbh->prepare($query) ;
                 if (! $stmt) {
                     throw new ControllerException('Prepared statement failed for ' . $query) ;
                 }
                 if (! ($stmt->bind_param(
-                    'sssi',
-                    $tag,
-                    $shortDescription,
-                    $fullDescription,
-                    $id
+                    'sii',
+                    $lastAudited,
+                    $hostGroupId,
+                    $hostId
                 ))) {
                     throw new ControllerException('Binding parameters for prepared statement failed.') ;
                 }
@@ -261,7 +270,7 @@ SQL;
                 if (!$stmt->close()) {
                     throw new ControllerException('Something broke while trying to close the prepared statement.') ;
                 }
-                return $id ;
+                return 0 ;
             } catch (\Exception $e) {
                 throw new ControllerException($e->getMessage()) ;
             }
@@ -271,10 +280,50 @@ SQL;
     }
 
     /**
-     * @param HostGroupModel $model
+     * @param  HostGroupModel $model
+     * @return 0 on success
+     * @throws ControllerException
+     * @see    ControllerBase::delete()
      */
     public function delete($model)
     {
-        $this->deleteModelById("DELETE FROM host_group WHERE id = ?", $model) ;
+        if ($model->validateForDelete()) {
+            try {
+                $query = <<<SQL
+DELETE 
+  FROM host_group_map
+ WHERE host_group_id = ?
+   AND host_id = ?
+SQL;
+                $hostGroupId = $model->getHostGroupId() ;
+                $hostId      = $model->getHostId() ;
+                $stmt        = $this->_dbh->prepare($query) ;
+                if (! $stmt) {
+                    throw new ControllerException('Prepared statement failed for ' . $query) ;
+                }
+                if (! ($stmt->bind_param(
+                    'ii',
+                    $hostGroupId,
+                    $hostId
+                ))) {
+                    throw new ControllerException('Binding parameters for prepared statement failed.') ;
+                }
+                if (!$stmt->execute()) {
+                    throw new ControllerException('Failed to execute DELETE statement. (' . $this->_dbh->error . ')') ;
+                }
+                /**
+                 * @SuppressWarnings checkAliases
+                 */
+                if (!$stmt->close()) {
+                    throw new ControllerException('Something broke while trying to close the prepared statement.') ;
+                }
+                return 0 ;
+            } catch (\Exception $e) {
+                throw new ControllerException($e->getMessage()) ;
+            }
+        } else {
+            throw new ControllerException("Invalid data.") ;
+        }
     }
 }
+
