@@ -61,6 +61,7 @@ class Config
     private $dbPort = null;
     private $dbUser = null;
     private $dbPass = null;
+    private $dbInstanceName = null;
     private $dbName = null;
     private $timeZone = null;
     private $issueTrackerBaseUrl = null;
@@ -94,13 +95,14 @@ class Config
      *
      * @param string $dbHost
      * @param int|null $dbPort
+     * @param string $dbInstanceName
      * @param string $dbName
      * @param string $dbUser
      * @param string $dbPass
      * @throws ConfigurationException
      * @SuppressWarnings indentation
      */
-    public function __construct( $dbHost = null, $dbPort = null, $dbName = null, $dbUser = null, $dbPass = null )
+    public function __construct( $dbHost = null, $dbPort = null, $dbInstanceName = null, $dbName = null, $dbUser = null, $dbPass = null )
     {
         if ( ! is_readable( 'config.xml' ) ) {
             throw new ConfigurationException( "Unable to load configuration from config.xml!" ) ;
@@ -111,6 +113,7 @@ class Config
         }
         $errors = "" ;
         $cfgValues = [
+            'dbInstanceName' => '',
             'minRefresh' => 15,
             'defaultRefresh' => 60,
             'roQueryPart' => '@@global.read_only',
@@ -121,6 +124,7 @@ class Config
         $paramList = [
             'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],
             'dbPass'               => [ 'isRequired' => 1, 'value' => 0 ],
+            'dbInstanceName'       => [ 'isRequired' => 0, 'value' => 0 ],
             'dbName'               => [ 'isRequired' => 1, 'value' => 0 ],
             'dbPort'               => [ 'isRequired' => 1, 'value' => 0 ],
             'dbUser'               => [ 'isRequired' => 1, 'value' => 0 ],
@@ -168,6 +172,7 @@ class Config
         $this->baseUrl = $cfgValues[ 'baseUrl' ] ;
         $this->dbHost = (! isset( $dbHost ) ) ? $cfgValues[ 'dbHost' ] : $dbHost ;
         $this->dbPort = (! isset( $dbPort ) ) ? $cfgValues[ 'dbPort' ] : $dbPort ;
+        $this->dbInstanceName = (! isset( $dbInstanceName ) ) ? $cfgValues[ 'dbInstanceName' ] : $dbInstanceName ;
         $this->dbName = (! isset( $dbName ) ) ? $cfgValues[ 'dbName' ] : $dbName ;
         $this->dbUser = (! isset( $dbUser ) ) ? $cfgValues[ 'dbUser' ] : $dbUser ;
         $this->dbPass = (! isset( $dbPass ) ) ? $cfgValues[ 'dbPass' ] : $dbPass ;
@@ -245,6 +250,16 @@ class Config
     public function getDbPass()
     {
         return $this->dbPass;
+    }
+
+    /**
+     * Getter
+     *
+     * @return string
+     */
+    public function getDbInstanceName()
+    {
+        return $this->dbInstanceName;
     }
 
     /**

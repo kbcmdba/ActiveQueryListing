@@ -1,6 +1,8 @@
 <config>
     <param name="baseUrl">https://localhost.localdomain/ActiveQueryListing/AJAXgetaql.php</param>
     <param name="dbHost">127.0.0.1</param>
+    <!-- MS-SQL Instance Name -->
+    <!-- <param name="dbInstanceName"></param> -->
     <param name="dbName">aql_db</param>
     <param name="dbPort">3306</param>
     <param name="dbUser">aql_app</param>

@@ -43,28 +43,30 @@ class DBConnection
      *
      * @param String $connType
      * @param String $dbHost
+     * @param String $dbInstanceName
      * @param String $dbName
      * @param String $dbUser
      * @param String $dbPass
      * @param Integer $dbPort
      * @param String $connClass
-     *            Must be 'mysql', 'mysqli', 'PDO', or 'MS-SQL'for now.
+     *            Must be 'mysql', 'mysqli', 'PDO', or 'MS-SQL' for now.
      * @return void
      * @throws \Exception
      * @SuppressWarnings indentation
      * @SuppressWarnings cyclomaticComplexity
      */
     public function __construct(
-        $connType  = null,
-        $dbHost    = null,
-        $dbName    = null,
-        $dbUser    = null,
-        $dbPass    = null,
-        $dbPort    = null,
-        $connClass = 'mysqli',
-        $createDb = false
+        $connType       = null,
+        $dbHost         = null,
+        $dbInstanceName = null,
+        $dbName         = null,
+        $dbUser         = null,
+        $dbPass         = null,
+        $dbPort         = null,
+        $connClass      = 'mysqli',
+        $createDb       = false
     ) {
-        $oConfig = new Config($dbHost, $dbPort, $dbName, $dbUser, $dbPass);
+        $oConfig = new Config($dbHost, $dbPort, $dbInstanceName, $dbName, $dbUser, $dbPass);
         $this->oConfig = $oConfig;
         switch ($connClass) {
             case 'mysql':
@@ -153,6 +155,16 @@ class DBConnection
                     throw new DaoException('Error connecting to database server(' . $oConfig->getDbHost() . ')!');
                 }
                 break;
+            case 'MS-SQL':
+                throw new DaoException('Connection class not implemented: ' . $connClass);
+                // https://www.php.net/manual/en/function.sqlsrv-connect.php
+                $serverName = $oConfig->getDbHost() . "\\" . $oConfig->getDbInstanceName;
+                $connectionInfo = array("Database" => "aql_db", "UID" => $oConfig->getDbUser(), "PWD" => $oConfig->getDbPassword());
+                $this->dbh = sqlsrv_connect($serverName, $connectionInfo);
+                if (! $this->dbh) {
+                    throw new DaoException('Connection to $serverName could not be established. ' . sqlsrv_errors());
+                }
+                break ;
             default:
                 throw new DaoException('Unknown connection class: ' . $connClass);
         } // END OF switch ( $connClass )
