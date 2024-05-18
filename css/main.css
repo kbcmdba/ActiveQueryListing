@@ -88,6 +88,16 @@ select {
   color: white !important ;
 }
 
+input {
+  background-color: #333 !important ;
+  color: white !important ;
+}
+
+button {
+  background-color: #333 !important ;
+  color: white !important ;
+}
+
 .comment {
 	margin: 2px ;
     color: #444 ;
