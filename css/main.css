@@ -22,7 +22,7 @@
  */
 
 body {
-    background-color: #202020 !important ;
+    background-color: #333 !important ;
     color: white !important ;
 }
 
@@ -54,7 +54,7 @@ body {
 }
 
 .level1 {
-  background-color: #202020 ;
+  background-color: #333 ;
   color: white ;
 }
 
@@ -74,7 +74,7 @@ body {
 }
 
 th {
-  background-color: #303030 ;
+  background-color: #555 ;
   text-align: center !important ;
   padding: 2px !important ;
 }
@@ -124,7 +124,7 @@ a:visited {
 
 .Blank {
 	color: white ;
-	background-color: #202020 ;
+	background-color: #333 ;
 }
 
 .Unique {
