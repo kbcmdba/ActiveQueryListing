@@ -22,8 +22,8 @@
  */
 
 body {
-    background-color: darkgrey !important;
-    color: white ;
+    background-color: #101010 !important ;
+    color: white !important ;
 }
 
 .errorNotice {
@@ -54,8 +54,8 @@ body {
 }
 
 .level1 {
-  background-color: white ;
-  color: black ;
+  background-color: #101010 ;
+  color: white ;
 }
 
 .level0 {
@@ -75,17 +75,17 @@ body {
 
 th {
   background-color: #eee ;
-  text-align: center !important /* Override bootstrap */;
-  padding: 2px !important /* Override bootstrap */;
+  text-align: center !important ;
+  padding: 2px !important ;
 }
 
 td {
-  padding: 2px !important /* Override bootstrap */;
+  padding: 2px !important ;
 }
 
 .comment {
-	margin: 2px;
-	background-color: #f0f0f0;
+	margin: 2px ;
+	background-color: #f0f0f0 ;
 }
 
 a.morelink {
@@ -94,37 +94,37 @@ a.morelink {
 }
 
 .morecontent span {
-	display: none;
+	display: none ;
 }
 
 a {
-	color: #0254EB
+	color: #0254EB ;
 }
 
 a:visited {
-	color: #0254EB
+	color: #0254EB ;
 }
 
 .headerTableTd {
-    vertical-align: middle;
-    text-align: center;
+    vertical-align: middle ;
+    text-align: center ;
 }
 
 .chartImage {
-    width:275px;
-    height:250px;
+    width:275px ;
+    height:250px ;
 }
 
 #updatedAt {
-	color: silver;
-	font-size: 8pt;
-	vertical-align: middle;
-	text-align: center;
+	color: silver ;
+	font-size: 8pt ;
+	vertical-align: middle ;
+	text-align: center ;
 }
 
 .Blank {
-	color: black;
-	background-color: white;
+	color: white ;
+	background-color: #101010 ;
 }
 
 .Unique {
