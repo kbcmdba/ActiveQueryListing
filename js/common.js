@@ -476,7 +476,9 @@ function drawPieChartByLevel() {
                            , 4 : { color : '#ddd'       }
                            , 5 : { color : 'cyan'       }
                            }
-                , backgroundColor: '#333333'
+                , chartArea : {
+                              backgroundColor: '#333333'
+                              },
                 } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByLevel'));
