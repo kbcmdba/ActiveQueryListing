@@ -83,8 +83,14 @@ td {
   padding: 2px !important ;
 }
 
+select {
+  background-color: #333 !important ;
+  color: white !important ;
+}
+
 .comment {
 	margin: 2px ;
+    color: #444 ;
 	background-color: #f0f0f0 ;
 }
 
