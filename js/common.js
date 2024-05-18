@@ -468,6 +468,7 @@ function drawPieChartByLevel() {
              ] ) ;
     var options = {
                   title : 'Level Counts'
+                , backgroundColor: { fill: '#333333' }
                 , is3D : true
                 , slices : { 0 : { color : 'red'        }
                            , 1 : { color : 'orange'     }
@@ -476,7 +477,6 @@ function drawPieChartByLevel() {
                            , 4 : { color : '#ddd'       }
                            , 5 : { color : 'cyan'       }
                            }
-                , backgroundColor: { fill: '#333333' }
                 } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByLevel'));
