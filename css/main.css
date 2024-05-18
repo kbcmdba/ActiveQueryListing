@@ -21,6 +21,11 @@
  *
  */
 
+body {
+    background-color: black ;
+    color: white ;
+}
+
 .errorNotice {
 	background-color: red ;
 	color: white ;
