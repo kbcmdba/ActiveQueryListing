@@ -476,6 +476,7 @@ function drawPieChartByLevel() {
                            , 4 : { color : '#ddd'       }
                            , 5 : { color : 'cyan'       }
                            }
+                , backgroundColor: 'transparent'
                 } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByLevel'));
@@ -496,6 +497,7 @@ function drawPieChartByHost() {
     var options = {
             title : 'Queries by Host'
           , is3D : true
+          , backgroundColor: 'transparent'
           } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByHost'));
@@ -518,6 +520,7 @@ function drawPieChartByDB() {
     var options = {
             title : 'Queries by DB'
           , is3D : true
+          , backgroundColor: 'transparent'
           } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByDB'));
@@ -545,7 +548,9 @@ function drawPieChartByDupeState() {
                           , 1 : { color : 'yellow' }
                           , 2 : { color : 'silver' }
                           , 3 : { color : 'white'  }
-                          } };
+                          }
+               , backgroundColor: 'transparent'
+               } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByDupeState'));
     chart.draw(data, options);
@@ -564,6 +569,7 @@ function drawPieChartByReadWrite() {
                , is3D : true
                , slices : { 0 : { color : 'cyan'   }
                           , 1 : { color : 'yellow' }
+               , backgroundColor: 'transparent'
                           } };
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByReadWrite'));
