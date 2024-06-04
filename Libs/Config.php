@@ -36,7 +36,7 @@ class Config
      * Configuration Class
      *
      * Note: There are no setters for this class. All the configuration comes from
-     * config.xml (described in config_sample.xml).
+     * /etc/aql_config.xml (described in config_sample.xml).
      *
      * Usage Examples:
      *
@@ -104,12 +104,12 @@ class Config
      */
     public function __construct( $dbHost = null, $dbPort = null, $dbInstanceName = null, $dbName = null, $dbUser = null, $dbPass = null )
     {
-        if ( ! is_readable( 'config.xml' ) ) {
-            throw new ConfigurationException( "Unable to load configuration from config.xml!" ) ;
+        if ( ! is_readable( '/etc/aql_config.xml' ) ) {
+            throw new ConfigurationException( "Unable to load configuration from /etc/aql_config.xml!" ) ;
         }
-        $xml = simplexml_load_file( 'config.xml' ) ;
+        $xml = simplexml_load_file( '/etc/aql_config.xml' ) ;
         if ( ! $xml ) {
-            throw new ConfigurationException( "Invalid syntax in config.xml!" ) ;
+            throw new ConfigurationException( "Invalid syntax in /etc/aql_config.xml!" ) ;
         }
         $errors = "" ;
         $cfgValues = [

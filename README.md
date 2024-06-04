@@ -87,16 +87,15 @@ simply change the decommissioned setting to 1 and should_monitor to 0.
 In order to allow this program to run under Fedora-based systems, it's
 important to either turn off SELinux completely (yuck), or to make it possible
 for programs running under your web server to connect to the database and read
-files stored in the web server's directory. One way to do this is to tell
-SELinux that the web server can connect to databases and to allow it to read
-files flagged as "user-content" :
+files stored in the web server's directory. Older versions of Fedora Linux
+required these commands.
 
 ```
 sudo setsebool -P httpd_can_network_connect_db 1
 sudo setsebool -P httpd_read_user_content 1
 ```
 
-For more information on this tool, please see:
+For more information on ActiveQueryListing, please see:
 
 https://github.com/kbcmdba/ActiveQueryListing/
 
