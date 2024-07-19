@@ -54,8 +54,11 @@ CREATE TABLE IF NOT EXISTS host (
 , hostname          VARCHAR(64) NOT NULL
 , port_number       INT UNSIGNED NOT NULL DEFAULT 3306
 , description       TEXT DEFAULT NULL
+, db_type           ENUM('MySQL', 'MariaDB', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB') NOT NULL DEFAULT 'MySQL'
+, db_version        VARCHAR(30) NOT NULL DEFAULT ''
 , should_monitor    BOOLEAN NOT NULL DEFAULT 1
 , should_backup     BOOLEAN NOT NULL DEFAULT 1
+, should_schemaspy  BOOLEAN NOT NULL DEFAULT 0
 , revenue_impacting BOOLEAN NOT NULL DEFAULT 1
 , decommissioned    BOOLEAN NOT NULL DEFAULT 0
 , alert_crit_secs   INT UNSIGNED NOT NULL DEFAULT 0

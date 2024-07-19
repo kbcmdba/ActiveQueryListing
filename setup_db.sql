@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS host (
      , hostname          VARCHAR( 64 ) NOT NULL
      , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
      , description       TEXT NULL DEFAULT NULL
+     , db_type           ENUM('MySQL', 'MariaDB', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB') NOT NULL DEFAULT 'MySQL'
+     , db_version        VARCHAR( 30 ) NOT NULL DEFAULT ''
      , should_monitor    BOOLEAN NOT NULL DEFAULT 1
      , should_backup     BOOLEAN NOT NULL DEFAULT 1
      , should_schemaspy  BOOLEAN NOT NULL DEFAULT 0
@@ -58,6 +60,8 @@ VALUES ( 1                 -- id
        , 'localhost'       -- hostname
        , 3306              -- port_number
        , 'This host'       -- description
+       , 'MySQL'           -- db_type
+       , ''                -- db_version
        , 1                 -- should_monitor
        , 1                 -- should_backup
        , 0                 -- should_schemaspy
@@ -75,6 +79,8 @@ VALUES ( 1                 -- id
        , '127.0.0.1'       -- hostname
        , 3306              -- port_number
        , 'localhostx2'     -- description
+       , 'MySQL'           -- db_type
+       , ''                -- db_version
        , 1                 -- should_monitor
        , 1                 -- should_backup
        , 0                 -- should_schemaspy
@@ -92,6 +98,8 @@ VALUES ( 1                 -- id
        , '192.168.256.256' -- hostname
        , 3306              -- port_number
        , 'Bad host'        -- description
+       , 'MySQL'           -- db_type
+       , ''                -- db_version
        , 1                 -- should_monitor
        , 1                 -- should_backup
        , 0                 -- should_schemaspy
@@ -108,6 +116,8 @@ VALUES ( 1                 -- id
        , 'localhost'       -- hostname
        , 3307              -- port_number
        , 'Second instance on this host' -- description
+       , 'MySQL'           -- db_type
+       , ''                -- db_version
        , 1                 -- should_monitor
        , 1                 -- should_backup
        , 0                 -- should_schemaspy

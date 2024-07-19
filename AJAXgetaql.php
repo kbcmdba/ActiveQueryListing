@@ -74,7 +74,7 @@ try {
     $dbc           = new DBConnection('process', $hostname) ;
     $dbh           = $dbc->getConnection() ;
     $outputList    = [] ;
-    $notIn         = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
+    $notInCommand  = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Binlog Dump GTID', 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
     $notInState    = "( 'Applying batch of row changes (update)'"
                    . ", 'Slave has read all relay log; waiting for more updates'"
                    . ", 'Queueing master event to the relay log'"
@@ -152,7 +152,7 @@ SELECT id
      , $roQueryPart as read_only
   FROM INFORMATION_SCHEMA.PROCESSLIST
  WHERE 1 = 1
- $debugComment  AND COMMAND NOT IN $notIn
+ $debugComment  AND COMMAND NOT IN $notInCommand
  $debugComment  AND STATE NOT IN $notInState
  $debugComment  AND id <> CONNECTION_ID()
  ORDER BY time DESC

@@ -225,6 +225,7 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
   FROM aql_db.host AS h
  WHERE h.decommissioned = 0
    AND CONCAT( h.hostname, ':', h.port_number ) IN ( $in )
+   AND h.host_type IN ( 'MySQL', 'MariaDB' )
  ORDER BY h.hostname, h.port_number
 
 SQL ;
@@ -237,6 +238,7 @@ SELECT hg.host_group_id, hg.tag, CONCAT( '"', GROUP_CONCAT( CONCAT( h.hostname, 
   LEFT
   JOIN host AS h
  USING ( host_id )
+ WHERE h.host_type IN ( 'MySQL', 'MariaDB' )
  GROUP BY hg.host_group_id
  ORDER BY hg.tag
 
@@ -392,7 +394,7 @@ JS
         <button type="button" class="close" data-dismiss="modal">&times;</button>
         <h4 style="color: red;"<span class="glyphicon glyphicon-lock"></span>Login</h4>
       </div>
-      <div class="modal-body" style="background-color: white;">
+      <div class="modal-body">
         <h2>Active Query Listing: Kill Thread Login</h2>
         <form method="post" id="modalForm">
             <input type="hidden" name="server" id="i_server" value="" />
