@@ -225,7 +225,7 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
   FROM aql_db.host AS h
  WHERE h.decommissioned = 0
    AND CONCAT( h.hostname, ':', h.port_number ) IN ( $in )
-   AND h.host_type IN ( 'MySQL', 'MariaDB' )
+   AND h.db_type IN ( 'MySQL', 'MariaDB' )
  ORDER BY h.hostname, h.port_number
 
 SQL ;
@@ -238,7 +238,7 @@ SELECT hg.host_group_id, hg.tag, CONCAT( '"', GROUP_CONCAT( CONCAT( h.hostname, 
   LEFT
   JOIN host AS h
  USING ( host_id )
- WHERE h.host_type IN ( 'MySQL', 'MariaDB' )
+ WHERE h.db_type IN ( 'MySQL', 'MariaDB' )
  GROUP BY hg.host_group_id
  ORDER BY hg.tag
 
