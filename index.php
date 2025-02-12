@@ -210,6 +210,7 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
   FROM aql_db.host AS h
  WHERE h.decommissioned = 0
    AND h.should_monitor = 1
+   AND h.db_type IN ( 'MySQL', 'MariaDB' )
  ORDER BY h.hostname, h.port_number
  
 SQL;
