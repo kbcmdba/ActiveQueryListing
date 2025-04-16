@@ -74,7 +74,15 @@ try {
     $dbc           = new DBConnection('process', $hostname) ;
     $dbh           = $dbc->getConnection() ;
     $outputList    = [] ;
-    $notInCommand  = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Binlog Dump GTID', 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
+    $notInCommand  = "( 'Binlog Dump'"
+                   . ", 'Binlog Dump GTID'"
+                   . ", 'Daemon'"
+                   . ", 'Group Replicatio'"
+                   . ", 'Slave_IO'"
+                   . ", 'Slave_SQL'"
+                   . ", 'Slave_worker'"
+                   . ", 'Sleep'"
+                   . ")" ;
     $notInState    = "( 'Applying batch of row changes (update)'"
                    . ", 'Connection delegated to Group Replication'"
                    . ", 'Queueing master event to the relay log'"
