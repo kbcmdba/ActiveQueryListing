@@ -85,6 +85,7 @@ try {
                    . ", 'Waiting for source to send event'"
                    . ", 'reading event from relay log'"
                    . ", 'waiting for handler commit'"
+                   . ", 'Connection delegated to Group Replication'"
                    . ")" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
     $globalStatusDb = $config->getGlobalStatusDb() ;
