@@ -76,16 +76,16 @@ try {
     $outputList    = [] ;
     $notInCommand  = "( 'Sleep', 'Daemon', 'Binlog Dump', 'Binlog Dump GTID', 'Slave_IO', 'Slave_SQL', 'Slave_worker' )" ;
     $notInState    = "( 'Applying batch of row changes (update)'"
-                   . ", 'Slave has read all relay log; waiting for more updates'"
+                   . ", 'Connection delegated to Group Replication'"
                    . ", 'Queueing master event to the relay log'"
                    . ", 'Queueing source event to the relay log'"
                    . ", 'Replica has read all relay log; waiting for more updates'"
+                   . ", 'Slave has read all relay log; waiting for more updates'"
                    . ", 'Waiting for an event from Coordinator'"
                    . ", 'Waiting for master to send event'"
                    . ", 'Waiting for source to send event'"
                    . ", 'reading event from relay log'"
                    . ", 'waiting for handler commit'"
-                   . ", 'Connection delegated to Group Replication'"
                    . ")" ;
     $debugComment  = ( $debug ) ? '-- ' : '' ;
     $globalStatusDb = $config->getGlobalStatusDb() ;
