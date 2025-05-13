@@ -31,7 +31,11 @@ body {
 	color: white ;
 	font: 20pt bold ;
 	text-align: center ;
+    /* 1-frame noop animation purely to raise an event */
+    animation: klaxon-ping 0.001s linear 1;
 }
+
+@keyframes klaxon-ping { from { opacity: 1 } to { opacity:1 } }
 
 .error {
   background-color: red ;
