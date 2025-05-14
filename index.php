@@ -347,6 +347,7 @@ JS
     $cb = function ($fn) { return $fn; };
     $page->setBody(
         <<<HTML
+<button onclick="initAlerts()">Enable Audio Alerts</button>
 <audio id="klaxon" src="Images/honk-alarm-repeat-loop-101015.mp3" preload="auto"></audio>
 <a id="graphs"></a>
 <table id="top" width="100%" border="1">

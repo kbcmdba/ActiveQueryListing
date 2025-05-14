@@ -647,3 +647,41 @@ function fillGroupForm( group_id
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+function initAlerts() {
+    // Needed to enable audio playback on Chrome
+    document.getElementById("klaxon").play().then(() => {
+        document.getElementById("klaxon").pause();
+        document.getElementById("klaxon").currentTime = 0;
+        console.log("Audio primed.");
+    });
+
+    if (Notification.permission !== "granted") {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                console.log("Notifications enabled.");
+            }
+        });
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Call this when a long-running query is detected
+function triggerAlert(queryId) {
+    const sound = document.getElementById("klaxon");
+
+    if (Notification.permission === "granted") {
+        new Notification("⚠️ Long-running query", {
+            body: `Query ${queryId} exceeded the time threshold!`,
+            icon: "Images/alert-icon.png"
+        });
+    }
+
+    // Play klaxon sound
+    sound.play().catch(e => {
+        console.error("Failed to play sound:", e);
+    });
+}
+
+///////////////////////////////////////////////////////////////////////////////
