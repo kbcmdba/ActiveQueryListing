@@ -25,13 +25,13 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 01 Implement Host/Group Limiter
-// @todo 02 Protect code from SQL injection
-// @todo 02 Sort results table
-// @todo 03 Set minimum refresh time to 15 seconds
-// @todo 04 Implement refresh setting
-// @todo 10 Create host editor
-// @todo 15 Create group editor
-// @todo 20 Implement Kill button
-// @todo 20 Add login capability to enable kill button as well as editing hosts/groups.
-// @todo 30 Detect duplicate and similar queries per-host
+// @done 02 Protect code from SQL injection (2026-01-06)
+// @done 02 Sort results table - TableSorter implemented
+// @done 03 Set minimum refresh time to 15 seconds - $minRefresh in Config
+// @done 04 Implement refresh setting - refresh param in index.php
+// @done 10 Create host editor - manageData.php
+// @done 15 Create group editor - manageData.php
+// @done 20 Implement Kill button - AJAXKillProc.php
+// @done 20 Add login capability to enable kill button as well as editing hosts/groups - LDAP auth
+// @todo 30 Detect duplicate and similar queries per-host (currently global only)
 // @todo 40 Detect queries that are blocked by other threads and display.
