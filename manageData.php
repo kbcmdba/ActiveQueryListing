@@ -482,7 +482,7 @@ SELECT host_id, CONCAT( hostname, ':', port_number )
  
 SQL;
         $body .= <<<HTML
-<table border=1 cellspacing=0 cellpadding=2 class="tablesorter" width="100%">
+<table id="groupEdit" border=1 cellspacing=0 cellpadding=2 class="tablesorter" width="100%">
   <thead>
     <tr>
       <th>Actions</th>
@@ -502,10 +502,10 @@ HTML;
                 throw new \ErrorException( "Query failed: $groupQuery\n Error: " . $dbh->error ) ;
             }
             while ( $row = $groupResult->fetch_row() ) {
-                // Use json_encode for safe JavaScript string escaping
-                $jsTag = json_encode( $row[1] ) ;
-                $jsShortDesc = json_encode( $row[2] ) ;
-                $jsFullDesc = json_encode( $row[3] ) ;
+                // Use json_encode for safe JavaScript string escaping, then htmlspecialchars for HTML attribute context
+                $jsTag = htmlspecialchars( json_encode( $row[1] ), ENT_QUOTES, 'UTF-8' ) ;
+                $jsShortDesc = htmlspecialchars( json_encode( $row[2] ), ENT_QUOTES, 'UTF-8' ) ;
+                $jsFullDesc = htmlspecialchars( json_encode( $row[3] ), ENT_QUOTES, 'UTF-8' ) ;
                 // host_list is comma-separated integers from GROUP_CONCAT, sanitize to be safe
                 $hostList = $row[5] ? preg_replace( '/[^0-9,]/', '', $row[5] ) : '' ;
                 $body .= "      <tr>"

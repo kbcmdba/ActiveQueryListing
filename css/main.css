@@ -87,6 +87,14 @@ td {
   padding: 2px !important ;
 }
 
+#groupEdit tbody tr:nth-child(odd) {
+  background-color: black ;
+}
+
+#groupEdit tbody tr:nth-child(even) {
+  background-color: #222 ;
+}
+
 select {
   background-color: #333 !important ;
   color: white !important ;

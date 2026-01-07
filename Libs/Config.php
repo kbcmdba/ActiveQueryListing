@@ -73,6 +73,8 @@ class Config
     private $ldapDomainName = null;
     private $ldapUserGroup = null;
     private $ldapUserDomain = null;
+    private $ldapVerifyCert = null;
+    private $ldapDebugConnection = null;
     private $globalStatusDb = null;
 
     /**
@@ -141,6 +143,8 @@ class Config
             'ldapDomainName'       => [ 'isRequired' => 0, 'value' => 0 ],
             'ldapUserGroup'        => [ 'isRequired' => 0, 'value' => 0 ],
             'ldapUserDomain'       => [ 'isRequired' => 0, 'value' => 0 ],
+            'ldapVerifyCert'       => [ 'isRequired' => 0, 'value' => 0 ],
+            'ldapDebugConnection'  => [ 'isRequired' => 0, 'value' => 0 ],
             'globalStatusDb'       => [ 'isRequired' => 0, 'value' => 0 ]
         ] ;
 
@@ -189,6 +193,8 @@ class Config
         $this->ldapDomainName = $cfgValues[ 'ldapDomainName' ] ;
         $this->ldapUserGroup = $cfgValues[ 'ldapUserGroup' ] ;
         $this->ldapUserDomain = $cfgValues[ 'ldapUserDomain' ] ;
+        $this->ldapVerifyCert = $cfgValues[ 'ldapVerifyCert' ] ?? 'true' ;
+        $this->ldapDebugConnection = $cfgValues[ 'ldapDebugConnection' ] ?? 'false' ;
         $this->globalStatusDb = $cfgValues[ 'globalStatusDb' ] ;
     }
 
@@ -386,6 +392,20 @@ class Config
      */
     public function getLDAPUserDomain() {
         return ( null !== $this->ldapUserDomain ) ? $this->ldapUserDomain : '' ;
+    }
+
+    /**
+     * Return whether to verify LDAP SSL certificates (defaults to true)
+     */
+    public function getLDAPVerifyCert() {
+        return ( 'false' !== $this->ldapVerifyCert ) ;
+    }
+
+    /**
+     * Return whether to show LDAP connection debug output (defaults to false)
+     */
+    public function getLDAPDebugConnection() {
+        return ( 'true' === $this->ldapDebugConnection ) ;
     }
 
     /**

@@ -23,5 +23,9 @@
     <param name="ldapDomainName">DC=mycompany,DC=com</param>
     <param name="ldapUserGroup">Admins</param>
     <param name="ldapUserDomain">mycompany</param>
+    <!-- Set to false to skip SSL certificate verification (useful for self-signed certs) -->
+    <param name="ldapVerifyCert">true</param>
+    <!-- Set to true to show LDAP debug output on screen -->
+    <param name="ldapDebugConnection">false</param>
 </config>
 

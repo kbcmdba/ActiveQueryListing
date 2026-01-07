@@ -59,41 +59,79 @@ class LDAP
         catch ( ConfigurationException $e ) {
             return true ;
         }
+        $debugEnabled = $oConfig->getLDAPDebugConnection() ;
+        $debug = function( $msg ) use ( $debugEnabled ) {
+            if ( $debugEnabled ) {
+                echo "<pre>LDAP DEBUG: " . htmlspecialchars( $msg, ENT_QUOTES, 'UTF-8' ) . "</pre>\n" ;
+            }
+        } ;
+
         if ( empty( $user ) || empty( $password ) ) {
+            $debug( "Empty user or password" ) ;
             return false;
         }
         $adServer = $oConfig->getLDAPHost() ;
         $adUser = $oConfig->getLDAPUserDomain() . '\\' . $user ;
+        $debug( "Connecting to: $adServer" ) ;
+        $debug( "Binding as: $adUser" ) ;
         $ldap = ldap_connect( $adServer ) ;
         if ( false === $ldap ) {
+            $debug( "ldap_connect() failed" ) ;
             echo "LDAP is mis-configured or blocked.\n" ;
             die() ;
         }
+        $debug( "ldap_connect() OK" ) ;
         ldap_set_option( $ldap, LDAP_OPT_PROTOCOL_VERSION, 3 ) ;
         ldap_set_option( $ldap, LDAP_OPT_REFERRALS, 0 ) ;
         ldap_set_option( $ldap, LDAP_OPT_NETWORK_TIMEOUT, 10 ) ;
+        if ( ! $oConfig->getLDAPVerifyCert() ) {
+            ldap_set_option( null, LDAP_OPT_X_TLS_REQUIRE_CERT, LDAP_OPT_X_TLS_NEVER ) ;
+            $debug( "SSL certificate verification disabled" ) ;
+        }
         $bind = @ldap_bind( $ldap, $adUser, $password ) ;
         if ( false === $bind ) {
+            $debug( "ldap_bind() FAILED - " . ldap_error( $ldap ) ) ;
+            ldap_unbind( $ldap ) ;
             return false ;
         }
+        $debug( "ldap_bind() OK" ) ;
         // check group(s)
         $filter = "(sAMAccountName=" . $user . ")" ;
         $attr = array( "memberof" ) ;
-        $result = ldap_search( $ldap, $oConfig->getLDAPDomainName(), $filter, $attr )
-                or exit( "Unable to search LDAP server" ) ;
+        $debug( "Searching: " . $oConfig->getLDAPDomainName() . " with filter: $filter" ) ;
+        $result = ldap_search( $ldap, $oConfig->getLDAPDomainName(), $filter, $attr ) ;
+        if ( false === $result ) {
+            $debug( "ldap_search() FAILED - " . ldap_error( $ldap ) ) ;
+            ldap_unbind( $ldap ) ;
+            return false ;
+        }
+        $debug( "ldap_search() OK" ) ;
         $entries = ldap_get_entries( $ldap, $result ) ;
         ldap_unbind( $ldap ) ;
+        $debug( "Found " . $entries[ 'count' ] . " entries" ) ;
+        if ( $entries[ 'count' ] === 0 ) {
+            $debug( "User not found in directory" ) ;
+            return false ;
+        }
         $canAccess = 0;
-        foreach ( $entries[ 0 ][ 'memberof' ] as $grps ) {
-            if ( strpos($grps, $oConfig->getLDAPUserGroup() ) ) {
+        $memberOf = $entries[ 0 ][ 'memberof' ] ?? [] ;
+        $debug( "Looking for group: " . $oConfig->getLDAPUserGroup() ) ;
+        $debug( "User has " . ( $memberOf[ 'count' ] ?? 0 ) . " group memberships" ) ;
+        foreach ( $memberOf as $key => $grps ) {
+            if ( $key === 'count' ) continue ;
+            $debug( "  - $grps" ) ;
+            if ( strpos($grps, $oConfig->getLDAPUserGroup() ) !== false ) {
                 $canAccess = 1;
+                $debug( "  ^ MATCH!" ) ;
             }
         }
         if ( 1 === $canAccess) {
             $_SESSION[ 'AuthUser' ] = $user ;
             $_SESSION[ 'AuthCanAccess' ] = $canAccess ;
+            $debug( "SUCCESS - Access granted" ) ;
             return true ;
         }
+        $debug( "FAILED - User not in required group" ) ;
         return false ;
     } // END OF authenticate( $user, $password )
 
