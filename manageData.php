@@ -52,6 +52,32 @@ function checkIsNumeric( $value, $errmsg, &$errors ) {
         $errors .= $errmsg . " (got $value)<br />\n";
     }
 }
+
+// ///////////////////////////////////////////////////////////////////////////
+
+/**
+ * Get ENUM values from a column definition in the database
+ * @param mysqli $dbh Database connection handle
+ * @param string $table Table name
+ * @param string $column Column name
+ * @return array Array of ENUM values
+ */
+function getEnumValues( $dbh, $table, $column ) {
+    $values = [] ;
+    $sql = "SHOW COLUMNS FROM `$table` LIKE ?" ;
+    $stmt = $dbh->prepare( $sql ) ;
+    $stmt->bind_param( 's', $column ) ;
+    $stmt->execute() ;
+    $result = $stmt->get_result() ;
+    if ( $row = $result->fetch_assoc() ) {
+        // Type looks like: enum('MySQL','MariaDB','InnoDBCluster',...)
+        $type = $row['Type'] ;
+        if ( preg_match( "/^enum\('(.*)'\)$/i", $type, $matches ) ) {
+            $values = explode( "','", $matches[1] ) ;
+        }
+    }
+    return $values ;
+}
   
 // ///////////////////////////////////////////////////////////////////////////
 
@@ -105,6 +131,18 @@ $page->setTop( "<h2>AQL: Manage Data</h2>\n"
 doLoginOrDie( $page ) ;
 switch ( Tools::param( 'data' ) ) {
     case 'Hosts':
+        // Create DB connection early so we can fetch ENUM values for validation
+        $dbc = new DBConnection();
+        $dbh = $dbc->getConnection();
+        $dbh->set_charset('utf8');
+
+        // Fetch valid db_type values from ENUM definition in DDL
+        $validDbTypes = getEnumValues( $dbh, 'host', 'db_type' ) ;
+        if ( empty( $validDbTypes ) ) {
+            // Fallback if ENUM fetch fails
+            $validDbTypes = [ 'MySQL' ] ;
+        }
+
         // validate input
         $body = '' ;
         $links = '' ;
@@ -123,6 +161,7 @@ switch ( Tools::param( 'data' ) ) {
         $alertWarnSecs = Tools::param( 'alertWarnSecs' ) ;
         $alertInfoSecs = Tools::param( 'alertInfoSecs' ) ;
         $alertLowSecs = Tools::param( 'alertLowSecs' ) ;
+        $dbType = Tools::param( 'dbType' ) ;
 
         if (  ( ( 'Update' === $action ) || ( 'Delete' === $action ) )
              && ! Tools::isNumeric( $hostId )
@@ -142,7 +181,10 @@ switch ( Tools::param( 'data' ) ) {
             checkIsNumeric( $alertCritSecs, "Alert Seconds: Critical", $errors ) ;
             checkIsNumeric( $alertWarnSecs, "Alert Seconds: Warning", $errors ) ;
             checkIsNumeric( $alertInfoSecs, "Alert Seconds: Info", $errors ) ;
-            checkIsNumeric( $alertLowSecs, "Alert Seconds: Low", $errors ) ;  
+            checkIsNumeric( $alertLowSecs, "Alert Seconds: Low", $errors ) ;
+            if ( ! in_array( $dbType, $validDbTypes ) ) {
+                $errors .= "Invalid Database Type.<br />\n" ;
+            }
         }
 
         if ( ( '' != $errors ) && ( '' != $action ) ) {
@@ -152,9 +194,6 @@ switch ( Tools::param( 'data' ) ) {
         }
 
         // react accordingly
-        $dbc = new DBConnection();
-        $dbh = $dbc->getConnection();
-        $dbh->set_charset('utf8');
         switch ( $action ) {
             case '':
                 // Nothing to see here.
@@ -165,14 +204,14 @@ switch ( Tools::param( 'data' ) ) {
                      . ', description = ?, should_monitor = ?, should_backup = ?'
                      . ', should_schemaspy = ?, revenue_impacting = ?, decommissioned = ?'
                      . ', alert_crit_secs = ?, alert_warn_secs = ?'
-                     . ', alert_info_secs = ?, alert_low_secs = ?'
+                     . ', alert_info_secs = ?, alert_low_secs = ?, db_type = ?'
                      . ', created = NOW(), updated = NOW(), last_audited = NOW()'
                      ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sisiiiiiiiii'
+                $stmt->bind_param( 'sisiiiiiiiiiis'
                                  , $hostName, $portNumber, $description, $shouldMonitor
                                  , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
-                                 , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs
+                                 , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs, $dbType
                                  ) ;
                 $body .= ( $stmt->execute() ) ? "Success.<br />\n" : "Failed.<br />\n" ;
             break ;
@@ -183,15 +222,15 @@ switch ( Tools::param( 'data' ) ) {
                      . ', should_backup = ?, should_schemaspy = ?'
                      . ', revenue_impacting = ?, decommissioned = ?'
                      . ', alert_crit_secs = ?, alert_warn_secs = ?'
-                     . ', alert_info_secs = ?, alert_low_secs = ?'
+                     . ', alert_info_secs = ?, alert_low_secs = ?, db_type = ?'
                      . ', updated = NOW(), last_audited = NOW()'
                      . ' WHERE host_id = ?'
                      ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sisiiiiiiiiii'
+                $stmt->bind_param( 'sisiiiiiiiiisi'
                                  , $hostName, $portNumber, $description, $shouldMonitor
                                  , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
-                                 , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs
+                                 , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs, $dbType
                                  , $hostId
                                  ) ;
                 $body .= ( $stmt->execute() ) ? "Success.<br />\n" : "Failed.<br />\n" ;
@@ -223,6 +262,7 @@ SELECT host_id
      , alert_warn_secs
      , alert_info_secs
      , alert_low_secs
+     , db_type
   FROM aql_db.host
  ORDER BY decommissioned DESC, hostname ASC, port_number ASC
  
@@ -242,6 +282,7 @@ SQL;
       <th rowspan="2">Revenue Impacting</th>
       <th rowspan="2">Decommissioned</th>
       <th colspan="4">Alert Seconds</th>
+      <th rowspan="2">DB Type</th>
     </tr>
     <tr>
       <th>Critical</th>
@@ -262,6 +303,7 @@ HTML;
                 // Use json_encode for safe JavaScript string escaping, then htmlspecialchars for HTML attribute context
                 $jsHostname = htmlspecialchars( json_encode( $row[1] ), ENT_QUOTES, 'UTF-8' ) ;
                 $jsDescription = htmlspecialchars( json_encode( $row[3] ), ENT_QUOTES, 'UTF-8' ) ;
+                $jsDbType = htmlspecialchars( json_encode( $row[13] ), ENT_QUOTES, 'UTF-8' ) ;
                 $body .= "      <tr>"
                       .  "<td style=\"text-align: center\">"
                       .  "<button type=\"button\" onclick=\"fillHostForm("
@@ -277,13 +319,14 @@ HTML;
                       .  intval( $row[9] ) . ", "
                       .  intval( $row[10] ) . ", "
                       .  intval( $row[11] ) . ", "
-                      .  intval( $row[12] )
+                      .  intval( $row[12] ) . ", "
+                      .  $jsDbType
                       .  "); return false;\">Fill Host Form</button>"
                       .  "</td>"
                       ;
                 // Columns 4-8 are boolean flags that get color coding
                 $boolCols = [ 4, 5, 6, 7, 8 ] ;
-                for ( $i = 0 ; $i < 13 ; $i++ ) {
+                for ( $i = 0 ; $i < 14 ; $i++ ) {
                     if ( in_array( $i, $boolCols ) ) {
                         $class = ( $row[$i] == 1 ) ? 'bool-yes' : 'bool-no' ;
                         $body .= "<td class=\"$class\">" . htmlspecialchars( $row[$i] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>" ;
@@ -293,6 +336,14 @@ HTML;
                 }
                 $body .= "</tr>\n" ;
             }
+            // Generate db_type dropdown options dynamically from ENUM values
+            $dbTypeOptions = '' ;
+            foreach ( $validDbTypes as $type ) {
+                $selected = ( $type === 'MySQL' ) ? ' selected="selected"' : '' ;
+                $dbTypeOptions .= '<option value="' . htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' ) . '"' . $selected . '>'
+                               . htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' ) . '</option>' ;
+            }
+
             $body .= <<<HTML
   </tbody>
 </table>
@@ -307,6 +358,7 @@ HTML;
     <tr><th colspan="2">Host Name</th><td><input type="text" id="hostName" name="hostName" size="32" value="" /></td></tr>
     <tr><th colspan="2">Port Number</th><td><input type="number" id="portNumber" name="portNumber" size="5" value="3306" /></td></tr>
     <tr><th colspan="2">Description</th><td><textarea id="description" name="description" rows="4" cols="60"></textarea></td></tr>
+    <tr><th colspan="2">DB Type</th><td><select id="dbType" name="dbType">$dbTypeOptions</select></td></tr>
     <tr><th colspan="2">Should Monitor</th><td><select id="shouldMonitor" name="shouldMonitor"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Should Backup</th><td><select id="shouldBackup" name="shouldBackup"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Should Schemaspy</th><td><select id="shouldSchemaspy" name="shouldSchemaspy"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>

@@ -628,11 +628,13 @@ function fillHostForm( host_id
                      , alert_crit_secs
                      , alert_warn_secs
                      , alert_info_secs
-                     , alert_low_secs ) {
+                     , alert_low_secs
+                     , db_type ) {
     document.getElementById( 'hostId' ).value = host_id ;
     document.getElementById( 'hostName' ).value = hostname ;
     document.getElementById( 'portNumber' ).value = port_number ;
     document.getElementById( 'description' ).value = description ;
+    document.getElementById( 'dbType' ).value = db_type ;
     document.getElementById( 'shouldMonitor' ).value = should_monitor ;
     document.getElementById( 'shouldBackup' ).value = should_backup ;
     document.getElementById( 'shouldSchemaspy' ).value = should_schemaspy ;
