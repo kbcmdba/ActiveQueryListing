@@ -106,7 +106,7 @@ class Config
      */
     public function __construct( $dbHost = null, $dbPort = null, $dbInstanceName = null, $dbName = null, $dbUser = null, $dbPass = null )
     {
-        $configFile = __DIR__ . '/../config.xml' ;
+        $configFile = __DIR__ . '/../aql_config.xml' ;
         if ( ! is_readable( $configFile ) ) {
             throw new ConfigurationException( "Unable to load configuration from $configFile!" ) ;
         }

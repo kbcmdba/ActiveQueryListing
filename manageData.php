@@ -259,9 +259,9 @@ HTML;
                 throw new \ErrorException( "Query failed: $allHostsQuery\n Error: " . $dbh->error );
             }
             while ( $row = $result->fetch_row() ) {
-                // Use json_encode for safe JavaScript string escaping
-                $jsHostname = json_encode( $row[1] ) ;
-                $jsDescription = json_encode( $row[3] ) ;
+                // Use json_encode for safe JavaScript string escaping, then htmlspecialchars for HTML attribute context
+                $jsHostname = htmlspecialchars( json_encode( $row[1] ), ENT_QUOTES, 'UTF-8' ) ;
+                $jsDescription = htmlspecialchars( json_encode( $row[3] ), ENT_QUOTES, 'UTF-8' ) ;
                 $body .= "      <tr>"
                       .  "<td style=\"text-align: center\">"
                       .  "<button type=\"button\" onclick=\"fillHostForm("
@@ -559,7 +559,7 @@ HTML;
 
         break ;
     default:
-        $page->setBody( $links ) ;
+        $page->setBody( '' ) ;
         $page->displayPage() ;
         break ;
 }

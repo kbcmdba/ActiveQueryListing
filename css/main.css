@@ -105,6 +105,11 @@ input {
   color: white !important ;
 }
 
+textarea {
+  background-color: #333 !important ;
+  color: white !important ;
+}
+
 button {
   background-color: #333 !important ;
   color: white !important ;
