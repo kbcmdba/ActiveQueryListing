@@ -106,6 +106,8 @@ doLoginOrDie( $page ) ;
 switch ( Tools::param( 'data' ) ) {
     case 'Hosts':
         // validate input
+        $body = '' ;
+        $links = '' ;
         $errors = '' ;
         $action = Tools::param( 'action' ) ;
         $hostId = Tools::param( 'hostId' ) ;
@@ -257,27 +259,30 @@ HTML;
                 throw new \ErrorException( "Query failed: $allHostsQuery\n Error: " . $dbh->error );
             }
             while ( $row = $result->fetch_row() ) {
+                // Use json_encode for safe JavaScript string escaping
+                $jsHostname = json_encode( $row[1] ) ;
+                $jsDescription = json_encode( $row[3] ) ;
                 $body .= "      <tr>"
                       .  "<td style=\"text-align: center\">"
-                      .  "<button type=\"submit\" onclick=\"fillHostForm("
-                      .  $row[0] . ", '"
-                      .  $row[1] . "', "
-                      .  $row[2] . ", '"
-                      .  $row[3] . "', "
-                      .  $row[4] . ", "
-                      .  $row[5] . ", "
-                      .  $row[6] . ", "
-                      .  $row[7] . ", "
-                      .  $row[8] . ", "
-                      .  $row[9] . ", "
-                      .  $row[10] . ", "
-                      .  $row[11] . ", "
-                      .  $row[12]
-                      .  "); return(false);\">Fill Host Form</button>"
+                      .  "<button type=\"button\" onclick=\"fillHostForm("
+                      .  intval( $row[0] ) . ", "
+                      .  $jsHostname . ", "
+                      .  intval( $row[2] ) . ", "
+                      .  $jsDescription . ", "
+                      .  intval( $row[4] ) . ", "
+                      .  intval( $row[5] ) . ", "
+                      .  intval( $row[6] ) . ", "
+                      .  intval( $row[7] ) . ", "
+                      .  intval( $row[8] ) . ", "
+                      .  intval( $row[9] ) . ", "
+                      .  intval( $row[10] ) . ", "
+                      .  intval( $row[11] ) . ", "
+                      .  intval( $row[12] )
+                      .  "); return false;\">Fill Host Form</button>"
                       .  "</td>"
                       ;
                 for ( $i = 0 ; $i < 13 ; $i++ ) {
-                    $body .= "<td>{$row[$i]}</td>" ;
+                    $body .= "<td>" . htmlspecialchars( $row[$i] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>" ;
                 }
                 $body .= "</tr>\n" ;
             }
@@ -321,7 +326,7 @@ HTML;
 
         break ;
     case 'Groups':
-        $body = $errors = '' ;
+        $body = $links = $errors = '' ;
         $action = Tools::param( 'action' ) ;
         $groupId = Tools::param( 'groupId' ) ;
         $groupTag = Tools::param( 'groupTag' ) ;
@@ -393,7 +398,7 @@ HTML;
                      . ', short_description = ?'
                      . ', full_description = ?'
                      . ', updated = CURRENT_TIMESTAMP()'
-                     . 'WHERE host_group_id = ?'
+                     . ' WHERE host_group_id = ?'
                     ;
                 $stmt = $dbh->prepare( $sql ) ;
                 $stmt->bind_param( 'sssi', $groupTag, $shortDesc, $fullDesc, $groupId ) ;
@@ -420,23 +425,37 @@ HTML;
         }
 
         if ( 'Update' === $action ) {
-            // Delete group members not in list
-            $hostGroupList = implode( ",", $groupSelection ) ;
-            // These are already certified injection-proof so go ahead and expand here.
-            $sql = "DELETE FROM host_group_map WHERE host_group_id = $groupId AND host_id NOT IN ({$hostGroupList})" ;
-            if ( ! $dbh->query( $sql ) ) {
-                echo "Conflicting update?<br />\n" ;
-                exit( 1 ) ;
+            // Delete group members not in the selected list
+            if ( !empty( $groupSelection ) ) {
+                $placeholders = implode( ',', array_fill( 0, count( $groupSelection ), '?' ) ) ;
+                $sql = "DELETE FROM host_group_map WHERE host_group_id = ? AND host_id NOT IN ($placeholders)" ;
+                $stmt = $dbh->prepare( $sql ) ;
+                $types = 'i' . str_repeat( 'i', count( $groupSelection ) ) ;
+                $params = array_merge( [ $groupId ], $groupSelection ) ;
+                $stmt->bind_param( $types, ...$params ) ;
+                if ( ! $stmt->execute() ) {
+                    echo "Conflicting update?<br />\n" ;
+                    exit( 1 ) ;
+                }
+            } else {
+                // No hosts selected - delete all mappings for this group
+                $sql = "DELETE FROM host_group_map WHERE host_group_id = ?" ;
+                $stmt = $dbh->prepare( $sql ) ;
+                $stmt->bind_param( 'i', $groupId ) ;
+                if ( ! $stmt->execute() ) {
+                    echo "Conflicting update?<br />\n" ;
+                    exit( 1 ) ;
+                }
             }
         }
         if ( ( 'Add' === $action ) || ( 'Update' === $action ) ) {
             // Add group members
             $sql = "INSERT IGNORE INTO host_group_map"
-                 . " SET host_group_id = $groupId, host_id = ?, created = NOW(), updated = NOW(), last_audited = NOW()"
+                 . " SET host_group_id = ?, host_id = ?, created = NOW(), updated = NOW(), last_audited = NOW()"
                  ;
             $stmt = $dbh->prepare( $sql ) ;
             foreach ( $groupSelection as $hostId ) {
-                $stmt->bind_param( "i", $hostId ) ;
+                $stmt->bind_param( "ii", $groupId, $hostId ) ;
                 $stmt->execute() ;
             }
         }
@@ -483,13 +502,19 @@ HTML;
                 throw new \ErrorException( "Query failed: $groupQuery\n Error: " . $dbh->error ) ;
             }
             while ( $row = $groupResult->fetch_row() ) {
+                // Use json_encode for safe JavaScript string escaping
+                $jsTag = json_encode( $row[1] ) ;
+                $jsShortDesc = json_encode( $row[2] ) ;
+                $jsFullDesc = json_encode( $row[3] ) ;
+                // host_list is comma-separated integers from GROUP_CONCAT, sanitize to be safe
+                $hostList = $row[5] ? preg_replace( '/[^0-9,]/', '', $row[5] ) : '' ;
                 $body .= "      <tr>"
-                      .  "<td><button type=\"submit\""
-                      .  " onclick=\"fillGroupForm({$row[0]}, '{$row[1]}', '{$row[2]}', '{$row[3]}', [{$row[5]}]); return false;\""
+                      .  "<td><button type=\"button\""
+                      .  " onclick=\"fillGroupForm(" . intval( $row[0] ) . ", $jsTag, $jsShortDesc, $jsFullDesc, [$hostList]); return false;\""
                       .  ">Fill In Form</button></td>"
                       ;
                 for ( $i = 0 ; $i < 5 ; $i++ ) {
-                    $body .= "<td>{$row[$i]}</td>" ;
+                    $body .= "<td>" . htmlspecialchars( $row[$i] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>" ;
                 }
                 $body .= "</tr>\n" ;
             }
@@ -499,7 +524,8 @@ HTML;
             }
             $groupSelect = "<select name=\"groupSelect[]\" id=\"groupSelect\" size=\"25\" multiple=\"multiple\">\n" ;
             while ( $row = $hostResult->fetch_row() ) {
-                $groupSelect .= "  <option value=\"{$row[0]}\">{$row[1]}</option>\n" ;
+                $groupSelect .= "  <option value=\"" . intval( $row[0] ) . "\">"
+                             . htmlspecialchars( $row[1], ENT_QUOTES, 'UTF-8' ) . "</option>\n" ;
             }
             $groupSelect .= "</select>\n" ;
             $body .= <<<HTML
