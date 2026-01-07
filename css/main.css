@@ -73,6 +73,19 @@ body {
   color: black ;
 }
 
+/* Boolean column styling for manageData tables */
+.bool-yes {
+  background-color: lightgreen ;
+  color: black ;
+  text-align: center ;
+}
+
+.bool-no {
+  background-color: yellow ;
+  color: black ;
+  text-align: center ;
+}
+
 .readOnly {
   background-color: cyan ;
   color: black ;

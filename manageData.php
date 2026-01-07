@@ -281,8 +281,15 @@ HTML;
                       .  "); return false;\">Fill Host Form</button>"
                       .  "</td>"
                       ;
+                // Columns 4-8 are boolean flags that get color coding
+                $boolCols = [ 4, 5, 6, 7, 8 ] ;
                 for ( $i = 0 ; $i < 13 ; $i++ ) {
-                    $body .= "<td>" . htmlspecialchars( $row[$i] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>" ;
+                    if ( in_array( $i, $boolCols ) ) {
+                        $class = ( $row[$i] == 1 ) ? 'bool-yes' : 'bool-no' ;
+                        $body .= "<td class=\"$class\">" . htmlspecialchars( $row[$i] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>" ;
+                    } else {
+                        $body .= "<td>" . htmlspecialchars( $row[$i] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>" ;
+                    }
                 }
                 $body .= "</tr>\n" ;
             }
