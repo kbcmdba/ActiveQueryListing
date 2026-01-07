@@ -106,12 +106,13 @@ class Config
      */
     public function __construct( $dbHost = null, $dbPort = null, $dbInstanceName = null, $dbName = null, $dbUser = null, $dbPass = null )
     {
-        if ( ! is_readable( '/etc/aql_config.xml' ) ) {
-            throw new ConfigurationException( "Unable to load configuration from /etc/aql_config.xml!" ) ;
+        $configFile = __DIR__ . '/../config.xml' ;
+        if ( ! is_readable( $configFile ) ) {
+            throw new ConfigurationException( "Unable to load configuration from $configFile!" ) ;
         }
-        $xml = simplexml_load_file( '/etc/aql_config.xml' ) ;
+        $xml = simplexml_load_file( $configFile ) ;
         if ( ! $xml ) {
-            throw new ConfigurationException( "Invalid syntax in /etc/aql_config.xml!" ) ;
+            throw new ConfigurationException( "Invalid syntax in $configFile!" ) ;
         }
         $errors = "" ;
         $cfgValues = [
@@ -121,7 +122,9 @@ class Config
             'roQueryPart' => '@@global.read_only',
             'killStatement' => 'kill :pid',
             'showSlaveStatement' => 'show slave status',
-            'globalStatusDb' => 'performance_schema'
+            'globalStatusDb' => 'performance_schema',
+            'ldapVerifyCert' => 'true',
+            'ldapDebugConnection' => 'false'
         ] ;
         $paramList = [
             'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],

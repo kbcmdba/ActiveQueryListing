@@ -65,6 +65,7 @@ class WebPage
   <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="js/common.js"></script>
+  <script src="js/klaxon.js"></script>
 
 HTML
         ) ;
