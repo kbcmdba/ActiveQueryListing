@@ -47,9 +47,9 @@
     const triggerSelector = '.level4, .errorNotice';
     const runTest = () => document.querySelector(triggerSelector) && fire();
 
-    // run immediately for already-rendered rows
-    document.addEventListener('DOMContentLoaded', runTest);
-
-    // watch for rows added later by Ajax
-    new MutationObserver(runTest).observe(document.body, { childList: true, subtree: true });
+    // run when DOM is ready and watch for rows added later by Ajax
+    document.addEventListener('DOMContentLoaded', () => {
+        runTest();
+        new MutationObserver(runTest).observe(document.body, { childList: true, subtree: true });
+    });
 })();
