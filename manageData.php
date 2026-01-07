@@ -64,12 +64,13 @@ function checkIsNumeric( $value, $errmsg, &$errors ) {
  */
 function getEnumValues( $dbh, $table, $column ) {
     $values = [] ;
-    $sql = "SHOW COLUMNS FROM `$table` LIKE ?" ;
-    $stmt = $dbh->prepare( $sql ) ;
-    $stmt->bind_param( 's', $column ) ;
-    $stmt->execute() ;
-    $result = $stmt->get_result() ;
-    if ( $row = $result->fetch_assoc() ) {
+    // SHOW COLUMNS doesn't support prepared statement parameter binding,
+    // so we escape the identifiers directly (they come from our code, not user input)
+    $safeTable = $dbh->real_escape_string( $table ) ;
+    $safeColumn = $dbh->real_escape_string( $column ) ;
+    $sql = "SHOW COLUMNS FROM `$safeTable` LIKE '$safeColumn'" ;
+    $result = $dbh->query( $sql ) ;
+    if ( $result && ( $row = $result->fetch_assoc() ) ) {
         // Type looks like: enum('MySQL','MariaDB','InnoDBCluster',...)
         $type = $row['Type'] ;
         if ( preg_match( "/^enum\('(.*)'\)$/i", $type, $matches ) ) {

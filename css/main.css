@@ -75,14 +75,12 @@ body {
 
 /* Boolean column styling for manageData tables */
 .bool-yes {
-  background-color: lightgreen ;
-  color: black ;
+  color: lightgreen !important ;
   text-align: center ;
 }
 
 .bool-no {
-  background-color: yellow ;
-  color: black ;
+  color: yellow !important ;
   text-align: center ;
 }
 
