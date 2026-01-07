@@ -268,7 +268,43 @@ SELECT host_id
  ORDER BY decommissioned DESC, hostname ASC, port_number ASC
  
 SQL;
+        // Generate db_type dropdown options dynamically from ENUM values
+        $dbTypeOptions = '' ;
+        foreach ( $validDbTypes as $type ) {
+            $selected = ( $type === 'MySQL' ) ? ' selected="selected"' : '' ;
+            $dbTypeOptions .= '<option value="' . htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' ) . '"' . $selected . '>'
+                           . htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' ) . '</option>' ;
+        }
+
+        // Form at the top for easier access
         $body .= <<<HTML
+<form id="AddUpdateDeleteHostForm" action="manageData.php">
+  <input type="hidden" name="data" value="Hosts">
+  <table id="AddUpdateDeleteHostTable" border=1 cellspacing=0 cellpadding=2>
+    <caption>Host Form</caption>
+    <tr><th colspan="2">ID</th><td><input type="number" id="hostId" name="hostId" readonly="readonly" value="" size=5 /></td></tr>
+    <tr><th colspan="2">Host Name</th><td><input type="text" id="hostName" name="hostName" size="32" value="" /></td></tr>
+    <tr><th colspan="2">Port Number</th><td><input type="number" id="portNumber" name="portNumber" size="5" value="3306" /></td></tr>
+    <tr><th colspan="2">Description</th><td><textarea id="description" name="description" rows="4" cols="60"></textarea></td></tr>
+    <tr><th colspan="2">DB Type</th><td><select id="dbType" name="dbType">$dbTypeOptions</select></td></tr>
+    <tr><th colspan="2">Should Monitor</th><td><select id="shouldMonitor" name="shouldMonitor"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
+    <tr><th colspan="2">Should Backup</th><td><select id="shouldBackup" name="shouldBackup"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
+    <tr><th colspan="2">Should Schemaspy</th><td><select id="shouldSchemaspy" name="shouldSchemaspy"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>
+    <tr><th colspan="2">Revenue Impacting</th><td><select id="revenueImpacting" name="revenueImpacting"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
+    <tr><th colspan="2">Decommissioned</th><td><select id="decommissioned" name="decommissioned"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>
+    <tr><th rowspan="4">Alert Seconds</th><th>Critical</th><td><input type="number" id="alertCritSecs" name="alertCritSecs" size="3" value="" /></td></tr>
+    <tr><th>Warning</th><td><input type="number" id="alertWarnSecs" name="alertWarnSecs" size="3" value="" /></td></tr>
+    <tr><th>Info</th><td><input type="number" id="alertInfoSecs" name="alertInfoSecs" size="3" value="" /></td></tr>
+    <tr><th>Low</th><td><input type="number" id="alertLowSecs" name="alertLowSecs" size="3" value="" /></td></tr>
+    </tr>
+  </table>
+  <input type="submit" name="action" value="Add"> &nbsp;
+  <input type="submit" name="action" value="Update"> &nbsp;
+  <input type="submit" name="action" value="Delete"> &nbsp;
+</form>
+
+<p></p>
+
 <table id="hostEdit" border=1 cellspacing=0 cellpadding=2 class="tablesorter aql-listing">
   <thead>
     <tr>
@@ -337,44 +373,9 @@ HTML;
                 }
                 $body .= "</tr>\n" ;
             }
-            // Generate db_type dropdown options dynamically from ENUM values
-            $dbTypeOptions = '' ;
-            foreach ( $validDbTypes as $type ) {
-                $selected = ( $type === 'MySQL' ) ? ' selected="selected"' : '' ;
-                $dbTypeOptions .= '<option value="' . htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' ) . '"' . $selected . '>'
-                               . htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' ) . '</option>' ;
-            }
-
             $body .= <<<HTML
   </tbody>
 </table>
-
-<p></p>
-
-<form id="AddUpdateDeleteHostForm" action="manageData.php">
-  <input type="hidden" name="data" value="Hosts">
-  <table id="AddUpdateDeleteHostTable" border=1 cellspacing=0 cellpadding=2>
-    <caption>Host Form</caption>
-    <tr><th colspan="2">ID</th><td><input type="number" id="hostId" name="hostId" readonly="readonly" value="" size=5 /></td></tr>
-    <tr><th colspan="2">Host Name</th><td><input type="text" id="hostName" name="hostName" size="32" value="" /></td></tr>
-    <tr><th colspan="2">Port Number</th><td><input type="number" id="portNumber" name="portNumber" size="5" value="3306" /></td></tr>
-    <tr><th colspan="2">Description</th><td><textarea id="description" name="description" rows="4" cols="60"></textarea></td></tr>
-    <tr><th colspan="2">DB Type</th><td><select id="dbType" name="dbType">$dbTypeOptions</select></td></tr>
-    <tr><th colspan="2">Should Monitor</th><td><select id="shouldMonitor" name="shouldMonitor"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
-    <tr><th colspan="2">Should Backup</th><td><select id="shouldBackup" name="shouldBackup"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
-    <tr><th colspan="2">Should Schemaspy</th><td><select id="shouldSchemaspy" name="shouldSchemaspy"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>
-    <tr><th colspan="2">Revenue Impacting</th><td><select id="revenueImpacting" name="revenueImpacting"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
-    <tr><th colspan="2">Decommissioned</th><td><select id="decommissioned" name="decommissioned"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>
-    <tr><th rowspan="4">Alert Seconds</th><th>Critical</th><td><input type="number" id="alertCritSecs" name="alertCritSecs" size="3" value="" /></td></tr>
-    <tr><th>Warning</th><td><input type="number" id="alertWarnSecs" name="alertWarnSecs" size="3" value="" /></td></tr>
-    <tr><th>Info</th><td><input type="number" id="alertInfoSecs" name="alertInfoSecs" size="3" value="" /></td></tr>
-    <tr><th>Low</th><td><input type="number" id="alertLowSecs" name="alertLowSecs" size="3" value="" /></td></tr>
-    </tr>
-  </table>
-  <input type="submit" name="action" value="Add"> &nbsp;
-  <input type="submit" name="action" value="Update"> &nbsp;
-  <input type="submit" name="action" value="Delete"> &nbsp;
-</form>
 
 HTML;
             $page->setBody( $links . $body ) ;
