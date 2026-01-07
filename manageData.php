@@ -540,9 +540,41 @@ SELECT host_id, CONCAT( hostname, ':', port_number )
   FROM aql_db.host
  WHERE decommissioned = 0
  ORDER BY hostname, port_number
- 
+
 SQL;
-        $body .= <<<HTML
+        try {
+            // Build host select dropdown first (needed for form)
+            $hostResult = $dbh->query( $hostsQuery ) ;
+            if ( ! $hostResult ) {
+                throw new \ErrorException( "Query failed: $hostsQuery\n Error: " . $dbh->error ) ;
+            }
+            $groupSelect = "<select name=\"groupSelect[]\" id=\"groupSelect\" size=\"25\" multiple=\"multiple\">\n" ;
+            while ( $row = $hostResult->fetch_row() ) {
+                $groupSelect .= "  <option value=\"" . intval( $row[0] ) . "\">"
+                             . htmlspecialchars( $row[1], ENT_QUOTES, 'UTF-8' ) . "</option>\n" ;
+            }
+            $groupSelect .= "</select>\n" ;
+
+            // Form at the top for easier access
+            $body .= <<<HTML
+<form method="get" action="manageData.php">
+  <input type="hidden" name="data" value="Groups">
+  <table id="Form" border=1 cellspacing=0 cellpadding=2>
+    <caption>Group Form</caption>
+    <tr><th>Group ID</th><td><input type="number" id="groupId" name="groupId" readonly="readonly" size=5 /></td></tr>
+    <tr><th>Group Tag (16)</th><td><input type="text" id="groupTag" name="groupTag" size="16" maxlength="16" /></td></tr>
+    <tr><th>Description</th><td><input type="text" id="shortDescription" name="shortDescription" size="80" maxlength="255" /></td></tr>
+    <tr><th>Full Description</th><td><textarea id="fullDescription" name="fullDescription" rows="4" cols="80" maxlength="65535"></textarea></td></tr>
+    <tr><th>Members</th><td>$groupSelect</td></tr>
+  </table>
+  <input type="submit" name="action" value="Add"> &nbsp; &nbsp;
+  <input type="submit" name="action" value="Update"> &nbsp; &nbsp;
+  <input type="submit" name="action" value="Delete"> &nbsp; &nbsp;
+  <br clear="all" />
+</form>
+
+<p></p>
+
 <table id="groupEdit" border=1 cellspacing=0 cellpadding=2 class="tablesorter aql-listing">
   <thead>
     <tr>
@@ -557,7 +589,6 @@ SQL;
   <tbody>
 
 HTML;
-        try {
             $groupResult = $dbh->query( $groupQuery ) ;
             if ( ! $groupResult ) {
                 throw new \ErrorException( "Query failed: $groupQuery\n Error: " . $dbh->error ) ;
@@ -579,36 +610,9 @@ HTML;
                 }
                 $body .= "</tr>\n" ;
             }
-            $hostResult = $dbh->query( $hostsQuery ) ;
-            if ( ! $hostResult ) {
-                throw new \ErrorException( "Query failed: $hostsQuery\n Error: " . $dbh->error ) ;
-            }
-            $groupSelect = "<select name=\"groupSelect[]\" id=\"groupSelect\" size=\"25\" multiple=\"multiple\">\n" ;
-            while ( $row = $hostResult->fetch_row() ) {
-                $groupSelect .= "  <option value=\"" . intval( $row[0] ) . "\">"
-                             . htmlspecialchars( $row[1], ENT_QUOTES, 'UTF-8' ) . "</option>\n" ;
-            }
-            $groupSelect .= "</select>\n" ;
             $body .= <<<HTML
   </tbody>
 </table>
-
-<p></p>
-
-<form method="get" action="manageData.php">
-  <input type="hidden" name="data" value="Groups">
-  <table id="Form" border=1 cellspacing=0 cellpadding=2>
-    <tr><th>Group ID</th><td><input type="number" id="groupId" name="groupId" readonly="readonly" size=5 /></td></tr>
-    <tr><th>Group Tag (16)</th><td><input type="text" id="groupTag" name="groupTag" size="16" maxlength="16" /></td></tr>
-    <tr><th>Description</th><td><input type="text" id="shortDescription" name="shortDescription" size="80" maxlength="255" /></td></tr>
-    <tr><th>Full Description</th><td><textarea id="fullDescription" name="fullDescription" rows="4" cols="80" maxlength="65535"></textarea></td></tr>
-    <tr><th>Members</th><td>$groupSelect</td></tr>
-  </table>
-  <input type="submit" name="action" value="Add"> &nbsp; &nbsp;
-  <input type="submit" name="action" value="Update"> &nbsp; &nbsp;
-  <input type="submit" name="action" value="Delete"> &nbsp; &nbsp;
-  <br clear="all" />
-</form>
 
 HTML;
             $page->setBody( $links . $body ) ;
