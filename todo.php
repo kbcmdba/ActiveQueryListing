@@ -33,5 +33,5 @@ namespace com\kbcmdba\aql ;
 // @done 15 Create group editor - manageData.php
 // @done 20 Implement Kill button - AJAXKillProc.php
 // @done 20 Add login capability to enable kill button as well as editing hosts/groups - LDAP auth
-// @todo 30 Detect duplicate and similar queries per-host (currently global only)
+// @done 30 Detect duplicate and similar queries per-host
 // @todo 40 Detect queries that are blocked by other threads and display.
