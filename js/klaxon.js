@@ -31,8 +31,8 @@
         document.body.appendChild(div);
     };
 
-    // ── detect a *level-4* (critical) row as soon as it appears (excluding legend)
-    const triggerSelector = '.level4:not(#legend .level4), .errorNotice:not(#legend .errorNotice)';
+    // ── detect a *level-4* (critical) row as soon as it appears
+    const triggerSelector = '.level4, .errorNotice';
     const runTest = () => document.querySelector(triggerSelector) && fire();
 
     // run immediately for already‑rendered rows

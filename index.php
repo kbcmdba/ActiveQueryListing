@@ -458,14 +458,12 @@ $navBar
 <table border=1 cellspacing=0 cellpadding=2 id="legend" width="100%">
   <caption>Legend</caption>
   <tr><th>Level</th><th>Description</th></tr>
-  <tr class="error" ><td>-</td><td>An error has occurred while communicating with the host described.</td></tr>
-  <tr class="level4">
-    <td>4</td><td>The shown query has reached a critical alert level and should be investigated.</td>
-  </tr>
-  <tr class="level3"><td>3</td><td>The shown query has reached a warning alert level.</td></tr>
-  <tr class="level2"><td>2</td><td>The shown query is running longer than expected.</td></tr>
-  <tr class="level1"><td>1</td><td>The shown query is running within normal time parameters.</td></tr>
-  <tr class="level0"><td>0</td><td>The shown query has run for less time than expected so far.</td></tr>
+  <tr class="legendError"><td>-</td><td>An error has occurred while communicating with the host described.</td></tr>
+  <tr class="legendLevel4"><td>4</td><td>The shown query has reached a critical alert level and should be investigated.</td></tr>
+  <tr class="legendLevel3"><td>3</td><td>The shown query has reached a warning alert level.</td></tr>
+  <tr class="legendLevel2"><td>2</td><td>The shown query is running longer than expected.</td></tr>
+  <tr class="legendLevel1"><td>1</td><td>The shown query is running within normal time parameters.</td></tr>
+  <tr class="legendLevel0"><td>0</td><td>The shown query has run for less time than expected so far.</td></tr>
 </table>
 
 HTML

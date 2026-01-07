@@ -37,32 +37,38 @@ body {
 
 @keyframes klaxon-ping { from { opacity: 1 } to { opacity:1 } }
 
-.error {
+.error,
+.legendError {
   background-color: red ;
   color: white ;
 }
 
-.level4 {
+.level4,
+.legendLevel4 {
   background-color: orange ;
   color: black ;
 }
 
-.level3 {
+.level3,
+.legendLevel3 {
   background-color: yellow ;
   color: black ;
 }
 
-.level2 {
+.level2,
+.legendLevel2 {
   background-color: lightgreen ;
   color: black ;
 }
 
-.level1 {
+.level1,
+.legendLevel1 {
   background-color: #333 ;
   color: white ;
 }
 
-.level0 {
+.level0,
+.legendLevel0 {
   background-color: cyan ;
   color: black ;
 }
