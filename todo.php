@@ -35,3 +35,11 @@ namespace com\kbcmdba\aql ;
 // @done 20 Add login capability to enable kill button as well as editing hosts/groups - LDAP auth
 // @done 30 Detect duplicate and similar queries per-host
 // @done 40 Detect queries that are blocked by other threads and display (2026-01-06)
+// @todo 50 Add MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
+//          - Implement sqlsrv connection in DBConnection.php
+//          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
+//          - Convert INFORMATION_SCHEMA.PROCESSLIST to sys.dm_exec_requests/sessions
+//          - Handle lock detection via sys.dm_tran_locks
+//          - Update DDL (AUTO_INCREMENT -> IDENTITY, ENUM -> CHECK constraints)
+//          - Skip replication monitoring for v1 (AlwaysOn is fundamentally different)
+// @todo 51 Add CA cert to system trust store for LDAP SSL verification
