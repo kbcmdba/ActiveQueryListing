@@ -116,8 +116,38 @@ SQL;
         return($model) ;
     }
 
-    public function getSome($whereClause = '1 = 1')
+    /**
+     * Get host group records matching the specified filters.
+     *
+     * @param array $filters Associative array of column => value pairs for WHERE conditions.
+     *                       Supported columns: host_group_id, tag.
+     *                       Example: ['tag' => 'production']
+     * @return HostGroupModel[]
+     * @throws ControllerException
+     */
+    public function getSome(array $filters = [])
     {
+        // Whitelist of allowed filter columns to prevent SQL injection
+        $allowedColumns = [
+            'host_group_id' => 'i',
+            'tag' => 's'
+        ] ;
+
+        $whereClauses = [] ;
+        $bindTypes = '' ;
+        $bindValues = [] ;
+
+        foreach ($filters as $column => $value) {
+            if (!array_key_exists($column, $allowedColumns)) {
+                throw new ControllerException("Invalid filter column: $column") ;
+            }
+            $whereClauses[] = "$column = ?" ;
+            $bindTypes .= $allowedColumns[$column] ;
+            $bindValues[] = $value ;
+        }
+
+        $whereSQL = empty($whereClauses) ? '1 = 1' : implode(' AND ', $whereClauses) ;
+
         $sql = <<<SQL
 SELECT host_group_id
      , tag
@@ -126,12 +156,15 @@ SELECT host_group_id
      , created
      , updated
   FROM host_group
- WHERE $whereClause
+ WHERE $whereSQL
 
 SQL;
         $stmt = $this->_dbh->prepare($sql) ;
         if (! $stmt) {
             throw new ControllerException('Failed to prepare SELECT statement. (' . $this->_dbh->error . ')') ;
+        }
+        if (!empty($bindValues)) {
+            $stmt->bind_param($bindTypes, ...$bindValues) ;
         }
         if (! $stmt->execute()) {
             throw new ControllerException('Failed to execute SELECT statement. (' . $this->_dbh->error . ')') ;

@@ -160,8 +160,44 @@ SQL;
         return($model) ;
     }
 
-    public function getSome($whereClause = '1 = 1')
+    /**
+     * Get host records matching the specified filters.
+     *
+     * @param array $filters Associative array of column => value pairs for WHERE conditions.
+     *                       Supported columns: host_id, hostname, port_number, should_monitor,
+     *                       should_backup, revenue_impacting, decommissioned.
+     *                       Example: ['should_monitor' => 1, 'decommissioned' => 0]
+     * @return HostModel[]
+     * @throws ControllerException
+     */
+    public function getSome(array $filters = [])
     {
+        // Whitelist of allowed filter columns to prevent SQL injection
+        $allowedColumns = [
+            'host_id' => 'i',
+            'hostname' => 's',
+            'port_number' => 'i',
+            'should_monitor' => 'i',
+            'should_backup' => 'i',
+            'revenue_impacting' => 'i',
+            'decommissioned' => 'i'
+        ] ;
+
+        $whereClauses = [] ;
+        $bindTypes = '' ;
+        $bindValues = [] ;
+
+        foreach ($filters as $column => $value) {
+            if (!array_key_exists($column, $allowedColumns)) {
+                throw new ControllerException("Invalid filter column: $column") ;
+            }
+            $whereClauses[] = "$column = ?" ;
+            $bindTypes .= $allowedColumns[$column] ;
+            $bindValues[] = $value ;
+        }
+
+        $whereSQL = empty($whereClauses) ? '1 = 1' : implode(' AND ', $whereClauses) ;
+
         $sql = <<<SQL
 SELECT host_id
      , hostname
@@ -179,12 +215,15 @@ SELECT host_id
      , updated
      , last_audited
   FROM host
- WHERE $whereClause
+ WHERE $whereSQL
 
 SQL;
         $stmt = $this->_dbh->prepare($sql) ;
         if (! $stmt) {
             throw new ControllerException('Failed to prepare SELECT statement. (' . $this->_dbh->error . ')') ;
+        }
+        if (!empty($bindValues)) {
+            $stmt->bind_param($bindTypes, ...$bindValues) ;
         }
         if (! $stmt->execute()) {
             throw new ControllerException('Failed to execute SELECT statement. (' . $this->_dbh->error . ')') ;
