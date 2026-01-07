@@ -40,6 +40,8 @@ header('Pragma: no-cache') ;
 $overviewData = [
     'aQPS'            => -1
   , 'blank'           => 0
+  , 'blocked'         => 0
+  , 'blocking'        => 0
   , 'duplicate'       => 0
   , 'level0'          => 0
   , 'level1'          => 0
@@ -149,6 +151,116 @@ SQL;
             $roQueryPart = '@@global.read_only' ;
             break ;
     } ;
+
+    // Lock detection - build map of blocked/blocking threads
+    $lockWaitData = [] ;
+    try {
+        // Determine which lock query to use based on MySQL version
+        $useMysql8LockQuery = preg_match( '/^[8]\./', $version ) === 1
+                           && preg_match( '/^[8]\.0\.[01][^0-9]/', $version ) !== 1 ;
+
+        if ( $useMysql8LockQuery ) {
+            // MySQL 8.0.2+ uses performance_schema
+            $lockQuery = <<<SQL
+SELECT
+    r.trx_mysql_thread_id AS waiting_thread_id,
+    COALESCE(TIMESTAMPDIFF(SECOND, r.trx_wait_started, NOW()), 0) AS wait_seconds,
+    b.trx_mysql_thread_id AS blocking_thread_id,
+    CONCAT(dl.OBJECT_SCHEMA, '.', dl.OBJECT_NAME) AS locked_table,
+    dl.LOCK_MODE AS lock_mode
+FROM performance_schema.data_lock_waits dlw
+JOIN performance_schema.data_locks dl ON dlw.REQUESTING_ENGINE_LOCK_ID = dl.ENGINE_LOCK_ID
+JOIN information_schema.INNODB_TRX b ON b.trx_id = dlw.BLOCKING_ENGINE_TRANSACTION_ID
+JOIN information_schema.INNODB_TRX r ON r.trx_id = dlw.REQUESTING_ENGINE_TRANSACTION_ID
+SQL;
+        } else {
+            // MySQL 5.x, MariaDB, MySQL 8.0.0-8.0.1 use information_schema
+            $lockQuery = <<<SQL
+SELECT
+    r.trx_mysql_thread_id AS waiting_thread_id,
+    COALESCE(TIMESTAMPDIFF(SECOND, r.trx_wait_started, NOW()), 0) AS wait_seconds,
+    b.trx_mysql_thread_id AS blocking_thread_id,
+    l.lock_table AS locked_table,
+    l.lock_mode AS lock_mode
+FROM information_schema.INNODB_LOCK_WAITS w
+JOIN information_schema.INNODB_TRX b ON b.trx_id = w.blocking_trx_id
+JOIN information_schema.INNODB_TRX r ON r.trx_id = w.requesting_trx_id
+JOIN information_schema.INNODB_LOCKS l ON l.lock_id = w.requested_lock_id
+SQL;
+        }
+
+        $lockResult = $dbh->query( $lockQuery ) ;
+        if ( $lockResult !== false ) {
+            while ( $row = $lockResult->fetch_assoc() ) {
+                $waitingThreadId = (int) $row['waiting_thread_id'] ;
+                $blockingThreadId = (int) $row['blocking_thread_id'] ;
+
+                // Initialize or update waiting thread entry
+                if ( !isset( $lockWaitData[$waitingThreadId] ) ) {
+                    $lockWaitData[$waitingThreadId] = [
+                        'isBlocked'   => true,
+                        'isBlocking'  => false,
+                        'waitSeconds' => (int) $row['wait_seconds'],
+                        'lockMode'    => $row['lock_mode'],
+                        'lockedTable' => $row['locked_table'],
+                        'blockedBy'   => [],
+                        'blocking'    => []
+                    ] ;
+                }
+                $lockWaitData[$waitingThreadId]['blockedBy'][] = $blockingThreadId ;
+
+                // Initialize or update blocking thread entry
+                if ( !isset( $lockWaitData[$blockingThreadId] ) ) {
+                    $lockWaitData[$blockingThreadId] = [
+                        'isBlocked'   => false,
+                        'isBlocking'  => true,
+                        'waitSeconds' => 0,
+                        'lockMode'    => null,
+                        'lockedTable' => null,
+                        'blockedBy'   => [],
+                        'blocking'    => []
+                    ] ;
+                }
+                $lockWaitData[$blockingThreadId]['isBlocking'] = true ;
+                $lockWaitData[$blockingThreadId]['blocking'][] = $waitingThreadId ;
+            }
+            $lockResult->close() ;
+        }
+
+        // Also check for table-level lock waits (MyISAM, metadata locks)
+        $tableLockQuery = <<<SQL
+SELECT id AS waiting_thread_id, time AS wait_seconds, state
+FROM INFORMATION_SCHEMA.PROCESSLIST
+WHERE state IN (
+    'Waiting for table level lock',
+    'Waiting for table metadata lock',
+    'Locked',
+    'Waiting for table flush'
+)
+SQL;
+        $tableLockResult = $dbh->query( $tableLockQuery ) ;
+        if ( $tableLockResult !== false ) {
+            while ( $row = $tableLockResult->fetch_assoc() ) {
+                $waitingThreadId = (int) $row['waiting_thread_id'] ;
+                if ( !isset( $lockWaitData[$waitingThreadId] ) ) {
+                    $lockWaitData[$waitingThreadId] = [
+                        'isBlocked'   => true,
+                        'isBlocking'  => false,
+                        'waitSeconds' => (int) $row['wait_seconds'],
+                        'lockMode'    => 'TABLE',
+                        'lockedTable' => $row['state'],
+                        'blockedBy'   => [],
+                        'blocking'    => []
+                    ] ;
+                }
+            }
+            $tableLockResult->close() ;
+        }
+    } catch ( \Exception $e ) {
+        // Lock detection is supplementary - don't fail if it errors
+        // Just continue with empty $lockWaitData
+    }
+
     $processQuery  = <<<SQL
 SELECT id
      , user
@@ -227,6 +339,26 @@ SQL;
             default:
                 $level = 1 ;
         }
+
+        // Check for lock wait status and elevate level if blocked
+        $blockInfo = isset( $lockWaitData[$pid] ) ? $lockWaitData[$pid] : null ;
+        if ( $blockInfo !== null ) {
+            if ( !empty( $blockInfo['isBlocked'] ) ) {
+                $overviewData['blocked'] ++ ;
+                // Elevate level based on wait time
+                if ( $blockInfo['waitSeconds'] > 60 ) {
+                    $level = 4 ;  // Critical if blocked > 60s
+                } elseif ( $blockInfo['waitSeconds'] > 30 ) {
+                    $level = max( $level, 3 ) ;  // Warning if blocked > 30s
+                } else {
+                    $level = max( $level, 2 ) ;  // Info if blocked
+                }
+            }
+            if ( !empty( $blockInfo['isBlocking'] ) ) {
+                $overviewData['blocking'] ++ ;
+            }
+        }
+
         $overviewData[ "level$level" ] ++ ;
         $safeInfoJS   = urlencode( $safeInfo ) ;
         $outputList[] = [
@@ -244,7 +376,8 @@ SQL;
           , 'info'         => htmlspecialchars( $safeInfo )
           , 'actions'      => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid, '$uid', '$host', '$db', '$command', $time, '$state', '$safeInfoJS' ) ; return false ;\">Kill Thread</button>"
                             . "<button type=\"button\" onclick=\"fileIssue( '$hostname', '$readOnly', '$host', '$uid', '$db', $time, '$safeUrl' ) ; return false ;\">File Issue</button>"
-          , 'readOnly'    => $readOnly
+          , 'readOnly'     => $readOnly
+          , 'blockInfo'    => $blockInfo
         ] ;
     }
     $processResult->close() ;

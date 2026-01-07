@@ -82,7 +82,7 @@ if ( ! is_array( $hostList ) ) {
     $hostList = [ Tools::params('hosts') ] ;
 }
 
-$processCols = 14 ;
+$processCols = 15 ;
 $processHeaderFooterCols = <<<HTML
 <tr class="mytr">
       <th>Server</th>
@@ -97,6 +97,7 @@ $processHeaderFooterCols = <<<HTML
       <th>State <a href="https://dev.mysql.com/doc/refman/5.6/en/general-thread-states.html" target="_blank">?</a></th>
       <th>R/O</th>
       <th>Dupe <a onclick="alert('Possible states are Unique, Similar, Duplicate and Blank. Similar indicates that a query is identical to another query except that the numbers and strings may be different. Duplicate means the entire query is identical to another query.') ; return false;">?</a><br>State</th>
+      <th>Lock <a onclick="alert('Shows if this query is BLOCKED waiting for a lock, or is BLOCKING other queries.') ; return false;">?</a><br>Status</th>
       <th>Info</th>
       <th>Actions</th>
     </tr>

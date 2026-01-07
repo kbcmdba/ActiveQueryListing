@@ -161,3 +161,40 @@ a:visited {
 	color: black;
 	background-color: pink;
 }
+
+/* Lock status indicators */
+.blocked {
+    border-left: 4px solid red !important;
+}
+
+.blocking {
+    border-left: 4px solid orange !important;
+}
+
+.blocked.blocking {
+    border-left: 4px solid purple !important;
+}
+
+.blockedIndicator {
+    background-color: red;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: help;
+    display: inline-block;
+    margin: 1px;
+}
+
+.blockingIndicator {
+    background-color: orange;
+    color: black;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: help;
+    display: inline-block;
+    margin: 1px;
+}

@@ -374,7 +374,26 @@ function myCallback( i, item ) {
                             + '</span>&nbsp;&nbsp;<a href="" class="morelink">'
                             + 'more</a></span>' ;
                 }
-                var myRow = "<tr class=\"level" + level + "\">"
+                // Build lock status indicator
+                var blockInfo = item[ 'result' ][ itemNo ][ 'blockInfo' ] ;
+                var lockStatus = '' ;
+                var lockClass = '' ;
+                if ( blockInfo ) {
+                    if ( blockInfo.isBlocked ) {
+                        lockStatus += '<span class="blockedIndicator" title="Blocked by thread(s) '
+                                   + ( blockInfo.blockedBy ? blockInfo.blockedBy.join(', ') : '?' )
+                                   + ' for ' + blockInfo.waitSeconds + 's on '
+                                   + ( blockInfo.lockedTable || 'unknown' ) + '">BLOCKED</span>' ;
+                        lockClass = ' blocked' ;
+                    }
+                    if ( blockInfo.isBlocking ) {
+                        lockStatus += '<span class="blockingIndicator" title="Blocking thread(s) '
+                                   + ( blockInfo.blocking ? blockInfo.blocking.join(', ') : '?' )
+                                   + '">BLOCKING</span>' ;
+                        lockClass += ' blocking' ;
+                    }
+                }
+                var myRow = "<tr class=\"level" + level + lockClass + "\">"
                           +      "<td class=\"comment more\">" + serverLinkAddress
                           + "</td><td align=\"center\">" + level
                           + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'           ]
@@ -387,6 +406,7 @@ function myCallback( i, item ) {
                           + "</td><td>" + item[ 'result' ][ itemNo ][ 'state'        ]
                           + "</td><td" + ( item[ 'result' ][ itemNo ][ 'readOnly'     ] == 0 ? ' class="readWrite">OFF' : ' class="readOnly">ON' )
                           + "</td><td class=\"" + dupeState + "\">" + dupeState
+                          + "</td><td>" + lockStatus
                           + "</td><td class=\"comment more\">" + info
                           + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
                           + "</td></tr>" ;
