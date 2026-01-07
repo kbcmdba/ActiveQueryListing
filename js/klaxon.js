@@ -1,23 +1,35 @@
-/* klaxon.js  ── plays the horn exactly once per full reload   KB Benton 2025‑05‑13 */
+/* klaxon.js -- plays alert sound on critical errors   KB Benton 2025-05-13 */
 
 (() => {
-    const audio = new Audio('Images/honk-alarm-repeat-loop-101015.mp3');
+    const audio = new Audio('Images/warning-ding.mp3');
+    const playCount = 3;  // number of times to play the alert
     audio.preload = 'auto';
 
-    // ── attempt autoplay on every hard refresh
+    // -- attempt autoplay on every hard refresh
+    let timesPlayed = 0;
     const fire = () => {
-        if (fire.done) return;              // one‑shot gate
+        if (fire.done) return;              // one-shot gate
         fire.done = true;
+        timesPlayed = 0;
         audio.currentTime = 0;
-        audio.play().catch(() => banner()); // Chrome may block → fallback
+        audio.play().catch(() => banner()); // Chrome may block - fallback
     };
 
-    // ── fallback banner when autoplay is blocked the very first visit
+    // -- replay until we've played the desired number of times
+    audio.addEventListener('ended', () => {
+        timesPlayed++;
+        if (timesPlayed < playCount) {
+            audio.currentTime = 0;
+            audio.play();
+        }
+    });
+
+    // -- fallback banner when autoplay is blocked the very first visit
     const banner = () => {
-        if (localStorage.getItem('klaxon‑unlocked')) return;       // user opted out
-        const div       = Object.assign(document.createElement('div'), {
-            id: 'unlock‑banner',
-            textContent: '🔊 Tap once to enable sound'
+        if (localStorage.getItem('klaxon-unlocked')) return;       // user opted out
+        const div = Object.assign(document.createElement('div'), {
+            id: 'unlock-banner',
+            textContent: 'Tap once to enable sound'
         });
         Object.assign(div.style, {
             position: 'fixed', inset: 0, zIndex: 9999,
@@ -26,16 +38,16 @@
             cursor: 'pointer'
         });
         div.onclick = () => audio.play().then(() => {
-            div.remove(); localStorage.setItem('klaxon‑unlocked', 1);
+            div.remove(); localStorage.setItem('klaxon-unlocked', 1);
         });
         document.body.appendChild(div);
     };
 
-    // ── detect a *level-4* (critical) row as soon as it appears
+    // -- detect a *level-4* (critical) row as soon as it appears
     const triggerSelector = '.level4, .errorNotice';
     const runTest = () => document.querySelector(triggerSelector) && fire();
 
-    // run immediately for already‑rendered rows
+    // run immediately for already-rendered rows
     document.addEventListener('DOMContentLoaded', runTest);
 
     // watch for rows added later by Ajax
