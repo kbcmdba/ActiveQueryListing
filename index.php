@@ -323,7 +323,7 @@ function loadPage() {
 
 \$(document).ready( loadPage ) ;
 
-var $hgjson;
+$hgjson
 
 function addGroupSelection() {
     var elements = document.getElementById( 'groupSelection' ).options ;

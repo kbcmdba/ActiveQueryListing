@@ -54,7 +54,7 @@ class HostGroupMapModel extends ModelBase
         return  ((! Tools::isNullOrEmptyString(Tools::param('hostGroupId')))
                && (Tools::isNumeric(Tools::param('hostGroupId')))
                && (! Tools::isNullOrEmptyString(Tools::param('hostId')))
-               && (Tools::isNumeric(Tools::param('hostIdd')))
+               && (Tools::isNumeric(Tools::param('hostId')))
                && (
                    (
                    Tools::isNullOrEmptyString('lastAudited')

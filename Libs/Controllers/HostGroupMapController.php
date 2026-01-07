@@ -184,12 +184,12 @@ SQL;
         }
         $models = [] ;
         while ($stmt->fetch()) {
-            $model = new HostGroupModel() ;
+            $model = new HostGroupMapModel() ;
             $model->setHostGroupId($hostGroupId) ;
             $model->setHostId($hostId) ;
             $model->setCreated($created) ;
             $model->setUpdated($updated) ;
-            $model->setLastUpdated($lastUpdated) ;
+            $model->setLastAudited($lastAudited) ;
             $models[] = $model ;
         }
         return($models) ;
@@ -230,10 +230,7 @@ SQL;
                 if (! ($stmt->bind_param(
                     'ii',
                     $hostGroupId,
-                    $hostId,
-                    $created,
-                    $updated,
-                    $lastAudited
+                    $hostId
                 ))) {
                     throw new ControllerException('Binding parameters for prepared statement failed.') ;
                 }
