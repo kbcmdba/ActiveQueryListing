@@ -228,7 +228,7 @@ SELECT host_id
  
 SQL;
         $body .= <<<HTML
-<table border=1 cellspacing=0 cellpadding=2 class="tablesorter" width="100%">
+<table id="hostEdit" border=1 cellspacing=0 cellpadding=2 class="tablesorter aql-listing">
   <thead>
     <tr>
       <th rowspan="2">Actions</th>
@@ -482,7 +482,7 @@ SELECT host_id, CONCAT( hostname, ':', port_number )
  
 SQL;
         $body .= <<<HTML
-<table id="groupEdit" border=1 cellspacing=0 cellpadding=2 class="tablesorter" width="100%">
+<table id="groupEdit" border=1 cellspacing=0 cellpadding=2 class="tablesorter aql-listing">
   <thead>
     <tr>
       <th>Actions</th>
