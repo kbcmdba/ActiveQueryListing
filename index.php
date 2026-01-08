@@ -597,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </form>
         <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
         <br /><br />
-        <div id="muteStatus" style="font-weight: bold; margin-bottom: 5px;">Alerts: ON</div>
+        <div style="margin-bottom: 5px;"><span id="muteStatus" style="font-weight: bold;">Alerts: ON</span> <a onclick="alert('Sound Controls Help\\n\\n• Quick mute: Click 30m, 1h, 2h, etc. to mute for that duration.\\n• ∞ button: Mute indefinitely until you click Unmute.\\n• Custom duration: Enter days/hours/minutes and click Set.\\n• Until date/time: Pick a specific date/time to unmute.\\n• Maximum mute: 90 days.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow.'); return false;" style="cursor: help;">?</a></div>
         <div id="muteControls">
           <nobr>
             <button onclick="applyQuickMute('30m'); return false;" title="Mute for 30 minutes">30m</button>
@@ -624,7 +624,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <div id="unmuteBtnContainer" style="display: none;">
           <button onclick="clearMute(); return false;">Unmute Alerts</button>
         </div>
-        <a onclick="alert('Sound Controls Help\\n\\n• Quick mute: Click 30m, 1h, 2h, etc. to mute for that duration.\\n• ∞ button: Mute indefinitely until you click Unmute.\\n• Custom duration: Enter days/hours/minutes and click Set.\\n• Until date/time: Pick a specific date/time to unmute.\\n• Maximum mute: 90 days.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow.'); return false;" style="cursor: help; margin-left: 5px;">?</a>
       </center>
     </td>
     <td class="headerTableTd">
