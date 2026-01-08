@@ -32,6 +32,11 @@ namespace com\kbcmdba\aql ;
 //          - Suppress error alerts for hosts during their maintenance window
 //          - Visual indicator in UI showing host is in planned maintenance
 //          - Could be per-host or per-group
+// @todo 18 Mute until a specific time (or for a specific period)
+//          - Allow user to mute alerts until a specific datetime
+//          - Or mute for X minutes/hours
+//          - Auto-unmute when time expires
+//          - Display countdown or expiry time in UI
 // @todo 20 Jira integration for File Issue button
 //          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
 //          - Pre-fill issue with query data (PCI-masked), query time, user, source host
