@@ -5,9 +5,14 @@
     const playCount = 3;  // number of times to play the alert
     audio.preload = 'auto';
 
+    // -- check if muted via URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const isMuted = urlParams.get('mute') === '1';
+
     // -- attempt autoplay on every hard refresh
     let timesPlayed = 0;
     const fire = () => {
+        if (isMuted) return;                // respect mute setting
         if (fire.done) return;              // one-shot gate
         fire.done = true;
         timesPlayed = 0;

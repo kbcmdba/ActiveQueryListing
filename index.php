@@ -178,6 +178,7 @@ $NWOverviewHeaderFooter = <<<HTML
 HTML;
 
 $debug = Tools::param('debug') === "1" ;
+$muted = Tools::param('mute') === "1" ;
 $page = new WebPage('Active Queries List');
 $config = new Config();
 $defaultRefresh = $config->getDefaultRefresh() ;
@@ -345,10 +346,24 @@ JS
     );
     $now          = Tools::currentTimestamp();
     $debugChecked = ( $debug ) ? 'checked="checked"' : '' ;
+    $muteButtonText = ( $muted ) ? 'Unmute Alerts' : 'Mute Alerts' ;
+    $muteToggleValue = ( $muted ) ? '0' : '1' ;
     $cb = function ($fn) { return $fn; };
     $page->setBody(
         <<<HTML
-<button onclick="initAlerts()">Enable Audio Alerts</button>
+<button onclick="toggleMute()">$muteButtonText</button>
+<a onclick="alert('Sound Controls Help\\n\\n• Mute/Unmute: Click the button to toggle sound. This adds ?mute=1 to the URL.\\n\\n• To re-enable: Click Unmute, or remove mute=1 from the URL.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow. Then refresh the page.\\n\\n• The alert plays 3 times when a Level 4 (critical) query is detected.'); return false;" style="cursor: help; margin-left: 5px;">?</a>
+<script>
+function toggleMute() {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('mute') === '1') {
+        url.searchParams.delete('mute');
+    } else {
+        url.searchParams.set('mute', '1');
+    }
+    window.location.href = url.toString();
+}
+</script>
 <audio id="klaxon" src="Images/honk-alarm-repeat-loop-101015.mp3" preload="auto"></audio>
 <a id="graphs"></a>
 <table id="top" width="100%" border="1">
