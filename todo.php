@@ -25,10 +25,23 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 17 Implement maintenance windows for hosts
-//          - Allow scheduling maintenance windows (start time, end time)
-//          - Suppress error alerts for hosts during their maintenance window
-//          - Visual indicator in UI showing host is in planned maintenance
-//          - Could be per-host or per-group
+//          SCHEDULED RECURRING WINDOWS:
+//          - Per-host recurring schedules (e.g., ce-cook-sql3001 Mo-Sa 10PM-8AM CT for restores)
+//          - Per-group recurring schedules (e.g., POS hosts Mo-Sa 8PM-8:30PM CT)
+//          - Multiple windows per host/group (e.g., POS also Sunday 8AM-4PM CT)
+//          - Day-of-week selection (Mo-Su checkboxes)
+//          - Start time + end time (handles overnight spans like 10PM-8AM)
+//          - Time zone aware (CT regardless of DST)
+//          - Store schedules in database (new table: maintenance_windows)
+//          AD-HOC "DO IT LIVE" SILENCING:
+//          - Per-host or per-group silence button: "Silence for X minutes/hours"
+//          - DBA silences a host/group when issue is "being worked on"
+//          - Similar to global timed mute but per-host or per-group
+//          UI/DISPLAY:
+//          - Visual indicator showing host is in maintenance window
+//          - Suppress alerts during active window (scheduled or ad-hoc)
+//          - Show countdown/expiry for ad-hoc silencing
+//          - manageData.php: UI to create/edit/delete scheduled windows
 // @todo 20 Jira integration for File Issue button
 //          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
 //          - Pre-fill issue with query data (PCI-masked), query time, user, source host
