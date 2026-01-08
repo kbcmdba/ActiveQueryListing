@@ -1,6 +1,12 @@
 /* klaxon.js -- plays alert sound on critical errors   KB Benton 2025-05-13 */
 
 (() => {
+    // Set to true to enable debug logging (or use ?klaxon_debug=1 in URL)
+    const DEBUG = new URLSearchParams(window.location.search).get('klaxon_debug') === '1';
+    const log = (...args) => { if (DEBUG) console.log('[klaxon]', ...args); };
+
+    log('klaxon.js loaded');
+
     const warningAudio = new Audio('Images/warning-ding.mp3');  // level4 (critical)
     let klaxonAudio = null;  // errorNotice (error/level9) - set after DOM ready
     const playCount = 3;  // number of times to play the alert
@@ -13,18 +19,24 @@
         const urlMuteUntil = urlParams.get('mute_until');
         if (urlMuteUntil !== null) {
             const expiry = parseInt(urlMuteUntil, 10);
-            return expiry === 0 || Date.now() < expiry;
+            const muted = expiry === 0 || Date.now() < expiry;
+            log('checkMuted (URL param):', muted, 'expiry:', expiry);
+            return muted;
         }
         // Legacy support: mute=1 means indefinite
         if (urlParams.get('mute') === '1') {
+            log('checkMuted (legacy URL): true');
             return true;
         }
         // Check cookie for timed mute
         const match = document.cookie.match(/aql_mute_until=(\d+)/);
         if (match) {
             const expiry = parseInt(match[1], 10);
-            return expiry === 0 || Date.now() < expiry;
+            const muted = expiry === 0 || Date.now() < expiry;
+            log('checkMuted (cookie):', muted, 'expiry:', expiry, 'now:', Date.now());
+            return muted;
         }
+        log('checkMuted: false (no mute found)');
         return false;
     };
 
@@ -34,8 +46,10 @@
     let timesPlayed = 0;
 
     const fireWarning = () => {
+        log('fireWarning() called, checkMuted:', checkMuted(), 'warningFired:', warningFired);
         if (checkMuted()) return;
         if (warningFired) return;
+        log('fireWarning() - PLAYING SOUND');
         warningFired = true;
         timesPlayed = 0;
         warningAudio.currentTime = 0;
@@ -43,9 +57,11 @@
     };
 
     const fireKlaxon = () => {
+        log('fireKlaxon() called, checkMuted:', checkMuted(), 'klaxonFired:', klaxonFired);
         if (checkMuted()) return;
         if (klaxonFired) return;
         if (!klaxonAudio) return;
+        log('fireKlaxon() - PLAYING SOUND');
         klaxonFired = true;
         klaxonAudio.currentTime = 0;
         klaxonAudio.play().catch(() => banner());

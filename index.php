@@ -355,6 +355,9 @@ JS
 <script>
 // Timed mute support: cookie stores expiry timestamp (0 = indefinite, >0 = when to unmute)
 const MAX_MUTE_DAYS = 90;
+// Debug logging: enable with ?mute_debug=1 in URL
+const MUTE_DEBUG = new URLSearchParams(window.location.search).get('mute_debug') === '1';
+const muteLog = (...args) => { if (MUTE_DEBUG) console.log('[mute]', ...args); };
 
 function getMuteExpiry() {
     // Check URL param first
@@ -363,13 +366,20 @@ function getMuteExpiry() {
     if (urlMuteUntil !== null) {
         return parseInt(urlMuteUntil, 10);
     }
-    // Legacy support: mute=1 means indefinite
+    // Legacy support: mute=1 URL param means indefinite
     if (urlParams.get('mute') === '1') {
         return 0;
     }
-    // Check cookie
+    // Check new cookie format
     const match = document.cookie.match(/aql_mute_until=(\d+)/);
-    return match ? parseInt(match[1], 10) : null;
+    if (match) {
+        return parseInt(match[1], 10);
+    }
+    // Check legacy cookie format (aql_mute=1 means indefinite)
+    if (document.cookie.split('; ').some(c => c === 'aql_mute=1')) {
+        return 0;
+    }
+    return null;
 }
 
 function isMuted() {
@@ -392,7 +402,19 @@ function setMuteCookie(expiryTimestamp) {
 }
 
 function clearMuteCookie() {
-    document.cookie = 'aql_mute_until=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=' + getAqlPath();
+    const expired = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    // Try clearing at multiple possible paths
+    const paths = ['/', getAqlPath(), window.location.pathname, ''];
+    const names = ['aql_mute_until', 'aql_mute'];
+    muteLog('Clearing mute cookies. Current cookies:', document.cookie);
+    for (const name of names) {
+        for (const path of paths) {
+            const cookieStr = name + '=; ' + expired + (path ? '; path=' + path : '');
+            document.cookie = cookieStr;
+            muteLog('Cleared:', cookieStr);
+        }
+    }
+    muteLog('After clear:', document.cookie);
 }
 
 function setMuteFor(days, hours, minutes) {
@@ -425,17 +447,23 @@ function setMuteUntil(dateTimeStr) {
     updateMuteUI();
 }
 
+var clearMuteInProgress = false;
 function clearMute() {
+    if (clearMuteInProgress) {
+        muteLog('clearMute() already in progress, ignoring');
+        return;
+    }
+    clearMuteInProgress = true;
+    muteLog('clearMute() called');
     clearMuteCookie();
-    // Remove URL params
+    // Remove URL params and reload to ensure clean state
     const url = new URL(window.location.href);
     url.searchParams.delete('mute');
     url.searchParams.delete('mute_until');
-    if (url.href !== window.location.href) {
-        window.location.href = url.toString();
-    } else {
-        updateMuteUI();
-    }
+    // Remove hash to prevent scroll-triggered issues
+    url.hash = '';
+    muteLog('Reloading to:', url.toString());
+    window.location.href = url.toString();
 }
 
 function formatTimeRemaining(ms) {
@@ -452,9 +480,11 @@ function formatTimeRemaining(ms) {
 
 function updateMuteUI() {
     const expiry = getMuteExpiry();
+    muteLog('updateMuteUI() - expiry:', expiry, 'isMuted:', expiry !== null && (expiry === 0 || Date.now() < expiry));
     const muteStatus = document.getElementById('muteStatus');
     const muteControls = document.getElementById('muteControls');
     const unmuteBtnContainer = document.getElementById('unmuteBtnContainer');
+    muteLog('DOM elements found:', !!muteStatus, !!muteControls, !!unmuteBtnContainer);
 
     if (expiry === null || (expiry > 0 && Date.now() >= expiry)) {
         // Not muted or expired

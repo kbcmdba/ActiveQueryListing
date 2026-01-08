@@ -56,6 +56,7 @@ class WebPage
                        , 'Cache-Control: post-check=0, pre-check=0', false
                        , 'Pragma: no-cache'
                        ]) ;
+        $cacheBuster = time();
         $this->setHead(
             <<<HTML
   <link rel="stylesheet" href="css/main.css" />
@@ -64,8 +65,8 @@ class WebPage
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.0/js/jquery.tablesorter.js"></script>
   <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-  <script src="js/common.js"></script>
-  <script src="js/klaxon.js"></script>
+  <script src="js/common.js?v=$cacheBuster"></script>
+  <script src="js/klaxon.js?v=$cacheBuster"></script>
 
 HTML
         ) ;
