@@ -43,8 +43,10 @@ namespace com\kbcmdba\aql ;
 //          - Use Jira REST API to create issues
 // @todo 29 Add light/dark mode toggle
 //          - Current UI is dark mode only
-//          - Add toggle to switch between light and dark themes
-//          - Use URL parameter (e.g., ?theme=light) for easy sharing
+//          - Use CSS variables for colors (--bg-color, --text-color, etc.)
+//          - Add .theme-light class that overrides the variables
+//          - JavaScript toggles class on body based on cookie/URL param
+//          - URL parameter (e.g., ?theme=light) for easy sharing, syncs to cookie
 // @todo 50 Add MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
