@@ -27,6 +27,11 @@ namespace com\kbcmdba\aql ;
 // @todo 15 Add version summary table
 //          - Show count of hosts per MySQL/MariaDB version
 //          - Mouseover on count shows list of hosts running that version
+// @todo 17 Implement maintenance windows for hosts
+//          - Allow scheduling maintenance windows (start time, end time)
+//          - Suppress error alerts for hosts during their maintenance window
+//          - Visual indicator in UI showing host is in planned maintenance
+//          - Could be per-host or per-group
 // @todo 20 Jira integration for File Issue button
 //          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
 //          - Pre-fill issue with query data (PCI-masked), query time, user, source host
