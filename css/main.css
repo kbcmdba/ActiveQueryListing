@@ -38,36 +38,42 @@ body {
 @keyframes klaxon-ping { from { opacity: 1 } to { opacity:1 } }
 
 .error,
+.error td,
 .legendError {
   background-color: red !important ;
   color: white !important ;
 }
 
 .level4,
+.level4 td,
 .legendLevel4 {
   background-color: orange !important ;
   color: black !important ;
 }
 
 .level3,
+.level3 td,
 .legendLevel3 {
   background-color: yellow !important ;
   color: black !important ;
 }
 
 .level2,
+.level2 td,
 .legendLevel2 {
   background-color: lightgreen !important ;
   color: black !important ;
 }
 
 .level1,
+.level1 td,
 .legendLevel1 {
   background-color: #333 !important ;
   color: white !important ;
 }
 
 .level0,
+.level0 td,
 .legendLevel0 {
   background-color: cyan !important ;
   color: black !important ;
@@ -75,21 +81,25 @@ body {
 
 /* Boolean column styling for manageData tables */
 .bool-yes {
+  background-color: #333 !important ;
   color: lightgreen !important ;
   text-align: center ;
 }
 
 .bool-no {
+  background-color: #333 !important ;
   color: yellow !important ;
   text-align: center ;
 }
 
-.readOnly {
+.readOnly,
+.readOnly td {
   background-color: cyan !important ;
   color: black !important ;
 }
 
-.readWrite {
+.readWrite,
+.readWrite td {
   background-color: yellow !important ;
   color: black !important ;
 }
@@ -169,28 +179,33 @@ a:visited {
 }
 
 #updatedAt {
+	background-color: #333 ;
 	color: silver ;
 	font-size: 8pt ;
 	vertical-align: middle ;
 	text-align: center ;
 }
 
-.Blank {
+.Blank,
+.Blank td {
 	color: white !important ;
 	background-color: #333 !important ;
 }
 
-.Unique {
+.Unique,
+.Unique td {
 	color: black !important ;
 	background-color: silver !important ;
 }
 
-.Similar {
+.Similar,
+.Similar td {
 	color: black !important ;
 	background-color: yellow !important ;
 }
 
-.Duplicate {
+.Duplicate,
+.Duplicate td {
 	color: black !important ;
 	background-color: pink !important ;
 }
