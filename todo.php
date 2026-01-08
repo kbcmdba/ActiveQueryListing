@@ -24,24 +24,47 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 17 Implement maintenance windows for hosts
-//          SCHEDULED RECURRING WINDOWS:
-//          - Per-host recurring schedules (e.g., ce-cook-sql3001 Mo-Sa 10PM-8AM CT for restores)
-//          - Per-group recurring schedules (e.g., POS hosts Mo-Sa 8PM-8:30PM CT)
-//          - Multiple windows per host/group (e.g., POS also Sunday 8AM-4PM CT)
-//          - Day-of-week selection (Mo-Su checkboxes)
-//          - Start time + end time (handles overnight spans like 10PM-8AM)
-//          - Time zone aware (CT regardless of DST)
-//          - Store schedules in database (new table: maintenance_windows)
-//          AD-HOC "DO IT LIVE" SILENCING:
-//          - Per-host or per-group silence button: "Silence for X minutes/hours"
-//          - DBA silences a host/group when issue is "being worked on"
-//          - Similar to global timed mute but per-host or per-group
-//          UI/DISPLAY:
-//          - Visual indicator showing host is in maintenance window
-//          - Suppress alerts during active window (scheduled or ad-hoc)
-//          - Show countdown/expiry for ad-hoc silencing
-//          - manageData.php: UI to create/edit/delete scheduled windows
+// @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
+// @todo 17-10 Database schema for maintenance windows
+//             - New table: maintenance_windows
+//             - Fields: id, host_id (nullable), group_id (nullable), window_type (scheduled|adhoc)
+//             - Scheduled: days_of_week (bitmask or set), start_time, end_time, timezone
+//             - Ad-hoc: silence_until (datetime)
+//             - Description field for notes
+// @todo 17-20 manageData.php: CRUD UI for scheduled recurring windows
+//             - Per-host recurring schedules (e.g., ce-cook-sql3001 Mo-Sa 10PM-8AM CT)
+//             - Per-group recurring schedules (e.g., POS hosts Mo-Sa 8PM-8:30PM CT)
+//             - Multiple windows per host/group
+//             - Day-of-week checkboxes (Mo-Su)
+//             - Start time + end time (handles overnight spans like 10PM-8AM)
+//             - Time zone selection (default CT)
+// @todo 17-30 Ad-hoc "do it live" silencing
+//             - Per-host or per-group silence button: "Silence for X minutes/hours"
+//             - Quick presets like global mute (30m, 1h, 2h, etc.)
+//             - DBA silences host/group when issue is "being worked on"
+//             - Store as ad-hoc window with silence_until timestamp
+// @todo 17-40 Backend: Check if host/group is in active maintenance window
+//             - Function to check scheduled windows (day-of-week + time range)
+//             - Function to check ad-hoc silencing (silence_until > now)
+//             - Handle overnight spans correctly
+//             - Return window info for display
+// @todo 17-50 index.php: Visual indicators for hosts in maintenance
+//             - Icon/badge showing host is in maintenance window
+//             - Tooltip with window details (scheduled vs ad-hoc, expiry)
+//             - Different indicators for scheduled vs ad-hoc
+// @todo 17-60 index.php: Quick link to manage host/group maintenance
+//             - Click host to open maintenance management (modal or link to manageData.php)
+//             - Pre-select the host/group in the management UI
+//             - Quick ad-hoc silence directly from index.php
+// @todo 17-70 Alert suppression integration
+//             - Modify klaxon.js to check maintenance status
+//             - Suppress alerts for hosts/groups in active window
+//             - Still display data, just don't sound alerts
+// @todo 17-80 DBA credential session persistence
+//             - Remember DBA credentials for a configurable period (e.g., 24 hours)
+//             - Store auth in session with expiry timestamp
+//             - Reduce friction for DBAs managing maintenance windows
+//             - Configurable timeout in aql_config.xml
 // @todo 20 Jira integration for File Issue button
 //          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
 //          - Pre-fill issue with query data (PCI-masked), query time, user, source host
