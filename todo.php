@@ -24,23 +24,27 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 01 Implement Host/Group Limiter
 // @todo 10 Add mute button for klaxon alerts
 //          - URL parameter (e.g., ?mute=1) to disable sound temporarily
 //          - Add "?" help icon with mouseover explaining:
 //            * What the mute button does
 //            * How to re-enable sound
 //            * Chrome instructions for allowing sound from the site
-// @done 02 Protect code from SQL injection (2026-01-06)
-// @done 02 Sort results table - TableSorter implemented
-// @done 03 Set minimum refresh time to 15 seconds - $minRefresh in Config
-// @done 04 Implement refresh setting - refresh param in index.php
-// @done 10 Create host editor - manageData.php
-// @done 15 Create group editor - manageData.php
-// @done 20 Implement Kill button - AJAXKillProc.php
-// @done 20 Add login capability to enable kill button as well as editing hosts/groups - LDAP auth
-// @done 30 Detect duplicate and similar queries per-host
-// @done 40 Detect queries that are blocked by other threads and display (2026-01-06)
+// @todo 26 Add alternating row colors to index.php tables
+//          - Apply aql-listing class to tables where rows aren't already colored
+//          - Noteworthy and Full sections for Process, Overview, Slave tables
+// @todo 27 Add version summary table
+//          - Show count of hosts per MySQL/MariaDB version
+//          - Mouseover on count shows list of hosts running that version
+// @todo 28 Jira integration for File Issue button
+//          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
+//          - Pre-fill issue with query data (PCI-masked), query time, user, source host
+//          - Include database, lock state, and other relevant context
+//          - Use Jira REST API to create issues
+// @todo 29 Add light/dark mode toggle
+//          - Current UI is dark mode only
+//          - Add toggle to switch between light and dark themes
+//          - Use URL parameter (e.g., ?theme=light) for easy sharing
 // @todo 50 Add MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
@@ -67,22 +71,9 @@ namespace com\kbcmdba\aql ;
 //          - Show which client hosts are hammering the database
 //          - Query counts and time grouped by source host
 //          - Drilldown to see queries from each source host
-// @todo 56 Add alternating row colors to index.php tables
-//          - Apply aql-listing class to tables where rows aren't already colored
-//          - Noteworthy and Full sections for Process, Overview, Slave tables
-// @todo 57 Add version summary table
-//          - Show count of hosts per MySQL/MariaDB version
-//          - Mouseover on count shows list of hosts running that version
-// @todo 58 Jira integration for File Issue button
-//          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
-//          - Pre-fill issue with query data (PCI-masked), query time, user, source host
-//          - Include database, lock state, and other relevant context
-//          - Use Jira REST API to create issues
-// @todo 59 Add light/dark mode toggle
-//          - Current UI is dark mode only
-//          - Add toggle to switch between light and dark themes
-//          - Use URL parameter (e.g., ?theme=light) for easy sharing
 // @todo 60 Enable sortable table columns
 //          - TableSorter JS is loaded but may not be initialized on all tables
 //          - Click column header to sort ascending/descending
 //          - Apply to Process, Overview, Slave, and other data tables
+// @todo 99 Implement Host/Group Limiter
+//          - There's a "Add Group Selection" button on the main index that *should* select all hosts/ports associated with the group (additive, not exclusive).
