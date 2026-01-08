@@ -718,9 +718,14 @@ function fillGroupForm( group_id
 
 function fillMaintenanceWindowForm( window_id
                                   , window_type
+                                  , schedule_type
                                   , target_type
                                   , target_id
                                   , days_of_week
+                                  , day_of_month
+                                  , month_of_year
+                                  , period_days
+                                  , period_start_date
                                   , start_time
                                   , end_time
                                   , timezone
@@ -728,6 +733,7 @@ function fillMaintenanceWindowForm( window_id
                                   , description ) {
     document.getElementById( 'windowId' ).value = window_id ;
     document.getElementById( 'windowType' ).value = window_type ;
+    document.getElementById( 'scheduleType' ).value = schedule_type || 'weekly' ;
     document.getElementById( 'targetType' ).value = target_type ;
 
     // Set the appropriate target dropdown
@@ -743,6 +749,12 @@ function fillMaintenanceWindowForm( window_id
     dayCheckboxes.forEach( function( cb ) {
         cb.checked = daysArray.indexOf( cb.value ) !== -1 ;
     } ) ;
+
+    // Set extended schedule fields
+    document.getElementById( 'dayOfMonth' ).value = day_of_month || '' ;
+    document.getElementById( 'monthOfYear' ).value = month_of_year || '' ;
+    document.getElementById( 'periodDays' ).value = period_days || '' ;
+    document.getElementById( 'periodStartDate' ).value = period_start_date || '' ;
 
     document.getElementById( 'startTime' ).value = start_time ;
     document.getElementById( 'endTime' ).value = end_time ;

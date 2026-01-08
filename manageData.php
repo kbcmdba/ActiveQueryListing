@@ -126,6 +126,7 @@ $page->setTop( "<h2>AQL: Manage Data</h2>\n"
              .  " | <a href=\"./manageData.php?data=Hosts\">Manage Hosts</a>\n"
              .  " | <a href=\"./manageData.php?data=Groups\">Manage Groups</a>\n"
              .  " | <a href=\"./manageData.php?data=MaintenanceWindows\">Manage Maintenance Windows</a>\n"
+             .  " | <a href=\"./deployDDL.php\">Deploy DDL</a>\n"
              .  " | <a href=\"./manageData.php?logout=logout\">Log out of Manage Data</a>\n"
              .  "<p />\n"
              ) ;
@@ -633,9 +634,14 @@ HTML;
         $action = Tools::param( 'action' ) ;
         $windowId = Tools::param( 'windowId' ) ;
         $windowType = Tools::param( 'windowType' ) ;
+        $scheduleType = Tools::param( 'scheduleType' ) ;
         $targetType = Tools::param( 'targetType' ) ;  // 'host' or 'group'
         $targetId = Tools::param( 'targetId' ) ;
         $daysOfWeek = Tools::params( 'daysOfWeek' ) ;  // array
+        $dayOfMonth = Tools::param( 'dayOfMonth' ) ;
+        $monthOfYear = Tools::param( 'monthOfYear' ) ;
+        $periodDays = Tools::param( 'periodDays' ) ;
+        $periodStartDate = Tools::param( 'periodStartDate' ) ;
         $startTime = Tools::param( 'startTime' ) ;
         $endTime = Tools::param( 'endTime' ) ;
         $timezone = Tools::param( 'timezone' ) ;
@@ -659,9 +665,36 @@ HTML;
                 $errors .= "Please select a valid Host or Group<br />\n" ;
             }
             if ( 'scheduled' === $windowType ) {
-                if ( empty( $daysOfWeek ) ) {
-                    $errors .= "Please select at least one day of the week<br />\n" ;
+                // Validate schedule type
+                if ( ! in_array( $scheduleType, [ 'weekly', 'monthly', 'quarterly', 'annually', 'periodic' ] ) ) {
+                    $errors .= "Schedule Type must be one of: weekly, monthly, quarterly, annually, periodic<br />\n" ;
                 }
+                // Schedule-type-specific validation
+                if ( 'weekly' === $scheduleType ) {
+                    if ( empty( $daysOfWeek ) ) {
+                        $errors .= "Please select at least one day of the week<br />\n" ;
+                    }
+                }
+                if ( in_array( $scheduleType, [ 'monthly', 'quarterly', 'annually' ] ) ) {
+                    if ( ! Tools::isNumeric( $dayOfMonth ) || $dayOfMonth < 1 || $dayOfMonth > 32 ) {
+                        $errors .= "Day of Month must be between 1 and 32<br />\n" ;
+                    }
+                }
+                if ( in_array( $scheduleType, [ 'quarterly', 'annually' ] ) ) {
+                    $maxMonth = ( 'quarterly' === $scheduleType ) ? 3 : 12 ;
+                    if ( ! Tools::isNumeric( $monthOfYear ) || $monthOfYear < 1 || $monthOfYear > $maxMonth ) {
+                        $errors .= "Month must be between 1 and $maxMonth<br />\n" ;
+                    }
+                }
+                if ( 'periodic' === $scheduleType ) {
+                    if ( ! Tools::isNumeric( $periodDays ) || $periodDays < 1 ) {
+                        $errors .= "Period Days must be at least 1<br />\n" ;
+                    }
+                    if ( empty( $periodStartDate ) ) {
+                        $errors .= "Period Start Date is required for periodic schedules<br />\n" ;
+                    }
+                }
+                // All scheduled types need start/end time
                 if ( empty( $startTime ) || empty( $endTime ) ) {
                     $errors .= "Start Time and End Time are required for scheduled windows<br />\n" ;
                 }
@@ -687,13 +720,20 @@ HTML;
                 $body .= 'Add - ' ;
                 // Convert days array to SET string
                 $daysSet = is_array( $daysOfWeek ) ? implode( ',', $daysOfWeek ) : '' ;
-                $sql = 'INSERT INTO maintenance_window SET window_type = ?, days_of_week = ?, start_time = ?, end_time = ?, timezone = ?, silence_until = ?, description = ?, created_by = ?' ;
-                $stmt = $dbh->prepare( $sql ) ;
+                // Prepare values (use null for empty)
+                $scheduleTypeVal = ( 'scheduled' === $windowType ) ? $scheduleType : null ;
+                $daysSetVal = empty( $daysSet ) ? null : $daysSet ;
+                $dayOfMonthVal = empty( $dayOfMonth ) ? null : intval( $dayOfMonth ) ;
+                $monthOfYearVal = empty( $monthOfYear ) ? null : intval( $monthOfYear ) ;
+                $periodDaysVal = empty( $periodDays ) ? null : intval( $periodDays ) ;
+                $periodStartDateVal = empty( $periodStartDate ) ? null : $periodStartDate ;
                 $startTimeVal = empty( $startTime ) ? null : $startTime ;
                 $endTimeVal = empty( $endTime ) ? null : $endTime ;
                 $silenceUntilVal = empty( $silenceUntil ) ? null : $silenceUntil ;
                 $createdBy = $_SESSION['userName'] ?? '' ;
-                $stmt->bind_param( 'ssssssss', $windowType, $daysSet, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $createdBy ) ;
+                $sql = 'INSERT INTO maintenance_window SET window_type = ?, schedule_type = ?, days_of_week = ?, day_of_month = ?, month_of_year = ?, period_days = ?, period_start_date = ?, start_time = ?, end_time = ?, timezone = ?, silence_until = ?, description = ?, created_by = ?' ;
+                $stmt = $dbh->prepare( $sql ) ;
+                $stmt->bind_param( 'sssiiiissssss', $windowType, $scheduleTypeVal, $daysSetVal, $dayOfMonthVal, $monthOfYearVal, $periodDaysVal, $periodStartDateVal, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $createdBy ) ;
                 if ( $stmt->execute() ) {
                     $newWindowId = $dbh->insert_id ;
                     // Add to mapping table
@@ -712,13 +752,21 @@ HTML;
                 break;
             case 'Update':
                 $body .= 'Update - ' ;
+                // Convert days array to SET string
                 $daysSet = is_array( $daysOfWeek ) ? implode( ',', $daysOfWeek ) : '' ;
-                $sql = 'UPDATE maintenance_window SET window_type = ?, days_of_week = ?, start_time = ?, end_time = ?, timezone = ?, silence_until = ?, description = ? WHERE window_id = ?' ;
-                $stmt = $dbh->prepare( $sql ) ;
+                // Prepare values (use null for empty)
+                $scheduleTypeVal = ( 'scheduled' === $windowType ) ? $scheduleType : null ;
+                $daysSetVal = empty( $daysSet ) ? null : $daysSet ;
+                $dayOfMonthVal = empty( $dayOfMonth ) ? null : intval( $dayOfMonth ) ;
+                $monthOfYearVal = empty( $monthOfYear ) ? null : intval( $monthOfYear ) ;
+                $periodDaysVal = empty( $periodDays ) ? null : intval( $periodDays ) ;
+                $periodStartDateVal = empty( $periodStartDate ) ? null : $periodStartDate ;
                 $startTimeVal = empty( $startTime ) ? null : $startTime ;
                 $endTimeVal = empty( $endTime ) ? null : $endTime ;
                 $silenceUntilVal = empty( $silenceUntil ) ? null : $silenceUntil ;
-                $stmt->bind_param( 'sssssssi', $windowType, $daysSet, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $windowId ) ;
+                $sql = 'UPDATE maintenance_window SET window_type = ?, schedule_type = ?, days_of_week = ?, day_of_month = ?, month_of_year = ?, period_days = ?, period_start_date = ?, start_time = ?, end_time = ?, timezone = ?, silence_until = ?, description = ? WHERE window_id = ?' ;
+                $stmt = $dbh->prepare( $sql ) ;
+                $stmt->bind_param( 'sssiiiissssssi', $windowType, $scheduleTypeVal, $daysSetVal, $dayOfMonthVal, $monthOfYearVal, $periodDaysVal, $periodStartDateVal, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $windowId ) ;
                 if ( $stmt->execute() ) {
                     // Update mapping - remove old, add new
                     $dbh->query( "DELETE FROM maintenance_window_host_map WHERE window_id = $windowId" ) ;
@@ -770,10 +818,19 @@ HTML;
   <table id="MaintenanceWindowTable" border=1 cellspacing=0 cellpadding=2>
     <caption>Maintenance Window Form</caption>
     <tr><th>Window ID</th><td><input type="number" id="windowId" name="windowId" readonly="readonly" value="" size=5 /></td></tr>
-    <tr><th>Window Type <a onclick="alert('Scheduled: Recurring window that repeats weekly on selected days/times.\\n\\nAd-hoc: One-time silencing until a specific date/time (e.g., while working an issue).'); return false;" style="cursor: help;">?</a></th><td>
+    <tr><th>Window Type <a onclick="alert('Scheduled: Recurring window that repeats on a schedule.\\n\\nAd-hoc: One-time silencing until a specific date/time (e.g., while working an issue).'); return false;" style="cursor: help;">?</a></th><td>
       <select id="windowType" name="windowType" onchange="toggleWindowTypeFields()">
         <option value="scheduled">Scheduled (Recurring)</option>
         <option value="adhoc">Ad-hoc (One-time)</option>
+      </select>
+    </td></tr>
+    <tr id="scheduleTypeRow"><th>Schedule Type <a onclick="alert('Weekly: Repeats on selected days each week.\\n\\nMonthly: Repeats on a specific day each month (e.g., 1st, 15th, or last day).\\n\\nQuarterly: Repeats on a specific day of a specific month each quarter.\\n\\nAnnually: Repeats on a specific date each year.\\n\\nPeriodic: Repeats every N days from a start date.'); return false;" style="cursor: help;">?</a></th><td>
+      <select id="scheduleType" name="scheduleType" onchange="toggleScheduleTypeFields()">
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Quarterly</option>
+        <option value="annually">Annually</option>
+        <option value="periodic">Periodic (Every N Days)</option>
       </select>
     </td></tr>
     <tr><th>Target Type</th><td>
@@ -797,6 +854,34 @@ HTML;
       <label><input type="checkbox" name="daysOfWeek[]" value="Fri"> Fri</label>
       <label><input type="checkbox" name="daysOfWeek[]" value="Sat"> Sat</label>
     </td></tr>
+    <tr id="dayOfMonthRow" style="display:none;"><th>Day of Month <a onclick="alert('Day of the month (1-31).\\n\\nUse 32 for \\'last day of month\\' (handles Feb, 30-day months, etc.).'); return false;" style="cursor: help;">?</a></th><td>
+      <input type="number" id="dayOfMonth" name="dayOfMonth" min="1" max="32" size="4" />
+      <span style="color: #888;">(1-31, or 32 for last day)</span>
+    </td></tr>
+    <tr id="monthOfYearRow" style="display:none;"><th>Month <a onclick="alert('For quarterly: which month of each quarter (1=first month, 2=second, 3=third).\\n\\nFor annually: which month of the year (1=Jan, 12=Dec).'); return false;" style="cursor: help;">?</a></th><td>
+      <select id="monthOfYear" name="monthOfYear">
+        <option value="">-- Select --</option>
+        <option value="1">January (or Q1/Q2/Q3/Q4 month 1)</option>
+        <option value="2">February (or Q1/Q2/Q3/Q4 month 2)</option>
+        <option value="3">March (or Q1/Q2/Q3/Q4 month 3)</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
+    </td></tr>
+    <tr id="periodDaysRow" style="display:none;"><th>Every N Days <a onclick="alert('Number of days between occurrences.\\n\\nExample: 7 = weekly, 14 = bi-weekly, 30 = roughly monthly.'); return false;" style="cursor: help;">?</a></th><td>
+      <input type="number" id="periodDays" name="periodDays" min="1" max="365" size="4" />
+      <span style="color: #888;">(e.g., 7, 14, 30)</span>
+    </td></tr>
+    <tr id="periodStartDateRow" style="display:none;"><th>Period Start Date <a onclick="alert('Anchor date for periodic schedule calculation.\\n\\nThe window will occur on this date and every N days thereafter.'); return false;" style="cursor: help;">?</a></th><td>
+      <input type="date" id="periodStartDate" name="periodStartDate" />
+    </td></tr>
     <tr id="startTimeRow"><th>Start Time <a onclick="alert('Start and End times define the daily window.\\n\\nOvernight spans are supported: e.g., Start 22:00, End 08:00 means 10PM to 8AM the next day.'); return false;" style="cursor: help;">?</a></th><td><input type="time" id="startTime" name="startTime" /></td></tr>
     <tr id="endTimeRow"><th>End Time</th><td><input type="time" id="endTime" name="endTime" /></td></tr>
     <tr id="timezoneRow"><th>Timezone <a onclick="alert('PHP timezone identifier for scheduled windows.\\n\\nExamples:\\n• America/Chicago (Central)\\n• America/Denver (Mountain)\\n• America/New_York (Eastern)\\n• America/Los_Angeles (Pacific)\\n• UTC'); return false;" style="cursor: help;">?</a></th><td><input type="text" id="timezone" name="timezone" value="America/Chicago" size="30" /></td></tr>
@@ -811,15 +896,49 @@ HTML;
 <script>
 function toggleWindowTypeFields() {
     var windowType = document.getElementById('windowType').value;
-    var scheduledRows = ['daysRow', 'startTimeRow', 'endTimeRow', 'timezoneRow'];
-    var adhocRows = ['silenceUntilRow'];
+    var isScheduled = (windowType === 'scheduled');
 
-    scheduledRows.forEach(function(id) {
-        document.getElementById(id).style.display = (windowType === 'scheduled') ? '' : 'none';
+    // Show/hide schedule type row
+    document.getElementById('scheduleTypeRow').style.display = isScheduled ? '' : 'none';
+
+    // Common scheduled rows (always shown for scheduled windows regardless of schedule type)
+    var commonScheduledRows = ['startTimeRow', 'endTimeRow', 'timezoneRow'];
+    commonScheduledRows.forEach(function(id) {
+        document.getElementById(id).style.display = isScheduled ? '' : 'none';
     });
-    adhocRows.forEach(function(id) {
-        document.getElementById(id).style.display = (windowType === 'adhoc') ? '' : 'none';
-    });
+
+    // Ad-hoc rows
+    document.getElementById('silenceUntilRow').style.display = isScheduled ? 'none' : '';
+
+    // Update schedule-type-specific fields
+    if (isScheduled) {
+        toggleScheduleTypeFields();
+    } else {
+        // Hide all schedule-type-specific fields when ad-hoc
+        ['daysRow', 'dayOfMonthRow', 'monthOfYearRow', 'periodDaysRow', 'periodStartDateRow'].forEach(function(id) {
+            document.getElementById(id).style.display = 'none';
+        });
+    }
+}
+
+function toggleScheduleTypeFields() {
+    var scheduleType = document.getElementById('scheduleType').value;
+
+    // Days of week: only for weekly
+    document.getElementById('daysRow').style.display = (scheduleType === 'weekly') ? '' : 'none';
+
+    // Day of month: for monthly, quarterly, annually
+    var needsDayOfMonth = ['monthly', 'quarterly', 'annually'].includes(scheduleType);
+    document.getElementById('dayOfMonthRow').style.display = needsDayOfMonth ? '' : 'none';
+
+    // Month of year: for quarterly (1-3) and annually (1-12)
+    var needsMonth = ['quarterly', 'annually'].includes(scheduleType);
+    document.getElementById('monthOfYearRow').style.display = needsMonth ? '' : 'none';
+
+    // Period fields: only for periodic
+    var isPeriodic = (scheduleType === 'periodic');
+    document.getElementById('periodDaysRow').style.display = isPeriodic ? '' : 'none';
+    document.getElementById('periodStartDateRow').style.display = isPeriodic ? '' : 'none';
 }
 
 function toggleTargetFields() {
@@ -851,8 +970,9 @@ document.addEventListener('DOMContentLoaded', function() {
       <th>Actions</th>
       <th>ID</th>
       <th>Type</th>
+      <th>Schedule</th>
       <th>Target</th>
-      <th>Days</th>
+      <th>Schedule Details</th>
       <th>Start</th>
       <th>End</th>
       <th>Timezone</th>
@@ -870,6 +990,7 @@ HTML;
         $windowsQuery = <<<SQL
 SELECT mw.window_id
      , mw.window_type
+     , mw.schedule_type
      , CASE
          WHEN mwhm.host_id IS NOT NULL THEN 'host'
          WHEN mwgm.host_group_id IS NOT NULL THEN 'group'
@@ -882,6 +1003,10 @@ SELECT mw.window_id
          ELSE '(none)'
        END AS target_display
      , mw.days_of_week
+     , mw.day_of_month
+     , mw.month_of_year
+     , mw.period_days
+     , mw.period_start_date
      , mw.start_time
      , mw.end_time
      , mw.timezone
@@ -907,14 +1032,50 @@ SQL;
                 $jsDays = htmlspecialchars( json_encode( $row['days_of_week'] ?? '' ), ENT_QUOTES, 'UTF-8' ) ;
                 $jsTimezone = htmlspecialchars( json_encode( $row['timezone'] ?? 'America/Chicago' ), ENT_QUOTES, 'UTF-8' ) ;
 
+                // Build schedule details display based on schedule type
+                $scheduleType = $row['schedule_type'] ?? 'weekly' ;
+                $scheduleDetails = '' ;
+                switch ( $scheduleType ) {
+                    case 'weekly':
+                        $scheduleDetails = htmlspecialchars( $row['days_of_week'] ?? '', ENT_QUOTES, 'UTF-8' ) ;
+                        break ;
+                    case 'monthly':
+                        $dom = intval( $row['day_of_month'] ?? 0 ) ;
+                        $scheduleDetails = $dom === 32 ? 'Last day' : "Day $dom" ;
+                        break ;
+                    case 'quarterly':
+                        $dom = intval( $row['day_of_month'] ?? 0 ) ;
+                        $moy = intval( $row['month_of_year'] ?? 0 ) ;
+                        $domStr = $dom === 32 ? 'Last' : $dom ;
+                        $scheduleDetails = "Day $domStr, Month $moy of quarter" ;
+                        break ;
+                    case 'annually':
+                        $dom = intval( $row['day_of_month'] ?? 0 ) ;
+                        $moy = intval( $row['month_of_year'] ?? 0 ) ;
+                        $domStr = $dom === 32 ? 'Last' : $dom ;
+                        $months = [ '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ] ;
+                        $scheduleDetails = ( $months[$moy] ?? "Month $moy" ) . " $domStr" ;
+                        break ;
+                    case 'periodic':
+                        $pd = intval( $row['period_days'] ?? 0 ) ;
+                        $psd = $row['period_start_date'] ?? '' ;
+                        $scheduleDetails = "Every {$pd} days from $psd" ;
+                        break ;
+                }
+
                 $body .= "<tr>"
                       .  "<td style=\"text-align: center\">"
                       .  "<button type=\"button\" onclick=\"fillMaintenanceWindowForm("
                       .  intval( $row['window_id'] ) . ", "
                       .  "'" . $row['window_type'] . "', "
+                      .  "'" . ( $row['schedule_type'] ?? 'weekly' ) . "', "
                       .  "'" . $row['target_type'] . "', "
                       .  intval( $row['target_id'] ?? 0 ) . ", "
                       .  $jsDays . ", "
+                      .  intval( $row['day_of_month'] ?? 0 ) . ", "
+                      .  intval( $row['month_of_year'] ?? 0 ) . ", "
+                      .  intval( $row['period_days'] ?? 0 ) . ", "
+                      .  "'" . ( $row['period_start_date'] ?? '' ) . "', "
                       .  "'" . ( $row['start_time'] ?? '' ) . "', "
                       .  "'" . ( $row['end_time'] ?? '' ) . "', "
                       .  $jsTimezone . ", "
@@ -924,8 +1085,9 @@ SQL;
                       .  "</td>"
                       .  "<td>" . intval( $row['window_id'] ) . "</td>"
                       .  "<td>" . htmlspecialchars( $row['window_type'], ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $scheduleType, ENT_QUOTES, 'UTF-8' ) . "</td>"
                       .  "<td>" . htmlspecialchars( $row['target_display'], ENT_QUOTES, 'UTF-8' ) . "</td>"
-                      .  "<td>" . htmlspecialchars( $row['days_of_week'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . $scheduleDetails . "</td>"
                       .  "<td>" . htmlspecialchars( $row['start_time'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
                       .  "<td>" . htmlspecialchars( $row['end_time'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
                       .  "<td>" . htmlspecialchars( $row['timezone'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"

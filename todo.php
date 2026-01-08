@@ -25,13 +25,6 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
-// @todo 17-25 Extended schedule types for maintenance windows
-//             - Monthly: specific day of month (e.g., 1st, 15th, last day)
-//             - Quarterly: specific day of quarter
-//             - Annually: specific date each year
-//             - Periodic: every N days (e.g., every 7 days, every 14 days)
-//             - Update schema: add schedule_type, day_of_month, month_of_year, period_days
-//             - Update UI to show/hide fields based on schedule type
 // @todo 17-30 Ad-hoc "do it live" silencing
 //             - Per-host or per-group silence button: "Silence for X minutes/hours"
 //             - Quick presets like global mute (30m, 1h, 2h, etc.)

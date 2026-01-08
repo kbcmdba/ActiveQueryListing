@@ -185,8 +185,21 @@ CREATE TABLE IF NOT EXISTS maintenance_window (
        window_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
        -- Window type: scheduled = recurring time window, adhoc = one-time silencing
      , window_type       ENUM('scheduled', 'adhoc') NOT NULL
+       -- Schedule type for recurring windows (weekly is default for backwards compatibility)
+     , schedule_type     ENUM('weekly', 'monthly', 'quarterly', 'annually', 'periodic')
+                           NULL DEFAULT 'weekly'
+                           COMMENT 'Type of recurring schedule'
        -- Scheduled window fields (used when window_type = 'scheduled')
      , days_of_week      SET('Sun','Mon','Tue','Wed','Thu','Fri','Sat') NULL DEFAULT NULL
+       -- Extended schedule fields
+     , day_of_month      TINYINT UNSIGNED NULL DEFAULT NULL
+                           COMMENT 'Day of month (1-31, 32=last day of month)'
+     , month_of_year     TINYINT UNSIGNED NULL DEFAULT NULL
+                           COMMENT 'Month of year (1-12) for quarterly/annually'
+     , period_days       SMALLINT UNSIGNED NULL DEFAULT NULL
+                           COMMENT 'Number of days between occurrences for periodic schedule'
+     , period_start_date DATE NULL DEFAULT NULL
+                           COMMENT 'Start date for periodic schedule calculation'
      , start_time        TIME NULL DEFAULT NULL
      , end_time          TIME NULL DEFAULT NULL
        -- Timezone for scheduled windows (e.g., 'America/Chicago' for CT)
