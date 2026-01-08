@@ -25,6 +25,12 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 01 Implement Host/Group Limiter
+// @todo 10 Add mute button for klaxon alerts
+//          - URL parameter (e.g., ?mute=1) to disable sound temporarily
+//          - Add "?" help icon with mouseover explaining:
+//            * What the mute button does
+//            * How to re-enable sound
+//            * Chrome instructions for allowing sound from the site
 // @done 02 Protect code from SQL injection (2026-01-06)
 // @done 02 Sort results table - TableSorter implemented
 // @done 03 Set minimum refresh time to 15 seconds - $minRefresh in Config
