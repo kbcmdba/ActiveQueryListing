@@ -25,12 +25,6 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
-// @todo 17-10 Database schema for maintenance windows
-//             - New table: maintenance_windows
-//             - Fields: id, host_id (nullable), group_id (nullable), window_type (scheduled|adhoc)
-//             - Scheduled: days_of_week (bitmask or set), start_time, end_time, timezone
-//             - Ad-hoc: silence_until (datetime)
-//             - Description field for notes
 // @todo 17-20 manageData.php: CRUD UI for scheduled recurring windows
 //             - Per-host recurring schedules (e.g., ce-cook-sql3001 Mo-Sa 10PM-8AM CT)
 //             - Per-group recurring schedules (e.g., POS hosts Mo-Sa 8PM-8:30PM CT)

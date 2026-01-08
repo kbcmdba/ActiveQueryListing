@@ -179,3 +179,61 @@ VALUES ( 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP )
     ON DUPLICATE KEY
 UPDATE updated = CURRENT_TIMESTAMP
      ;
+
+-- Maintenance window definition
+CREATE TABLE IF NOT EXISTS maintenance_window (
+       window_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+       -- Window type: scheduled = recurring time window, adhoc = one-time silencing
+     , window_type       ENUM('scheduled', 'adhoc') NOT NULL
+       -- Scheduled window fields (used when window_type = 'scheduled')
+     , days_of_week      SET('Sun','Mon','Tue','Wed','Thu','Fri','Sat') NULL DEFAULT NULL
+     , start_time        TIME NULL DEFAULT NULL
+     , end_time          TIME NULL DEFAULT NULL
+       -- Timezone for scheduled windows (e.g., 'America/Chicago' for CT)
+     , timezone          VARCHAR(64) NOT NULL DEFAULT 'America/Chicago'
+       -- Ad-hoc silencing (used when window_type = 'adhoc')
+     , silence_until     DATETIME NULL DEFAULT NULL
+       -- Description/notes
+     , description       VARCHAR(255) NOT NULL DEFAULT ''
+       -- Audit fields
+     , created_by        VARCHAR(64) NOT NULL DEFAULT ''
+     , created           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+     , updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           ON UPDATE CURRENT_TIMESTAMP
+       -- Indexes
+     , KEY idx_window_type ( window_type )
+     , KEY idx_silence_until ( silence_until )
+     ) ENGINE=InnoDB
+       COMMENT='Maintenance window definitions - scheduled recurring or ad-hoc silencing' ;
+
+-- Map maintenance windows to individual hosts
+CREATE TABLE IF NOT EXISTS maintenance_window_host_map (
+       mw_host_map_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+     , window_id         INT UNSIGNED NOT NULL
+     , host_id           INT UNSIGNED NOT NULL
+     , created           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+     , updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           ON UPDATE CURRENT_TIMESTAMP
+     , UNIQUE KEY ux_window_host ( window_id, host_id )
+     , FOREIGN KEY fk_mwh_window ( window_id ) REFERENCES maintenance_window( window_id )
+                   ON DELETE CASCADE ON UPDATE CASCADE
+     , FOREIGN KEY fk_mwh_host ( host_id ) REFERENCES host( host_id )
+                   ON DELETE CASCADE ON UPDATE CASCADE
+     ) ENGINE=InnoDB
+       COMMENT='Maps maintenance windows to hosts' ;
+
+-- Map maintenance windows to host groups
+CREATE TABLE IF NOT EXISTS maintenance_window_host_group_map (
+       mw_host_group_map_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+     , window_id         INT UNSIGNED NOT NULL
+     , host_group_id     INT UNSIGNED NOT NULL
+     , created           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+     , updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           ON UPDATE CURRENT_TIMESTAMP
+     , UNIQUE KEY ux_window_host_group ( window_id, host_group_id )
+     , FOREIGN KEY fk_mwg_window ( window_id ) REFERENCES maintenance_window( window_id )
+                   ON DELETE CASCADE ON UPDATE CASCADE
+     , FOREIGN KEY fk_mwg_host_group ( host_group_id ) REFERENCES host_group( host_group_id )
+                   ON DELETE CASCADE ON UPDATE CASCADE
+     ) ENGINE=InnoDB
+       COMMENT='Maps maintenance windows to host groups' ;
