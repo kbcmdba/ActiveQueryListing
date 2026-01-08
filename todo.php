@@ -24,9 +24,7 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 10 Add alternating row colors to index.php tables
-//          - Apply aql-listing class to tables where rows aren't already colored
-//          - Noteworthy and Full sections for Process, Overview, Slave tables
+// @todo 05 Fix "Data loading" row not removed from Full Status Overview
 // @todo 15 Add version summary table
 //          - Show count of hosts per MySQL/MariaDB version
 //          - Mouseover on count shows list of hosts running that version
