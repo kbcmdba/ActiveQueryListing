@@ -703,7 +703,7 @@ function fillGroupForm( group_id
     document.getElementById( 'groupTag' ).value = group_tag ;
     document.getElementById( 'shortDescription' ).value = short_desc ;
     document.getElementById( 'fullDescription' ).value = full_desc ;
-    elements = document.getElementById( 'groupSelect' ) ;
+    var elements = document.getElementById( 'groupSelect' ) ;
     elements.value = '' ;
     for ( var i = 0 ; i < elements.length ; i++ ) {
         for ( var j = 0 ; j < host_list.length ; j++ ) {
@@ -711,6 +711,57 @@ function fillGroupForm( group_id
                 elements[ i ].selected = true ;
             }
         }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+function fillMaintenanceWindowForm( window_id
+                                  , window_type
+                                  , target_type
+                                  , target_id
+                                  , days_of_week
+                                  , start_time
+                                  , end_time
+                                  , timezone
+                                  , silence_until
+                                  , description ) {
+    document.getElementById( 'windowId' ).value = window_id ;
+    document.getElementById( 'windowType' ).value = window_type ;
+    document.getElementById( 'targetType' ).value = target_type ;
+
+    // Set the appropriate target dropdown
+    if ( target_type === 'host' ) {
+        document.getElementById( 'targetHost' ).value = target_id ;
+    } else {
+        document.getElementById( 'targetGroup' ).value = target_id ;
+    }
+
+    // Set days of week checkboxes
+    var dayCheckboxes = document.querySelectorAll( 'input[name="daysOfWeek[]"]' ) ;
+    var daysArray = days_of_week ? days_of_week.split( ',' ) : [] ;
+    dayCheckboxes.forEach( function( cb ) {
+        cb.checked = daysArray.indexOf( cb.value ) !== -1 ;
+    } ) ;
+
+    document.getElementById( 'startTime' ).value = start_time ;
+    document.getElementById( 'endTime' ).value = end_time ;
+    document.getElementById( 'timezone' ).value = timezone ;
+
+    // Convert silence_until to datetime-local format (remove seconds)
+    if ( silence_until && silence_until.length > 16 ) {
+        silence_until = silence_until.substring( 0, 16 ).replace( ' ', 'T' ) ;
+    }
+    document.getElementById( 'silenceUntil' ).value = silence_until ;
+
+    document.getElementById( 'mwDescription' ).value = description ;
+
+    // Toggle visibility based on selections
+    if ( typeof toggleWindowTypeFields === 'function' ) {
+        toggleWindowTypeFields() ;
+    }
+    if ( typeof toggleTargetFields === 'function' ) {
+        toggleTargetFields() ;
     }
 }
 

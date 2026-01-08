@@ -125,6 +125,7 @@ $page->setTop( "<h2>AQL: Manage Data</h2>\n"
              .  "<a href=\"index.php\">ActiveQueryListing</a>\n"
              .  " | <a href=\"./manageData.php?data=Hosts\">Manage Hosts</a>\n"
              .  " | <a href=\"./manageData.php?data=Groups\">Manage Groups</a>\n"
+             .  " | <a href=\"./manageData.php?data=MaintenanceWindows\">Manage Maintenance Windows</a>\n"
              .  " | <a href=\"./manageData.php?logout=logout\">Log out of Manage Data</a>\n"
              .  "<p />\n"
              ) ;
@@ -619,6 +620,330 @@ HTML;
         }
         catch (DaoException $e) {
         $page->appendBody( "<pre>Error interacting with the database\n\n" . $e->getMessage() . "\n</pre>\n" ) ;
+        }
+        $page->displayPage() ;
+
+        break ;
+    case 'MaintenanceWindows':
+        $dbc = new DBConnection();
+        $dbh = $dbc->getConnection();
+        $dbh->set_charset('utf8');
+
+        $body = $links = $errors = '' ;
+        $action = Tools::param( 'action' ) ;
+        $windowId = Tools::param( 'windowId' ) ;
+        $windowType = Tools::param( 'windowType' ) ;
+        $targetType = Tools::param( 'targetType' ) ;  // 'host' or 'group'
+        $targetId = Tools::param( 'targetId' ) ;
+        $daysOfWeek = Tools::params( 'daysOfWeek' ) ;  // array
+        $startTime = Tools::param( 'startTime' ) ;
+        $endTime = Tools::param( 'endTime' ) ;
+        $timezone = Tools::param( 'timezone' ) ;
+        $silenceUntil = Tools::param( 'silenceUntil' ) ;
+        $description = Tools::param( 'description' ) ;
+
+        // Validation
+        if ( ( ( 'Update' === $action ) || ( 'Delete' === $action ) )
+             && ! Tools::isNumeric( $windowId )
+           ) {
+            $errors .= "Invalid Window ID<br />\n" ;
+        }
+        if ( 'Delete' !== $action && '' !== $action ) {
+            if ( ! in_array( $windowType, [ 'scheduled', 'adhoc' ] ) ) {
+                $errors .= "Window Type must be 'scheduled' or 'adhoc'<br />\n" ;
+            }
+            if ( ! in_array( $targetType, [ 'host', 'group' ] ) ) {
+                $errors .= "Target Type must be 'host' or 'group'<br />\n" ;
+            }
+            if ( ! Tools::isNumeric( $targetId ) || $targetId <= 0 ) {
+                $errors .= "Please select a valid Host or Group<br />\n" ;
+            }
+            if ( 'scheduled' === $windowType ) {
+                if ( empty( $daysOfWeek ) ) {
+                    $errors .= "Please select at least one day of the week<br />\n" ;
+                }
+                if ( empty( $startTime ) || empty( $endTime ) ) {
+                    $errors .= "Start Time and End Time are required for scheduled windows<br />\n" ;
+                }
+            }
+            if ( 'adhoc' === $windowType ) {
+                if ( empty( $silenceUntil ) ) {
+                    $errors .= "Silence Until is required for ad-hoc windows<br />\n" ;
+                }
+            }
+        }
+
+        if ( ( '' != $errors ) && ( '' != $action ) ) {
+            $page->setBody( $links . $body . $errors ) ;
+            $page->displayPage() ;
+            exit( 0 ) ;
+        }
+
+        // Process action
+        switch ( $action ) {
+            case '':
+                break;
+            case 'Add':
+                $body .= 'Add - ' ;
+                // Convert days array to SET string
+                $daysSet = is_array( $daysOfWeek ) ? implode( ',', $daysOfWeek ) : '' ;
+                $sql = 'INSERT INTO maintenance_window SET window_type = ?, days_of_week = ?, start_time = ?, end_time = ?, timezone = ?, silence_until = ?, description = ?, created_by = ?' ;
+                $stmt = $dbh->prepare( $sql ) ;
+                $startTimeVal = empty( $startTime ) ? null : $startTime ;
+                $endTimeVal = empty( $endTime ) ? null : $endTime ;
+                $silenceUntilVal = empty( $silenceUntil ) ? null : $silenceUntil ;
+                $createdBy = $_SESSION['userName'] ?? '' ;
+                $stmt->bind_param( 'ssssssss', $windowType, $daysSet, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $createdBy ) ;
+                if ( $stmt->execute() ) {
+                    $newWindowId = $dbh->insert_id ;
+                    // Add to mapping table
+                    if ( 'host' === $targetType ) {
+                        $mapSql = 'INSERT INTO maintenance_window_host_map (window_id, host_id) VALUES (?, ?)' ;
+                    } else {
+                        $mapSql = 'INSERT INTO maintenance_window_host_group_map (window_id, host_group_id) VALUES (?, ?)' ;
+                    }
+                    $mapStmt = $dbh->prepare( $mapSql ) ;
+                    $mapStmt->bind_param( 'ii', $newWindowId, $targetId ) ;
+                    $mapStmt->execute() ;
+                    $body .= "Added window ID $newWindowId<br />\n" ;
+                } else {
+                    $body .= "Error: " . $dbh->error . "<br />\n" ;
+                }
+                break;
+            case 'Update':
+                $body .= 'Update - ' ;
+                $daysSet = is_array( $daysOfWeek ) ? implode( ',', $daysOfWeek ) : '' ;
+                $sql = 'UPDATE maintenance_window SET window_type = ?, days_of_week = ?, start_time = ?, end_time = ?, timezone = ?, silence_until = ?, description = ? WHERE window_id = ?' ;
+                $stmt = $dbh->prepare( $sql ) ;
+                $startTimeVal = empty( $startTime ) ? null : $startTime ;
+                $endTimeVal = empty( $endTime ) ? null : $endTime ;
+                $silenceUntilVal = empty( $silenceUntil ) ? null : $silenceUntil ;
+                $stmt->bind_param( 'sssssssi', $windowType, $daysSet, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $windowId ) ;
+                if ( $stmt->execute() ) {
+                    // Update mapping - remove old, add new
+                    $dbh->query( "DELETE FROM maintenance_window_host_map WHERE window_id = $windowId" ) ;
+                    $dbh->query( "DELETE FROM maintenance_window_host_group_map WHERE window_id = $windowId" ) ;
+                    if ( 'host' === $targetType ) {
+                        $mapSql = 'INSERT INTO maintenance_window_host_map (window_id, host_id) VALUES (?, ?)' ;
+                    } else {
+                        $mapSql = 'INSERT INTO maintenance_window_host_group_map (window_id, host_group_id) VALUES (?, ?)' ;
+                    }
+                    $mapStmt = $dbh->prepare( $mapSql ) ;
+                    $mapStmt->bind_param( 'ii', $windowId, $targetId ) ;
+                    $mapStmt->execute() ;
+                    $body .= "Updated window ID $windowId<br />\n" ;
+                } else {
+                    $body .= "Error: " . $dbh->error . "<br />\n" ;
+                }
+                break;
+            case 'Delete':
+                $body .= 'Delete - ' ;
+                // Foreign keys with CASCADE will handle mapping table cleanup
+                $sql = 'DELETE FROM maintenance_window WHERE window_id = ?' ;
+                $stmt = $dbh->prepare( $sql ) ;
+                $stmt->bind_param( 'i', $windowId ) ;
+                if ( $stmt->execute() ) {
+                    $body .= "Deleted window ID $windowId<br />\n" ;
+                } else {
+                    $body .= "Error: " . $dbh->error . "<br />\n" ;
+                }
+                break;
+        }
+
+        // Fetch hosts and groups for dropdowns
+        $hostsResult = $dbh->query( 'SELECT host_id, CONCAT(hostname, ":", port_number) AS display FROM host ORDER BY hostname, port_number' ) ;
+        $hostOptions = '<option value="">-- Select Host --</option>' ;
+        while ( $row = $hostsResult->fetch_assoc() ) {
+            $hostOptions .= '<option value="' . $row['host_id'] . '">' . htmlspecialchars( $row['display'], ENT_QUOTES, 'UTF-8' ) . '</option>' ;
+        }
+
+        $groupsResult = $dbh->query( 'SELECT host_group_id, tag FROM host_group ORDER BY tag' ) ;
+        $groupOptions = '<option value="">-- Select Group --</option>' ;
+        while ( $row = $groupsResult->fetch_assoc() ) {
+            $groupOptions .= '<option value="' . $row['host_group_id'] . '">' . htmlspecialchars( $row['tag'], ENT_QUOTES, 'UTF-8' ) . '</option>' ;
+        }
+
+        // Form
+        $body .= <<<HTML
+<form id="MaintenanceWindowForm" action="manageData.php">
+  <input type="hidden" name="data" value="MaintenanceWindows">
+  <table id="MaintenanceWindowTable" border=1 cellspacing=0 cellpadding=2>
+    <caption>Maintenance Window Form</caption>
+    <tr><th>Window ID</th><td><input type="number" id="windowId" name="windowId" readonly="readonly" value="" size=5 /></td></tr>
+    <tr><th>Window Type <a onclick="alert('Scheduled: Recurring window that repeats weekly on selected days/times.\\n\\nAd-hoc: One-time silencing until a specific date/time (e.g., while working an issue).'); return false;" style="cursor: help;">?</a></th><td>
+      <select id="windowType" name="windowType" onchange="toggleWindowTypeFields()">
+        <option value="scheduled">Scheduled (Recurring)</option>
+        <option value="adhoc">Ad-hoc (One-time)</option>
+      </select>
+    </td></tr>
+    <tr><th>Target Type</th><td>
+      <select id="targetType" name="targetType" onchange="toggleTargetFields()">
+        <option value="host">Host</option>
+        <option value="group">Group</option>
+      </select>
+    </td></tr>
+    <tr id="hostRow"><th>Host</th><td>
+      <select id="targetHost" name="targetId">$hostOptions</select>
+    </td></tr>
+    <tr id="groupRow" style="display:none;"><th>Group</th><td>
+      <select id="targetGroup">$groupOptions</select>
+    </td></tr>
+    <tr id="daysRow"><th>Days of Week</th><td>
+      <label><input type="checkbox" name="daysOfWeek[]" value="Sun"> Sun</label>
+      <label><input type="checkbox" name="daysOfWeek[]" value="Mon"> Mon</label>
+      <label><input type="checkbox" name="daysOfWeek[]" value="Tue"> Tue</label>
+      <label><input type="checkbox" name="daysOfWeek[]" value="Wed"> Wed</label>
+      <label><input type="checkbox" name="daysOfWeek[]" value="Thu"> Thu</label>
+      <label><input type="checkbox" name="daysOfWeek[]" value="Fri"> Fri</label>
+      <label><input type="checkbox" name="daysOfWeek[]" value="Sat"> Sat</label>
+    </td></tr>
+    <tr id="startTimeRow"><th>Start Time <a onclick="alert('Start and End times define the daily window.\\n\\nOvernight spans are supported: e.g., Start 22:00, End 08:00 means 10PM to 8AM the next day.'); return false;" style="cursor: help;">?</a></th><td><input type="time" id="startTime" name="startTime" /></td></tr>
+    <tr id="endTimeRow"><th>End Time</th><td><input type="time" id="endTime" name="endTime" /></td></tr>
+    <tr id="timezoneRow"><th>Timezone <a onclick="alert('PHP timezone identifier for scheduled windows.\\n\\nExamples:\\n• America/Chicago (Central)\\n• America/Denver (Mountain)\\n• America/New_York (Eastern)\\n• America/Los_Angeles (Pacific)\\n• UTC'); return false;" style="cursor: help;">?</a></th><td><input type="text" id="timezone" name="timezone" value="America/Chicago" size="30" /></td></tr>
+    <tr id="silenceUntilRow" style="display:none;"><th>Silence Until <a onclick="alert('For ad-hoc windows only.\\n\\nSpecify when silencing should end. Alerts will be suppressed until this date/time.'); return false;" style="cursor: help;">?</a></th><td><input type="datetime-local" id="silenceUntil" name="silenceUntil" step="60" /></td></tr>
+    <tr><th>Description</th><td><input type="text" id="mwDescription" name="description" size="60" /></td></tr>
+  </table>
+  <input type="submit" name="action" value="Add"> &nbsp;
+  <input type="submit" name="action" value="Update"> &nbsp;
+  <input type="submit" name="action" value="Delete"> &nbsp;
+</form>
+
+<script>
+function toggleWindowTypeFields() {
+    var windowType = document.getElementById('windowType').value;
+    var scheduledRows = ['daysRow', 'startTimeRow', 'endTimeRow', 'timezoneRow'];
+    var adhocRows = ['silenceUntilRow'];
+
+    scheduledRows.forEach(function(id) {
+        document.getElementById(id).style.display = (windowType === 'scheduled') ? '' : 'none';
+    });
+    adhocRows.forEach(function(id) {
+        document.getElementById(id).style.display = (windowType === 'adhoc') ? '' : 'none';
+    });
+}
+
+function toggleTargetFields() {
+    var targetType = document.getElementById('targetType').value;
+    document.getElementById('hostRow').style.display = (targetType === 'host') ? '' : 'none';
+    document.getElementById('groupRow').style.display = (targetType === 'group') ? '' : 'none';
+    // Sync the hidden targetId field
+    if (targetType === 'host') {
+        document.getElementById('targetHost').name = 'targetId';
+        document.getElementById('targetGroup').name = '';
+    } else {
+        document.getElementById('targetHost').name = '';
+        document.getElementById('targetGroup').name = 'targetId';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleWindowTypeFields();
+    toggleTargetFields();
+});
+</script>
+
+<p></p>
+
+<table id="maintenanceWindowEdit" border=1 cellspacing=0 cellpadding=2 class="tablesorter aql-listing">
+  <thead>
+    <tr>
+      <th>Actions</th>
+      <th>ID</th>
+      <th>Type</th>
+      <th>Target</th>
+      <th>Days</th>
+      <th>Start</th>
+      <th>End</th>
+      <th>Timezone</th>
+      <th>Silence Until</th>
+      <th>Description</th>
+      <th>Created By</th>
+      <th>Created</th>
+    </tr>
+  </thead>
+  <tbody>
+
+HTML;
+
+        // Query existing windows with their targets
+        $windowsQuery = <<<SQL
+SELECT mw.window_id
+     , mw.window_type
+     , CASE
+         WHEN mwhm.host_id IS NOT NULL THEN 'host'
+         WHEN mwgm.host_group_id IS NOT NULL THEN 'group'
+         ELSE 'none'
+       END AS target_type
+     , COALESCE(mwhm.host_id, mwgm.host_group_id) AS target_id
+     , CASE
+         WHEN mwhm.host_id IS NOT NULL THEN CONCAT(h.hostname, ':', h.port_number)
+         WHEN mwgm.host_group_id IS NOT NULL THEN hg.tag
+         ELSE '(none)'
+       END AS target_display
+     , mw.days_of_week
+     , mw.start_time
+     , mw.end_time
+     , mw.timezone
+     , mw.silence_until
+     , mw.description
+     , mw.created_by
+     , mw.created
+  FROM maintenance_window mw
+  LEFT JOIN maintenance_window_host_map mwhm ON mwhm.window_id = mw.window_id
+  LEFT JOIN host h ON h.host_id = mwhm.host_id
+  LEFT JOIN maintenance_window_host_group_map mwgm ON mwgm.window_id = mw.window_id
+  LEFT JOIN host_group hg ON hg.host_group_id = mwgm.host_group_id
+ ORDER BY mw.window_id DESC
+SQL;
+
+        try {
+            $result = $dbh->query( $windowsQuery ) ;
+            if ( ! $result ) {
+                throw new \ErrorException( "Query failed: $windowsQuery\n Error: " . $dbh->error ) ;
+            }
+            while ( $row = $result->fetch_assoc() ) {
+                $jsDescription = htmlspecialchars( json_encode( $row['description'] ?? '' ), ENT_QUOTES, 'UTF-8' ) ;
+                $jsDays = htmlspecialchars( json_encode( $row['days_of_week'] ?? '' ), ENT_QUOTES, 'UTF-8' ) ;
+                $jsTimezone = htmlspecialchars( json_encode( $row['timezone'] ?? 'America/Chicago' ), ENT_QUOTES, 'UTF-8' ) ;
+
+                $body .= "<tr>"
+                      .  "<td style=\"text-align: center\">"
+                      .  "<button type=\"button\" onclick=\"fillMaintenanceWindowForm("
+                      .  intval( $row['window_id'] ) . ", "
+                      .  "'" . $row['window_type'] . "', "
+                      .  "'" . $row['target_type'] . "', "
+                      .  intval( $row['target_id'] ?? 0 ) . ", "
+                      .  $jsDays . ", "
+                      .  "'" . ( $row['start_time'] ?? '' ) . "', "
+                      .  "'" . ( $row['end_time'] ?? '' ) . "', "
+                      .  $jsTimezone . ", "
+                      .  "'" . ( $row['silence_until'] ?? '' ) . "', "
+                      .  $jsDescription
+                      .  "); return false;\">Edit</button>"
+                      .  "</td>"
+                      .  "<td>" . intval( $row['window_id'] ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['window_type'], ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['target_display'], ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['days_of_week'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['start_time'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['end_time'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['timezone'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['silence_until'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['description'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['created_by'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "<td>" . htmlspecialchars( $row['created'] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>"
+                      .  "</tr>\n" ;
+            }
+            $body .= <<<HTML
+  </tbody>
+</table>
+
+HTML;
+            $page->setBody( $links . $body ) ;
+        }
+        catch ( \Exception $e ) {
+            $page->appendBody( "<pre>Error: " . $e->getMessage() . "</pre>\n" ) ;
         }
         $page->displayPage() ;
 
