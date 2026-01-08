@@ -24,9 +24,6 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 15 Add version summary table
-//          - Show count of hosts per MySQL/MariaDB version
-//          - Mouseover on count shows list of hosts running that version
 // @todo 17 Implement maintenance windows for hosts
 //          - Allow scheduling maintenance windows (start time, end time)
 //          - Suppress error alerts for hosts during their maintenance window
