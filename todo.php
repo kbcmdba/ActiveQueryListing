@@ -33,6 +33,11 @@ namespace com\kbcmdba\aql ;
 //             - A fast query holding locks that block others is noteworthy
 //             - Include count of queries being blocked
 //             - Helps identify lock pile-ups caused by quick queries
+// @todo 04 Alternating row colors for all alert levels in Full Process Listing
+//          - Each level gets two shades: bright and muted (e.g., level4: red/dark red)
+//          - Helps visually track consecutive rows of the same level
+//          - Apply to level0 through level4 (and error level if applicable)
+//          - Add version query param to main.css in WebPage.php for cache busting
 // @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
 // @todo 17-30 Ad-hoc "do it live" silencing
 //             - Per-host or per-group silence button: "Silence for X minutes/hours"
