@@ -43,3 +43,27 @@ namespace com\kbcmdba\aql ;
 //          - Update DDL (AUTO_INCREMENT -> IDENTITY, ENUM -> CHECK constraints)
 //          - Skip replication monitoring for v1 (AlwaysOn is fundamentally different)
 // @todo 51 Add CA cert to system trust store for LDAP SSL verification
+// @todo 52 Add Redis support for long-running query monitoring
+//          - Use CLIENT LIST to get connected clients and current commands
+//          - Use SLOWLOG GET to retrieve slow queries
+//          - Use INFO commandstats for command statistics
+//          - Implement phpredis or Predis connection in DBConnection.php
+//          - Add Redis-specific display in AJAXgetaql.php
+// @todo 53 Add system load monitoring per host
+//          - Read /proc/loadavg via SSH/agent or MySQL LOAD_FILE() if permitted
+//          - Display load averages in Host Status Overview
+// @todo 54 Add user statistics drilldown
+//          - Display like Noteworthy Status Overview but per-user across all watched systems
+//          - Columns: User, Longest Running, Idle Time (aggregate), Level counts (0-4, Error)
+//          - Show RO/RW counts, Duplicate/Similar/Unique counts, Thread count
+//          - Drilldown to see individual queries per user
+// @todo 55 Add source host statistics drilldown
+//          - Show which client hosts are hammering the database
+//          - Query counts and time grouped by source host
+//          - Drilldown to see queries from each source host
+// @todo 56 Add alternating row colors to index.php tables
+//          - Apply aql-listing class to tables where rows aren't already colored
+//          - Noteworthy and Full sections for Process, Overview, Slave tables
+// @todo 57 Add version summary table
+//          - Show count of hosts per MySQL/MariaDB version
+//          - Mouseover on count shows list of hosts running that version
