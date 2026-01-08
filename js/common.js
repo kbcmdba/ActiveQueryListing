@@ -533,8 +533,7 @@ function fileIssue( hostname, ro, fromHost, user, db, time, safeUrl ) {
         '*User:* ' + user + '\n' +
         '*Source Host:* ' + fromHost + '\n' +
         '*Query Time:* ' + time + ' seconds\n' +
-        '*Access:* ' + roLabel + '\n' +
-        '*Query Hash:* ' + queryHash + '\n\n' +
+        '*Access:* ' + roLabel + '\n\n' +
         '*Query:*\n{code:sql}\n' + query + '\n{code}';
 
     var jiraUrl = jiraConfig.baseUrl + 'secure/CreateIssueDetails!init.jspa?' +

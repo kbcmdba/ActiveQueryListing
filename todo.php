@@ -29,6 +29,10 @@ namespace com\kbcmdba\aql ;
 //           - Mouseover on blocked query shows blocking thread ID and query text
 //           - Use performance_schema.data_locks/data_lock_waits (MySQL 8.0+)
 //           - Fallback to INFORMATION_SCHEMA.INNODB_LOCK_WAITS for older versions
+// @todo 03-10 Show blocking queries in Noteworthy Status Overview regardless of time
+//             - A fast query holding locks that block others is noteworthy
+//             - Include count of queries being blocked
+//             - Helps identify lock pile-ups caused by quick queries
 // @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
 // @todo 17-30 Ad-hoc "do it live" silencing
 //             - Per-host or per-group silence button: "Silence for X minutes/hours"
