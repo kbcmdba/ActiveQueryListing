@@ -353,43 +353,177 @@ JS
     $page->setBody(
         <<<HTML
 <script>
-// Mute state: URL param takes precedence, then cookie
-function isMuted() {
+// Timed mute support: cookie stores expiry timestamp (0 = indefinite, >0 = when to unmute)
+const MAX_MUTE_DAYS = 90;
+
+function getMuteExpiry() {
+    // Check URL param first
     const urlParams = new URLSearchParams(window.location.search);
-    const urlMute = urlParams.get('mute');
-    if (urlMute !== null) {
-        return urlMute === '1';
+    const urlMuteUntil = urlParams.get('mute_until');
+    if (urlMuteUntil !== null) {
+        return parseInt(urlMuteUntil, 10);
     }
-    return document.cookie.split('; ').some(c => c === 'aql_mute=1');
+    // Legacy support: mute=1 means indefinite
+    if (urlParams.get('mute') === '1') {
+        return 0;
+    }
+    // Check cookie
+    const match = document.cookie.match(/aql_mute_until=(\d+)/);
+    return match ? parseInt(match[1], 10) : null;
 }
 
-function setMuteCookie(muted) {
-    const days = 365;
-    const expires = new Date(Date.now() + days * 864e5).toUTCString();
-    document.cookie = 'aql_mute=' + (muted ? '1' : '0') + '; expires=' + expires + '; path=/';
+function isMuted() {
+    const expiry = getMuteExpiry();
+    if (expiry === null) return false;
+    if (expiry === 0) return true; // Indefinite
+    return Date.now() < expiry;
 }
 
-function toggleMute() {
-    const newMuted = !isMuted();
-    setMuteCookie(newMuted);
-    // Update URL to reflect state (for sharing)
-    const url = new URL(window.location.href);
-    if (newMuted) {
-        url.searchParams.set('mute', '1');
+// Get the directory path for this AQL installation (for path-specific cookies)
+function getAqlPath() {
+    const path = window.location.pathname;
+    // Get directory portion (remove filename if present)
+    return path.substring(0, path.lastIndexOf('/') + 1) || '/';
+}
+
+function setMuteCookie(expiryTimestamp) {
+    const cookieExpires = new Date(Date.now() + 365 * 864e5).toUTCString();
+    document.cookie = 'aql_mute_until=' + expiryTimestamp + '; expires=' + cookieExpires + '; path=' + getAqlPath();
+}
+
+function clearMuteCookie() {
+    document.cookie = 'aql_mute_until=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=' + getAqlPath();
+}
+
+function setMuteFor(days, hours, minutes) {
+    days = parseInt(days, 10) || 0;
+    hours = parseInt(hours, 10) || 0;
+    minutes = parseInt(minutes, 10) || 0;
+
+    if (days === 0 && hours === 0 && minutes === 0) {
+        // Indefinite mute
+        setMuteCookie(0);
     } else {
-        url.searchParams.delete('mute');
+        const ms = ((days * 24 + hours) * 60 + minutes) * 60 * 1000;
+        setMuteCookie(Date.now() + ms);
     }
-    window.location.href = url.toString();
+    updateMuteUI();
+}
+
+function setMuteUntil(dateTimeStr) {
+    const target = new Date(dateTimeStr).getTime();
+    const maxAllowed = Date.now() + MAX_MUTE_DAYS * 24 * 60 * 60 * 1000;
+    if (target > maxAllowed) {
+        alert('Maximum mute duration is ' + MAX_MUTE_DAYS + ' days.');
+        return;
+    }
+    if (target <= Date.now()) {
+        alert('Please select a future date/time.');
+        return;
+    }
+    setMuteCookie(target);
+    updateMuteUI();
+}
+
+function clearMute() {
+    clearMuteCookie();
+    // Remove URL params
+    const url = new URL(window.location.href);
+    url.searchParams.delete('mute');
+    url.searchParams.delete('mute_until');
+    if (url.href !== window.location.href) {
+        window.location.href = url.toString();
+    } else {
+        updateMuteUI();
+    }
+}
+
+function formatTimeRemaining(ms) {
+    if (ms <= 0) return 'expired';
+    const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+    let parts = [];
+    if (days > 0) parts.push(days + 'd');
+    if (hours > 0) parts.push(hours + 'h');
+    if (minutes > 0 || parts.length === 0) parts.push(minutes + 'm');
+    return parts.join(' ');
+}
+
+function updateMuteUI() {
+    const expiry = getMuteExpiry();
+    const muteStatus = document.getElementById('muteStatus');
+    const muteControls = document.getElementById('muteControls');
+    const unmuteBtnContainer = document.getElementById('unmuteBtnContainer');
+
+    if (expiry === null || (expiry > 0 && Date.now() >= expiry)) {
+        // Not muted or expired
+        muteStatus.textContent = 'Alerts: ON';
+        muteStatus.style.color = 'lightgreen';
+        muteControls.style.display = 'block';
+        unmuteBtnContainer.style.display = 'none';
+        if (expiry > 0 && Date.now() >= expiry) {
+            clearMuteCookie(); // Clean up expired
+        }
+    } else if (expiry === 0) {
+        // Indefinite mute
+        muteStatus.textContent = 'Alerts: MUTED (indefinite)';
+        muteStatus.style.color = 'yellow';
+        muteControls.style.display = 'none';
+        unmuteBtnContainer.style.display = 'block';
+    } else {
+        // Timed mute
+        const remaining = expiry - Date.now();
+        muteStatus.textContent = 'Alerts: MUTED (' + formatTimeRemaining(remaining) + ' left)';
+        muteStatus.style.color = 'yellow';
+        muteControls.style.display = 'none';
+        unmuteBtnContainer.style.display = 'block';
+    }
+}
+
+function applyQuickMute(preset) {
+    switch(preset) {
+        case '30m': setMuteFor(0, 0, 30); break;
+        case '1h': setMuteFor(0, 1, 0); break;
+        case '2h': setMuteFor(0, 2, 0); break;
+        case '4h': setMuteFor(0, 4, 0); break;
+        case '8h': setMuteFor(0, 8, 0); break;
+        case '1d': setMuteFor(1, 0, 0); break;
+        case 'indef': setMuteFor(0, 0, 0); break;
+    }
+}
+
+function applyCustomMute() {
+    const d = document.getElementById('muteDays').value;
+    const h = document.getElementById('muteHours').value;
+    const m = document.getElementById('muteMinutes').value;
+    setMuteFor(d, h, m);
+}
+
+function applyDateTimeMute() {
+    const dt = document.getElementById('muteUntilDateTime').value;
+    if (dt) setMuteUntil(dt);
 }
 
 // Sync cookie with URL param on page load
 (function() {
     const urlParams = new URLSearchParams(window.location.search);
+    const urlMuteUntil = urlParams.get('mute_until');
     const urlMute = urlParams.get('mute');
-    if (urlMute !== null) {
-        setMuteCookie(urlMute === '1');
+    if (urlMuteUntil !== null) {
+        setMuteCookie(parseInt(urlMuteUntil, 10));
+    } else if (urlMute === '1') {
+        setMuteCookie(0); // Indefinite
+    } else if (urlMute === '0') {
+        clearMuteCookie();
     }
 })();
+
+// Update UI on load and periodically
+document.addEventListener('DOMContentLoaded', function() {
+    updateMuteUI();
+    setInterval(updateMuteUI, 60000); // Update every minute
+});
 </script>
 <audio id="klaxon" src="Images/honk-alarm-repeat-loop-101015.mp3" preload="auto"></audio>
 <a id="graphs"></a>
@@ -408,9 +542,35 @@ function toggleMute() {
           <input type="submit" value="Update" />
         </form>
         <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
-        <br />
-        <button id="muteButton" onclick="toggleMute(); return false;">$muteButtonText</button>
-        <a onclick="alert('Sound Controls Help\\n\\n• Mute/Unmute: Click the button to toggle alert sounds. This sets a cookie and adds ?mute=1 to the URL for sharing.\\n\\n• To re-enable: Click Unmute Alerts, or remove mute=1 from the URL.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow. Then refresh the page.\\n\\n• The alert plays 3 times when a Level 4 (critical) query is detected.'); return false;" style="cursor: help; margin-left: 5px;">?</a>
+        <br /><br />
+        <div id="muteStatus" style="font-weight: bold; margin-bottom: 5px;">Alerts: ON</div>
+        <div id="muteControls">
+          <nobr>
+            <button onclick="applyQuickMute('30m'); return false;" title="Mute for 30 minutes">30m</button>
+            <button onclick="applyQuickMute('1h'); return false;" title="Mute for 1 hour">1h</button>
+            <button onclick="applyQuickMute('2h'); return false;" title="Mute for 2 hours">2h</button>
+            <button onclick="applyQuickMute('4h'); return false;" title="Mute for 4 hours">4h</button>
+            <button onclick="applyQuickMute('8h'); return false;" title="Mute for 8 hours">8h</button>
+            <button onclick="applyQuickMute('1d'); return false;" title="Mute for 1 day">1d</button>
+            <button onclick="applyQuickMute('indef'); return false;" title="Mute indefinitely">∞</button>
+          </nobr>
+          <br />
+          <nobr style="font-size: 11px;">
+            <input type="number" id="muteDays" value="0" min="0" max="90" style="width: 40px;" title="Days"/>d
+            <input type="number" id="muteHours" value="0" min="0" max="23" style="width: 40px;" title="Hours"/>h
+            <input type="number" id="muteMinutes" value="0" min="0" max="59" style="width: 40px;" title="Minutes"/>m
+            <button onclick="applyCustomMute(); return false;">Set</button>
+          </nobr>
+          <br />
+          <nobr style="font-size: 11px;">
+            Until: <input type="datetime-local" id="muteUntilDateTime" style="width: 150px;"/>
+            <button onclick="applyDateTimeMute(); return false;">Set</button>
+          </nobr>
+        </div>
+        <div id="unmuteBtnContainer" style="display: none;">
+          <button onclick="clearMute(); return false;">Unmute Alerts</button>
+        </div>
+        <a onclick="alert('Sound Controls Help\\n\\n• Quick mute: Click 30m, 1h, 2h, etc. to mute for that duration.\\n• ∞ button: Mute indefinitely until you click Unmute.\\n• Custom duration: Enter days/hours/minutes and click Set.\\n• Until date/time: Pick a specific date/time to unmute.\\n• Maximum mute: 90 days.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow.'); return false;" style="cursor: help; margin-left: 5px;">?</a>
       </center>
     </td>
     <td class="headerTableTd">

@@ -735,14 +735,26 @@ function initAlerts() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Check if alerts are muted via URL parameter or cookie
+// Check if alerts are muted via URL parameter or cookie (supports timed mute)
 function isAlertMuted() {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlMute = urlParams.get('mute');
-    if (urlMute !== null) {
-        return urlMute === '1';
+    // Check URL params first
+    const urlMuteUntil = urlParams.get('mute_until');
+    if (urlMuteUntil !== null) {
+        const expiry = parseInt(urlMuteUntil, 10);
+        return expiry === 0 || Date.now() < expiry;
     }
-    return document.cookie.split('; ').some(c => c === 'aql_mute=1');
+    // Legacy support: mute=1 means indefinite
+    if (urlParams.get('mute') === '1') {
+        return true;
+    }
+    // Check cookie for timed mute
+    const match = document.cookie.match(/aql_mute_until=(\d+)/);
+    if (match) {
+        const expiry = parseInt(match[1], 10);
+        return expiry === 0 || Date.now() < expiry;
+    }
+    return false;
 }
 
 // Call this when a long-running query is detected
