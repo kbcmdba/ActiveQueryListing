@@ -24,47 +24,41 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 10 Add mute button for klaxon alerts
-//          - URL parameter (e.g., ?mute=1) to disable sound temporarily
-//          - Add "?" help icon with mouseover explaining:
-//            * What the mute button does
-//            * How to re-enable sound
-//            * Chrome instructions for allowing sound from the site
-// @todo 26 Add alternating row colors to index.php tables
+// @todo 10 Add alternating row colors to index.php tables
 //          - Apply aql-listing class to tables where rows aren't already colored
 //          - Noteworthy and Full sections for Process, Overview, Slave tables
-// @todo 27 Add version summary table
+// @todo 15 Add version summary table
 //          - Show count of hosts per MySQL/MariaDB version
 //          - Mouseover on count shows list of hosts running that version
-// @todo 28 Jira integration for File Issue button
+// @todo 20 Jira integration for File Issue button
 //          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
 //          - Pre-fill issue with query data (PCI-masked), query time, user, source host
 //          - Include database, lock state, and other relevant context
 //          - Use Jira REST API to create issues
-// @todo 29 Add light/dark mode toggle
+// @todo 25 Add light/dark mode toggle
 //          - Current UI is dark mode only
 //          - Use CSS variables for colors (--bg-color, --text-color, etc.)
 //          - Add .theme-light class that overrides the variables
 //          - JavaScript toggles class on body based on cookie/URL param
 //          - URL parameter (e.g., ?theme=light) for easy sharing, syncs to cookie
-// @todo 50 Add MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
+// @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
 //          - Convert INFORMATION_SCHEMA.PROCESSLIST to sys.dm_exec_requests/sessions
 //          - Handle lock detection via sys.dm_tran_locks
 //          - Update DDL (AUTO_INCREMENT -> IDENTITY, ENUM -> CHECK constraints)
 //          - Skip replication monitoring for v1 (AlwaysOn is fundamentally different)
-// @todo 51 Add CA cert to system trust store for LDAP SSL verification
-// @todo 52 Add Redis support for long-running query monitoring
+// @todo 35 Add CA cert to system trust store for LDAP SSL verification
+// @todo 40 Add Redis support for long-running query monitoring
 //          - Use CLIENT LIST to get connected clients and current commands
 //          - Use SLOWLOG GET to retrieve slow queries
 //          - Use INFO commandstats for command statistics
 //          - Implement phpredis or Predis connection in DBConnection.php
 //          - Add Redis-specific display in AJAXgetaql.php
-// @todo 53 Add system load monitoring per host
+// @todo 45 Add system load monitoring per host
 //          - Read /proc/loadavg via SSH/agent or MySQL LOAD_FILE() if permitted
 //          - Display load averages in Host Status Overview
-// @todo 54 Add user statistics drilldown
+// @todo 50 Add user statistics drilldown
 //          - Display like Noteworthy Status Overview but per-user across all watched systems
 //          - Columns: User, Longest Running, Idle Time (aggregate), Level counts (0-4, Error)
 //          - Show RO/RW counts, Duplicate/Similar/Unique counts, Thread count
