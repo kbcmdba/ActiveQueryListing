@@ -96,6 +96,7 @@ body {
 
 th {
   background-color: #555 ;
+  color: white ;
   text-align: center !important ;
   padding: 2px !important ;
 }
@@ -106,10 +107,12 @@ td {
 
 .aql-listing tbody tr:nth-child(odd) {
   background-color: black ;
+  color: white ;
 }
 
 .aql-listing tbody tr:nth-child(even) {
   background-color: #222 ;
+  color: white ;
 }
 
 select {
