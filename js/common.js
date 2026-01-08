@@ -689,8 +689,20 @@ function initAlerts() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Check if alerts are muted via URL parameter or cookie
+function isAlertMuted() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMute = urlParams.get('mute');
+    if (urlMute !== null) {
+        return urlMute === '1';
+    }
+    return document.cookie.split('; ').some(c => c === 'aql_mute=1');
+}
+
 // Call this when a long-running query is detected
 function triggerAlert(queryId) {
+    if (isAlertMuted()) return;
+
     const sound = document.getElementById("klaxon");
 
     if (Notification.permission === "granted") {

@@ -351,18 +351,44 @@ JS
     $cb = function ($fn) { return $fn; };
     $page->setBody(
         <<<HTML
-<button onclick="toggleMute()">$muteButtonText</button>
-<a onclick="alert('Sound Controls Help\\n\\n• Mute/Unmute: Click the button to toggle sound. This adds ?mute=1 to the URL.\\n\\n• To re-enable: Click Unmute, or remove mute=1 from the URL.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow. Then refresh the page.\\n\\n• The alert plays 3 times when a Level 4 (critical) query is detected.'); return false;" style="cursor: help; margin-left: 5px;">?</a>
 <script>
+// Mute state: URL param takes precedence, then cookie
+function isMuted() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMute = urlParams.get('mute');
+    if (urlMute !== null) {
+        return urlMute === '1';
+    }
+    return document.cookie.split('; ').some(c => c === 'aql_mute=1');
+}
+
+function setMuteCookie(muted) {
+    const days = 365;
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = 'aql_mute=' + (muted ? '1' : '0') + '; expires=' + expires + '; path=/';
+}
+
 function toggleMute() {
+    const newMuted = !isMuted();
+    setMuteCookie(newMuted);
+    // Update URL to reflect state (for sharing)
     const url = new URL(window.location.href);
-    if (url.searchParams.get('mute') === '1') {
-        url.searchParams.delete('mute');
-    } else {
+    if (newMuted) {
         url.searchParams.set('mute', '1');
+    } else {
+        url.searchParams.delete('mute');
     }
     window.location.href = url.toString();
 }
+
+// Sync cookie with URL param on page load
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMute = urlParams.get('mute');
+    if (urlMute !== null) {
+        setMuteCookie(urlMute === '1');
+    }
+})();
 </script>
 <audio id="klaxon" src="Images/honk-alarm-repeat-loop-101015.mp3" preload="auto"></audio>
 <a id="graphs"></a>
@@ -381,6 +407,9 @@ function toggleMute() {
           <input type="submit" value="Update" />
         </form>
         <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
+        <br />
+        <button id="muteButton" onclick="toggleMute(); return false;">$muteButtonText</button>
+        <a onclick="alert('Sound Controls Help\\n\\n• Mute/Unmute: Click the button to toggle alert sounds. This sets a cookie and adds ?mute=1 to the URL for sharing.\\n\\n• To re-enable: Click Unmute Alerts, or remove mute=1 from the URL.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow. Then refresh the page.\\n\\n• The alert plays 3 times when a Level 4 (critical) query is detected.'); return false;" style="cursor: help; margin-left: 5px;">?</a>
       </center>
     </td>
     <td class="headerTableTd">

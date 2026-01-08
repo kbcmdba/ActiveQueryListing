@@ -1,37 +1,56 @@
 /* klaxon.js -- plays alert sound on critical errors   KB Benton 2025-05-13 */
 
 (() => {
-    const audio = new Audio('Images/warning-ding.mp3');
+    const warningAudio = new Audio('Images/warning-ding.mp3');  // level4 (critical)
+    let klaxonAudio = null;  // errorNotice (error/level9) - set after DOM ready
     const playCount = 3;  // number of times to play the alert
-    audio.preload = 'auto';
+    warningAudio.preload = 'auto';
 
-    // -- check if muted via URL parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const isMuted = urlParams.get('mute') === '1';
-
-    // -- attempt autoplay on every hard refresh
-    let timesPlayed = 0;
-    const fire = () => {
-        if (isMuted) return;                // respect mute setting
-        if (fire.done) return;              // one-shot gate
-        fire.done = true;
-        timesPlayed = 0;
-        audio.currentTime = 0;
-        audio.play().catch(() => banner()); // Chrome may block - fallback
+    // -- check if muted via URL parameter or cookie
+    const checkMuted = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlMute = urlParams.get('mute');
+        if (urlMute !== null) {
+            return urlMute === '1';
+        }
+        return document.cookie.split('; ').some(c => c === 'aql_mute=1');
     };
 
-    // -- replay until we've played the desired number of times
-    audio.addEventListener('ended', () => {
+    // -- track which alerts have fired
+    let warningFired = false;
+    let klaxonFired = false;
+    let timesPlayed = 0;
+
+    const fireWarning = () => {
+        if (checkMuted()) return;
+        if (warningFired) return;
+        warningFired = true;
+        timesPlayed = 0;
+        warningAudio.currentTime = 0;
+        warningAudio.play().catch(() => banner());
+    };
+
+    const fireKlaxon = () => {
+        if (checkMuted()) return;
+        if (klaxonFired) return;
+        if (!klaxonAudio) return;
+        klaxonFired = true;
+        klaxonAudio.currentTime = 0;
+        klaxonAudio.play().catch(() => banner());
+    };
+
+    // -- replay warning until we've played the desired number of times
+    warningAudio.addEventListener('ended', () => {
         timesPlayed++;
         if (timesPlayed < playCount) {
-            audio.currentTime = 0;
-            audio.play();
+            warningAudio.currentTime = 0;
+            warningAudio.play();
         }
     });
 
     // -- fallback banner when autoplay is blocked the very first visit
     const banner = () => {
-        if (localStorage.getItem('klaxon-unlocked')) return;       // user opted out
+        if (localStorage.getItem('klaxon-unlocked')) return;
         const div = Object.assign(document.createElement('div'), {
             id: 'unlock-banner',
             textContent: 'Tap once to enable sound'
@@ -42,18 +61,30 @@
             background: '#c00', color: '#fff', font: '1.2rem system-ui',
             cursor: 'pointer'
         });
-        div.onclick = () => audio.play().then(() => {
-            div.remove(); localStorage.setItem('klaxon-unlocked', 1);
-        });
+        div.onclick = () => {
+            warningAudio.play().then(() => {
+                div.remove();
+                localStorage.setItem('klaxon-unlocked', 1);
+            });
+        };
         document.body.appendChild(div);
     };
 
-    // -- detect a *level-4* (critical) row as soon as it appears
-    const triggerSelector = '.level4, .errorNotice';
-    const runTest = () => document.querySelector(triggerSelector) && fire();
+    // -- detect alerts: errorNotice gets klaxon, level4 gets warning
+    const runTest = () => {
+        // errorNotice (most severe) gets the klaxon horn
+        if (document.querySelector('.errorNotice')) {
+            fireKlaxon();
+        }
+        // level4 (critical but not error) gets warning ding
+        else if (document.querySelector('.level4')) {
+            fireWarning();
+        }
+    };
 
     // run when DOM is ready and watch for rows added later by Ajax
     document.addEventListener('DOMContentLoaded', () => {
+        klaxonAudio = document.getElementById('klaxon');
         runTest();
         new MutationObserver(runTest).observe(document.body, { childList: true, subtree: true });
     });
