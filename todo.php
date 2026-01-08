@@ -67,3 +67,16 @@ namespace com\kbcmdba\aql ;
 // @todo 57 Add version summary table
 //          - Show count of hosts per MySQL/MariaDB version
 //          - Mouseover on count shows list of hosts running that version
+// @todo 58 Jira integration for File Issue button
+//          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
+//          - Pre-fill issue with query data (PCI-masked), query time, user, source host
+//          - Include database, lock state, and other relevant context
+//          - Use Jira REST API to create issues
+// @todo 59 Add light/dark mode toggle
+//          - Current UI is dark mode only
+//          - Add toggle to switch between light and dark themes
+//          - Use URL parameter (e.g., ?theme=light) for easy sharing
+// @todo 60 Enable sortable table columns
+//          - TableSorter JS is loaded but may not be initialized on all tables
+//          - Click column header to sort ascending/descending
+//          - Apply to Process, Overview, Slave, and other data tables
