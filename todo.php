@@ -24,6 +24,12 @@
 
 namespace com\kbcmdba\aql ;
 
+// @todo 05 Jira integration for File Issue button
+//           - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
+//           - Pre-fill issue with query data (PCI-masked), query time, user, source host
+//           - Include database, lock state, and other relevant context
+//           - Use Jira REST API to create issues
+//           - Display (intentionally incomplete) Jira form using Jira itself.
 // @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
 // @todo 17-30 Ad-hoc "do it live" silencing
 //             - Per-host or per-group silence button: "Silence for X minutes/hours"
@@ -52,11 +58,6 @@ namespace com\kbcmdba\aql ;
 //             - Store auth in session with expiry timestamp
 //             - Reduce friction for DBAs managing maintenance windows
 //             - Configurable timeout in aql_config.xml
-// @todo 20 Jira integration for File Issue button
-//          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
-//          - Pre-fill issue with query data (PCI-masked), query time, user, source host
-//          - Include database, lock state, and other relevant context
-//          - Use Jira REST API to create issues
 // @todo 25 Add light/dark mode toggle
 //          - Current UI is dark mode only
 //          - Use CSS variables for colors (--bg-color, --text-color, etc.)
