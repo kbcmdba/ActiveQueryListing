@@ -777,3 +777,54 @@ function triggerAlert(queryId) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+// TableSorter URL persistence functions
+
+// Parse sort parameter from URL (format: "col,dir" e.g., "7,1" for column 7 descending)
+function getSortFromUrl(tableKey) {
+    var urlParams = new URLSearchParams(window.location.search);
+    var sortParam = urlParams.get(tableKey + '_sort');
+    if (sortParam) {
+        var parts = sortParam.split(',');
+        if (parts.length === 2) {
+            return [[parseInt(parts[0], 10), parseInt(parts[1], 10)]];
+        }
+    }
+    return null;
+}
+
+// Update URL with sort parameter and reload
+function updateSortUrl(tableKey, sortList) {
+    if (!sortList || sortList.length === 0) return;
+    var url = new URL(window.location.href);
+    url.searchParams.set(tableKey + '_sort', sortList[0][0] + ',' + sortList[0][1]);
+    window.location.href = url.toString();
+}
+
+// Initialize a single table with sorting and URL persistence
+function initTableSortWithUrl(tableId, tableKey, defaultSort) {
+    var $table = $(tableId);
+    if ($table.length === 0) return;
+
+    var sortList = getSortFromUrl(tableKey) || defaultSort;
+    $table.tablesorter({ sortList: sortList });
+
+    // On sort change, update URL and reload
+    $table.on('sortEnd', function(e) {
+        var newSort = e.target.config.sortList;
+        var currentSort = getSortFromUrl(tableKey);
+        // Only reload if sort actually changed from URL value
+        if (!currentSort || newSort[0][0] !== currentSort[0][0] || newSort[0][1] !== currentSort[0][1]) {
+            updateSortUrl(tableKey, newSort);
+        }
+    });
+}
+
+// Auto-initialize sorting for manageData tables on DOM ready
+$(document).ready(function() {
+    // Only init these if they exist (manageData.php)
+    initTableSortWithUrl('#hostEdit', 'host', [[2, 0]]);   // Host Name ascending
+    initTableSortWithUrl('#groupEdit', 'group', [[1, 0]]); // Group Name ascending
+});
+
+///////////////////////////////////////////////////////////////////////////////

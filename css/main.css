@@ -246,3 +246,32 @@ a:visited {
     display: inline-block;
     margin: 1px;
 }
+
+/* TableSorter sort indicators */
+.tablesorter th.tablesorter-header {
+    cursor: pointer;
+    position: relative;
+    padding-right: 18px !important;
+}
+
+.tablesorter th.tablesorter-header::after {
+    content: '●';
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.4;
+    font-size: 8px;
+}
+
+.tablesorter th.tablesorter-headerAsc::after {
+    content: '▲';
+    opacity: 1;
+    font-size: inherit;
+}
+
+.tablesorter th.tablesorter-headerDesc::after {
+    content: '▼';
+    opacity: 1;
+    font-size: inherit;
+}

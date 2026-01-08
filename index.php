@@ -327,7 +327,8 @@ function loadPage() {
             \$("#fullSlavefigment").remove() ;
             \$("#fullOverviewfigment").remove() ;
             \$("#fullProcessfigment").remove() ;
-            \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ; 
+            \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ;
+            initTableSorting();
             displayCharts() ;
         }
     );
@@ -348,6 +349,18 @@ function loadPage() {
     \$('#muteDays, #muteHours, #muteMinutes, #muteUntilDateTime').on('focus change input', resetRefreshTimer);
     refreshLog('Event listeners attached for refresh timer reset');
 });
+
+// Initialize sorting for data tables (uses functions from common.js)
+function initTableSorting() {
+    // Noteworthy tables
+    initTableSortWithUrl('#nwSlaveTable', 'nwslave', [[3, 1]]);        // Seconds Behind desc
+    initTableSortWithUrl('#nwOverviewTable', 'nwoverview', [[2, 1]]);  // Longest Running desc
+    initTableSortWithUrl('#nwProcessTable', 'nwprocess', [[7, 1]]);    // Time Secs desc
+    // Full tables
+    initTableSortWithUrl('#fullSlaveTable', 'fullslave', [[3, 1]]);    // Seconds Behind desc
+    initTableSortWithUrl('#fullOverviewTable', 'fulloverview', [[2, 1]]); // Longest Running desc
+    refreshLog('Table sorting initialized');
+}
 
 $hgjson
 
