@@ -29,13 +29,6 @@ namespace com\kbcmdba\aql ;
 //          - Suppress error alerts for hosts during their maintenance window
 //          - Visual indicator in UI showing host is in planned maintenance
 //          - Could be per-host or per-group
-// @done 18 Mute until a specific time (or for a specific period)
-//          - Implemented: preset buttons (30m, 1h, 2h, 4h, 8h, 1d, ∞)
-//          - Implemented: custom duration (days/hours/minutes, max 90 days)
-//          - Implemented: datetime picker for specific time
-//          - Implemented: countdown display, auto-unmute on expiry
-//          - Cookie: aql_mute_until=<timestamp> (0=indefinite), path-specific
-//          - Debug: ?mute_debug=1 (index.php), ?klaxon_debug=1 (klaxon.js)
 // @todo 20 Jira integration for File Issue button
 //          - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
 //          - Pre-fill issue with query data (PCI-masked), query time, user, source host
@@ -73,9 +66,5 @@ namespace com\kbcmdba\aql ;
 //          - Show which client hosts are hammering the database
 //          - Query counts and time grouped by source host
 //          - Drilldown to see queries from each source host
-// @todo 60 Enable sortable table columns
-//          - TableSorter JS is loaded but may not be initialized on all tables
-//          - Click column header to sort ascending/descending
-//          - Apply to Process, Overview, Slave, and other data tables
 // @todo 99 Implement Host/Group Limiter
 //          - There's a "Add Group Selection" button on the main index that *should* select all hosts/ports associated with the group (additive, not exclusive).
