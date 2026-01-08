@@ -46,6 +46,7 @@ Navigate:
  &nbsp; &nbsp; <nobr><a href="#fullSlaveStatus">Full Slave Status</a></nobr>
  &nbsp; &nbsp; <nobr><a href="#fullStatusOverview">Full Status Overview</a></nobr>
  &nbsp; &nbsp; <nobr><a href="#fullProcessListing">Full Process Listing</a></nobr>
+ &nbsp; &nbsp; <nobr><a href="#versionSummary">Version Summary</a></nobr>
  &nbsp; &nbsp; <nobr><a href="manageData.php">Manage Data</a></nobr>
 <br clear="all" />
 HTML;
@@ -496,6 +497,19 @@ function toggleMute() {
 {$cb(xTable( 'full', 'SlaveStatus', 'Slave', $fullSlaveHeaderFooter, 'slave', $slaveCols ))}
 {$cb(xTable( 'full', 'StatusOverview', 'Overview', $fullOverviewHeaderFooter, 'overview', $overviewCols ))}
 {$cb(xTable( 'full', 'ProcessListing', 'Process', $fullProcessHeaderFooter, 'process', $processCols ))}
+
+$navBar
+
+<a id="versionSummary"></a>
+<table border=1 cellspacing=0 cellpadding=2 id="versionSummaryTable" width="100%" class="tablesorter aql-listing">
+<thead>
+  <tr><th colspan="2">Version Summary</th></tr>
+  <tr><th>Version</th><th>Host Count</th></tr>
+</thead>
+<tbody id="versionsummarytbodyid">
+  <tr><td colspan="2"><center>Data loading</center></td></tr>
+</tbody>
+</table>
 
 $navBar
 

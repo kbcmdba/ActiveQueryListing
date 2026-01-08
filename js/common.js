@@ -231,6 +231,38 @@ var base_counts = {
                 , 'Unique'    : 0
                 } ;
 
+// Version summary data: { 'version_string': { count: N, hosts: ['host1', 'host2', ...] } }
+var versionData = {} ;
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Update version summary table with current versionData
+function updateVersionSummary() {
+    var tbody = $("#versionsummarytbodyid") ;
+    tbody.empty() ;
+
+    // Sort versions by count descending
+    var versions = Object.keys(versionData).sort(function(a, b) {
+        return versionData[b].count - versionData[a].count ;
+    }) ;
+
+    if (versions.length === 0) {
+        tbody.append('<tr><td colspan="2">No version data available</td></tr>') ;
+        return ;
+    }
+
+    for (var i = 0; i < versions.length; i++) {
+        var version = versions[i] ;
+        var data = versionData[version] ;
+        var hostList = data.hosts.join(', ') ;
+        var row = '<tr>'
+                + '<td>' + version + '</td>'
+                + '<td title="' + hostList + '" style="cursor: help;">' + data.count + '</td>'
+                + '</tr>' ;
+        tbody.append(row) ;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 function myCallback( i, item ) {
@@ -299,6 +331,20 @@ function myCallback( i, item ) {
                     ;
             if ( sum > 0 ) {
                 $(myRow).appendTo( '#nwoverviewtbodyid' ) ;
+            }
+
+            // Track version data for version summary table
+            var version = overviewData[ 'version' ] ;
+            if ( version ) {
+                if ( typeof versionData[ version ] === 'undefined' ) {
+                    versionData[ version ] = { count: 0, hosts: [] } ;
+                }
+                // Only add host if not already tracked (avoid duplicates on refresh)
+                if ( versionData[ version ].hosts.indexOf( server ) === -1 ) {
+                    versionData[ version ].count++ ;
+                    versionData[ version ].hosts.push( server ) ;
+                }
+                updateVersionSummary() ;
             }
         }
         if ( ( typeof slaveData !== 'undefined' ) && ( typeof slaveData[ 0 ] !== 'undefined' ) ) {
