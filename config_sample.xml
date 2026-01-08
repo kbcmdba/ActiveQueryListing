@@ -11,6 +11,16 @@
     <param name="minRefresh">15</param>
     <param name="defaultRefresh">60</param>
     <param name="issueTrackerBaseUrl">https://somewhere.jira.com/</param>
+    <!-- Jira Integration (optional) - enables "File Issue" button -->
+    <!-- Set jiraEnabled to true and configure your Jira instance -->
+    <param name="jiraEnabled">false</param>
+    <!-- Jira project ID (numeric) - find via REST API or project settings -->
+    <param name="jiraProjectId"></param>
+    <!-- Jira issue type ID (numeric) - find via /rest/api/3/issuetype -->
+    <param name="jiraIssueTypeId"></param>
+    <!-- Optional: Custom field ID for query hash (e.g., customfield_10100) -->
+    <!-- Create a text custom field in Jira and put its ID here for duplicate detection -->
+    <param name="jiraQueryHashFieldId"></param>
     <param name="globalStatusDb">performance_schema</param>
     <!-- Which DB is the global_status table in? MySQL: performance_schema. MariaDB: information_schema -->
     <param name="roQueryPart">@@global.read_only OR @@global.innodb_read_only</param>

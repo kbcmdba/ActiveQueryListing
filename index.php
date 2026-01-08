@@ -290,12 +290,20 @@ try {
     $whenBlock = $js['WhenBlock'];
     $thenParamBlock = $js['ThenParamBlock'];
     $thenCodeBlock = $js['ThenCodeBlock'];
+    $jiraConfigJson = json_encode([
+        'enabled' => $config->getJiraEnabled(),
+        'baseUrl' => $config->getIssueTrackerBaseUrl(),
+        'projectId' => $config->getJiraProjectId(),
+        'issueTypeId' => $config->getJiraIssueTypeId(),
+        'queryHashFieldId' => $config->getJiraQueryHashFieldId()
+    ]);
     $page->setBottom(
         <<<JS
 <script>
 
 var timeoutId = null;
 var reloadSeconds = $reloadSeconds * 1000 ;
+var jiraConfig = {$jiraConfigJson};
 
 // Debug logging: enable with ?refresh_debug=1 in URL
 var REFRESH_DEBUG = new URLSearchParams(window.location.search).get('refresh_debug') === '1';

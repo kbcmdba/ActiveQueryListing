@@ -24,12 +24,11 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 05 Jira integration for File Issue button
-//           - Configure in aql_config.xml: Jira URL, Project, Component (optional), auth
-//           - Pre-fill issue with query data (PCI-masked), query time, user, source host
-//           - Include database, lock state, and other relevant context
-//           - Use Jira REST API to create issues
-//           - Display (intentionally incomplete) Jira form using Jira itself.
+// @todo 03 Indicate both blocked and blocking queries in the Lock Status column
+//           - Show "Blocked" for waiting queries, "Blocking" for queries holding locks
+//           - Mouseover on blocked query shows blocking thread ID and query text
+//           - Use performance_schema.data_locks/data_lock_waits (MySQL 8.0+)
+//           - Fallback to INFORMATION_SCHEMA.INNODB_LOCK_WAITS for older versions
 // @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
 // @todo 17-30 Ad-hoc "do it live" silencing
 //             - Per-host or per-group silence button: "Silence for X minutes/hours"

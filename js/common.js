@@ -494,8 +494,61 @@ function killProcOnHost( hostname, pid, user, fromHost, db, command, time, state
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Normalize query for fingerprinting: replace strings with 'S', numbers with N
+function normalizeQueryForHash(query) {
+    return query
+        .replace(/'[^']*'/g, "'S'")      // Single-quoted strings -> 'S'
+        .replace(/"[^"]*"/g, '"S"')      // Double-quoted strings -> "S"
+        .replace(/\b\d+\.?\d*\b/g, 'N'); // Numbers -> N
+}
+
+// Simple hash function (djb2)
+function hashString(str) {
+    var hash = 5381;
+    for (var i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16);
+}
+
 function fileIssue( hostname, ro, fromHost, user, db, time, safeUrl ) {
-    alert( "Not yet implemented.\n\nhostname=" + hostname + "\nro=" + ro + "\nfromHost=" + fromHost + "\nuser=" + user + "\ndb=" + db + "\ntime=" + time + "\nsafeUrl=" + safeUrl + "\n" ) ;
+    if (!jiraConfig.enabled) {
+        alert('Jira integration is not configured. Set jiraEnabled to true in aql_config.xml.');
+        return;
+    }
+
+    var query = decodeURIComponent(safeUrl.replace(/\+/g, ' '));
+    var roLabel = (ro == 1) ? 'Read-Only' : 'Read-Write';
+
+    // Generate query fingerprint hash
+    var normalizedQuery = normalizeQueryForHash(query);
+    var queryHash = hashString(normalizedQuery);
+
+    var summary = 'Long Running Query on ' + hostname + ' from ' + user + '@' + fromHost + ' for ' + time + 's';
+
+    var description =
+        '*Server:* ' + hostname + '\n' +
+        '*Database:* ' + db + '\n' +
+        '*User:* ' + user + '\n' +
+        '*Source Host:* ' + fromHost + '\n' +
+        '*Query Time:* ' + time + ' seconds\n' +
+        '*Access:* ' + roLabel + '\n' +
+        '*Query Hash:* ' + queryHash + '\n\n' +
+        '*Query:*\n{code:sql}\n' + query + '\n{code}';
+
+    var jiraUrl = jiraConfig.baseUrl + 'secure/CreateIssueDetails!init.jspa?' +
+        'pid=' + encodeURIComponent(jiraConfig.projectId) +
+        '&issuetype=' + encodeURIComponent(jiraConfig.issueTypeId) +
+        '&summary=' + encodeURIComponent(summary) +
+        '&description=' + encodeURIComponent(description);
+
+    // Add custom field for query hash if configured
+    if (jiraConfig.queryHashFieldId) {
+        jiraUrl += '&' + jiraConfig.queryHashFieldId + '=' + encodeURIComponent(queryHash);
+    }
+
+    window.open(jiraUrl, '_blank');
 }
 
 ///////////////////////////////////////////////////////////////////////////////

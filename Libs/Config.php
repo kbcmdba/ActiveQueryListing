@@ -76,6 +76,10 @@ class Config
     private $ldapVerifyCert = null;
     private $ldapDebugConnection = null;
     private $globalStatusDb = null;
+    private $jiraEnabled = null;
+    private $jiraProjectId = null;
+    private $jiraIssueTypeId = null;
+    private $jiraQueryHashFieldId = null;
 
     /**
      * #@-
@@ -124,7 +128,11 @@ class Config
             'showSlaveStatement' => 'show slave status',
             'globalStatusDb' => 'performance_schema',
             'ldapVerifyCert' => 'true',
-            'ldapDebugConnection' => 'false'
+            'ldapDebugConnection' => 'false',
+            'jiraEnabled' => 'false',
+            'jiraProjectId' => '',
+            'jiraIssueTypeId' => '',
+            'jiraQueryHashFieldId' => ''
         ] ;
         $paramList = [
             'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],
@@ -148,7 +156,11 @@ class Config
             'ldapUserDomain'       => [ 'isRequired' => 0, 'value' => 0 ],
             'ldapVerifyCert'       => [ 'isRequired' => 0, 'value' => 0 ],
             'ldapDebugConnection'  => [ 'isRequired' => 0, 'value' => 0 ],
-            'globalStatusDb'       => [ 'isRequired' => 0, 'value' => 0 ]
+            'globalStatusDb'       => [ 'isRequired' => 0, 'value' => 0 ],
+            'jiraEnabled'          => [ 'isRequired' => 0, 'value' => 0 ],
+            'jiraProjectId'        => [ 'isRequired' => 0, 'value' => 0 ],
+            'jiraIssueTypeId'      => [ 'isRequired' => 0, 'value' => 0 ],
+            'jiraQueryHashFieldId' => [ 'isRequired' => 0, 'value' => 0 ]
         ] ;
 
         // verify that all the parameters are present and just once.
@@ -199,6 +211,10 @@ class Config
         $this->ldapVerifyCert = $cfgValues[ 'ldapVerifyCert' ] ?? 'true' ;
         $this->ldapDebugConnection = $cfgValues[ 'ldapDebugConnection' ] ?? 'false' ;
         $this->globalStatusDb = $cfgValues[ 'globalStatusDb' ] ;
+        $this->jiraEnabled = $cfgValues[ 'jiraEnabled' ] ?? 'false' ;
+        $this->jiraProjectId = $cfgValues[ 'jiraProjectId' ] ?? '' ;
+        $this->jiraIssueTypeId = $cfgValues[ 'jiraIssueTypeId' ] ?? '' ;
+        $this->jiraQueryHashFieldId = $cfgValues[ 'jiraQueryHashFieldId' ] ?? '' ;
     }
 
     /**
@@ -416,6 +432,42 @@ class Config
      */
     public function getGlobalStatusDb() {
         return ( null != $this->globalStatusDb ) ? $this->globalStatusDb : '' ;
+    }
+
+    /**
+     * Return whether Jira integration is enabled
+     *
+     * @return boolean
+     */
+    public function getJiraEnabled() {
+        return ( 'true' === $this->jiraEnabled ) ;
+    }
+
+    /**
+     * Return the Jira project ID
+     *
+     * @return string
+     */
+    public function getJiraProjectId() {
+        return ( null !== $this->jiraProjectId ) ? $this->jiraProjectId : '' ;
+    }
+
+    /**
+     * Return the Jira issue type ID
+     *
+     * @return string
+     */
+    public function getJiraIssueTypeId() {
+        return ( null !== $this->jiraIssueTypeId ) ? $this->jiraIssueTypeId : '' ;
+    }
+
+    /**
+     * Return the Jira custom field ID for query hash
+     *
+     * @return string
+     */
+    public function getJiraQueryHashFieldId() {
+        return ( null !== $this->jiraQueryHashFieldId ) ? $this->jiraQueryHashFieldId : '' ;
     }
 
 }
