@@ -297,6 +297,19 @@ try {
 var timeoutId = null;
 var reloadSeconds = $reloadSeconds * 1000 ;
 
+// Debug logging: enable with ?refresh_debug=1 in URL
+var REFRESH_DEBUG = new URLSearchParams(window.location.search).get('refresh_debug') === '1';
+var refreshLog = function() { if (REFRESH_DEBUG) console.log.apply(console, ['[refresh]'].concat(Array.prototype.slice.call(arguments))); };
+
+// Reset the refresh timer when user interacts with form controls
+function resetRefreshTimer() {
+    if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(function() { window.location.reload(1); }, reloadSeconds);
+        refreshLog('Timer reset, next refresh in', reloadSeconds / 1000, 'seconds');
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 function loadPage() {
@@ -324,6 +337,17 @@ function loadPage() {
 }
 
 \$(document).ready( loadPage ) ;
+
+// Reset refresh timer when user interacts with form controls
+\$(document).ready(function() {
+    // Host and group selection dropdowns
+    \$('#hostList, #groupSelection').on('change focus', resetRefreshTimer);
+    // Refresh interval and debug checkbox
+    \$('input[name="refresh"], input[name="debug"]').on('focus change input', resetRefreshTimer);
+    // Mute duration inputs and datetime picker
+    \$('#muteDays, #muteHours, #muteMinutes, #muteUntilDateTime').on('focus change input', resetRefreshTimer);
+    refreshLog('Event listeners attached for refresh timer reset');
+});
 
 $hgjson
 
@@ -593,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </nobr>
           <br />
           <nobr style="font-size: 11px;">
-            Until: <input type="datetime-local" id="muteUntilDateTime" style="width: 150px;"/>
+            Until: <input type="datetime-local" id="muteUntilDateTime" step="60" style="width: 150px;"/>
             <button onclick="applyDateTimeMute(); return false;">Set</button>
           </nobr>
         </div>
