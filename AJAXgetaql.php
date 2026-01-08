@@ -388,7 +388,7 @@ SQL;
     while ($row = $slaveResult->fetch_assoc()) {
         $thisResult = array() ;
         foreach ($replica_labels as $k => $v) {
-            $thisResult[ $k ] = $row[ $v ] ;
+            $thisResult[ $k ] = $row[ $v ] ?? '' ;
         }
         $slaveData[] = $thisResult ;
     }
