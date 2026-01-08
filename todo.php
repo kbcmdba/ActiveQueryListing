@@ -24,7 +24,6 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 05 Fix "Data loading" row not removed from Full Status Overview
 // @todo 15 Add version summary table
 //          - Show count of hosts per MySQL/MariaDB version
 //          - Mouseover on count shows list of hosts running that version

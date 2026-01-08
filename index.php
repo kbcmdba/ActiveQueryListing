@@ -311,7 +311,7 @@ function loadPage() {
             \$("#nwOverviewfigment").remove() ;
             \$("#nwProcessfigment").remove() ;
             \$("#fullSlavefigment").remove() ;
-            \$("#fullPverviewfigment").remove() ;
+            \$("#fullOverviewfigment").remove() ;
             \$("#fullProcessfigment").remove() ;
             \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ; 
             displayCharts() ;
