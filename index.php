@@ -501,7 +501,7 @@ function toggleMute() {
 $navBar
 
 <a id="versionSummary"></a>
-<table border=1 cellspacing=0 cellpadding=2 id="versionSummaryTable" width="100%" class="tablesorter aql-listing">
+<table border=1 cellspacing=0 cellpadding=2 id="versionSummaryTable" class="tablesorter aql-listing">
 <thead>
   <tr><th colspan="2">Version Summary</th></tr>
   <tr><th>Version</th><th>Host Count</th></tr>
