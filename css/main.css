@@ -39,38 +39,38 @@ body {
 
 .error,
 .legendError {
-  background-color: red ;
-  color: white ;
+  background-color: red !important ;
+  color: white !important ;
 }
 
 .level4,
 .legendLevel4 {
-  background-color: orange ;
-  color: black ;
+  background-color: orange !important ;
+  color: black !important ;
 }
 
 .level3,
 .legendLevel3 {
-  background-color: yellow ;
-  color: black ;
+  background-color: yellow !important ;
+  color: black !important ;
 }
 
 .level2,
 .legendLevel2 {
-  background-color: lightgreen ;
-  color: black ;
+  background-color: lightgreen !important ;
+  color: black !important ;
 }
 
 .level1,
 .legendLevel1 {
-  background-color: #333 ;
-  color: white ;
+  background-color: #333 !important ;
+  color: white !important ;
 }
 
 .level0,
 .legendLevel0 {
-  background-color: cyan ;
-  color: black ;
+  background-color: cyan !important ;
+  color: black !important ;
 }
 
 /* Boolean column styling for manageData tables */
@@ -85,13 +85,13 @@ body {
 }
 
 .readOnly {
-  background-color: cyan ;
-  color: black ;
+  background-color: cyan !important ;
+  color: black !important ;
 }
 
 .readWrite {
-  background-color: yellow ;
-  color: black ;
+  background-color: yellow !important ;
+  color: black !important ;
 }
 
 th {
@@ -173,23 +173,23 @@ a:visited {
 }
 
 .Blank {
-	color: white ;
-	background-color: #333 ;
+	color: white !important ;
+	background-color: #333 !important ;
 }
 
 .Unique {
-	color: black;
-	background-color: silver;
+	color: black !important ;
+	background-color: silver !important ;
 }
 
 .Similar {
-	color: black;
-	background-color: yellow;
+	color: black !important ;
+	background-color: yellow !important ;
 }
 
 .Duplicate {
-	color: black;
-	background-color: pink;
+	color: black !important ;
+	background-color: pink !important ;
 }
 
 /* Lock status indicators */

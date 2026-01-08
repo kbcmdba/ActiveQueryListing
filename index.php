@@ -58,7 +58,7 @@ function xTable( $prefix, $linkId, $tableId, $headerFooter, $id, $cols ) {
 $navBar
 
 <a id="{$prefix}$linkId"></a>
-<table border=1 cellspacing=0 cellpadding=2 id="{$prefix}{$tableId}Table" width="100%" class="tablesorter">
+<table border=1 cellspacing=0 cellpadding=2 id="{$prefix}{$tableId}Table" width="100%" class="tablesorter aql-listing">
 <thead>
   $headerFooter
 </thead>
