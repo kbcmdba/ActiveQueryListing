@@ -24,15 +24,20 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 03 Indicate both blocked and blocking queries in the Lock Status column
-//           - Show "Blocked" for waiting queries, "Blocking" for queries holding locks
-//           - Mouseover on blocked query shows blocking thread ID and query text
-//           - Use performance_schema.data_locks/data_lock_waits (MySQL 8.0+)
-//           - Fallback to INFORMATION_SCHEMA.INNODB_LOCK_WAITS for older versions
 // @todo 03-10 Show blocking queries in Noteworthy Status Overview regardless of time
 //             - A fast query holding locks that block others is noteworthy
 //             - Include count of queries being blocked
 //             - Helps identify lock pile-ups caused by quick queries
+// @todo 03-15 Include blocked victim count when filing issues for blocking queries
+//             - Display "(blocking N)" next to the buttons for blocking threads
+//             - Add "Blocking Count at time issue was filed: N" to Jira issue description
+//             - Helps DBAs prioritize and provides context for the issue
+// @todo 03-20 Log blocking queries for historical analysis
+//             - Store blocking events in database table (host, thread_id, user, query_hash, query_text, blocked_count, timestamp)
+//             - Auto-purge entries older than 90 days to prevent unbounded growth
+//             - UI to view blocking history: filter by host, user, query pattern
+//             - Identify repeat offenders and problematic query patterns
+//             - Could feed into automation/alerting for known bad queries
 // @todo 04 Alternating row colors for all alert levels in Full Process Listing
 //          - Each level gets two shades: bright and muted (e.g., level4: red/dark red)
 //          - Helps visually track consecutive rows of the same level
