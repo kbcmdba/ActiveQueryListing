@@ -60,7 +60,7 @@ class WebPage
         $this->setHead(
             <<<HTML
   <link rel="icon" type="image/x-icon" href="Images/favicon.ico" />
-  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/main.css?v=$cacheBuster" />
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.0/js/jquery.tablesorter.js"></script>
