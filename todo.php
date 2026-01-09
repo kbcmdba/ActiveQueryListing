@@ -103,5 +103,10 @@ namespace com\kbcmdba\aql ;
 //          - Show which client hosts are hammering the database
 //          - Query counts and time grouped by source host
 //          - Drilldown to see queries from each source host
+// @todo 60 Optional klaxon alert for blocking queries (low priority - revisit when alert noise reduced)
+//          - Configurable toggle (off by default)
+//          - Threshold-based: only alert if blocking N+ queries (e.g., 5) for X+ seconds (e.g., 30)
+//          - Consider separate, gentler sound to distinguish from long-running alerts
+//          - Currently blockers get level 3, so they alert if they hit warning time threshold
 // @todo 99 Implement Host/Group Limiter
 //          - There's a "Add Group Selection" button on the main index that *should* select all hosts/ports associated with the group (additive, not exclusive).
