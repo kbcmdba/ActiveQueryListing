@@ -841,6 +841,60 @@ SQL;
         }
     }
 
+    // 5b. Ensure ALL blocking threads are in outputList (they may have been filtered out as Sleep threads)
+    $outputThreadIds = [] ;
+    foreach ( $outputList as $thread ) {
+        $outputThreadIds[(int) $thread['id']] = true ;
+    }
+    $missingBlockerIds = [] ;
+    foreach ( $lockWaitData as $threadId => $info ) {
+        if ( !empty( $info['isBlocking'] ) && !isset( $outputThreadIds[(int) $threadId] ) ) {
+            $missingBlockerIds[] = (int) $threadId ;
+        }
+    }
+    if ( !empty( $missingBlockerIds ) ) {
+        $idList = implode( ',', $missingBlockerIds ) ;
+        $blockerQuery = "SELECT id, user, host, db, command, time, state, info, $roQueryPart as read_only
+                         FROM INFORMATION_SCHEMA.PROCESSLIST
+                         WHERE id IN ($idList)" ;
+        try {
+            $blockerResult = $dbh->query( $blockerQuery ) ;
+            if ( $blockerResult !== false ) {
+                while ( $row = $blockerResult->fetch_assoc() ) {
+                    $threadId = (int) $row['id'] ;
+                    $friendlyTime = Tools::friendlyTime( $row['time'] ) ;
+                    $safeInfo = Tools::makeQuotedStringPIISafe( $row['info'] ) ;
+                    $safeInfoJS = urlencode( $safeInfo ) ;
+                    $safeUrl = urlencode( $safeInfo ) ;
+                    $outputList[] = [
+                        'level'        => 3,  // Warning level for blockers
+                        'time'         => $row['time'],
+                        'friendlyTime' => $friendlyTime,
+                        'server'       => $hostname,
+                        'id'           => $threadId,
+                        'user'         => $row['user'],
+                        'host'         => $row['host'],
+                        'db'           => $row['db'],
+                        'command'      => $row['command'],
+                        'state'        => $row['state'],
+                        'dupeState'    => 'Blank',
+                        'info'         => htmlspecialchars( $safeInfo ?: '[Holding lock - no active query]' ),
+                        'actions'      => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $threadId, '{$row['user']}', '{$row['host']}', '{$row['db']}', '{$row['command']}', {$row['time']}, '{$row['state']}', '$safeInfoJS' ) ; return false ;\">Kill Thread</button>"
+                                        . "<button type=\"button\" onclick=\"fileIssue( '$hostname', '0', '{$row['host']}', '{$row['user']}', '{$row['db']}', {$row['time']}, '$safeUrl' ) ; return false ;\">File Issue</button>",
+                        'readOnly'     => $row['read_only'],
+                        'blockInfo'    => $lockWaitData[$threadId]
+                    ] ;
+                    $overviewData['threads'] ++ ;
+                    // Only increment blocking count if not already counted
+                    // (it should have been counted when lockWaitData entry was created)
+                }
+                $blockerResult->close() ;
+            }
+        } catch ( \Exception $e ) {
+            // Ignore errors fetching missing blockers
+        }
+    }
+
     // 6. Store detected blocking relationships in cache for future reference
     $cacheEntries = [] ;
     foreach ( $lockWaitData as $threadId => $info ) {
