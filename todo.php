@@ -85,6 +85,10 @@ namespace com\kbcmdba\aql ;
 //          - Update DDL (AUTO_INCREMENT -> IDENTITY, ENUM -> CHECK constraints)
 //          - Skip replication monitoring for v1 (AlwaysOn is fundamentally different)
 // @todo 35 Add CA cert to system trust store for LDAP SSL verification
+// @todo 36 Renew LDAP server SSL certificate (EXTERNAL - AD admin task)
+//          - Certificate on ce-cook-adc1101.cashtn.com expired Jan 9, 2025
+//          - Currently using ldapVerifyCert=false as workaround (security risk)
+//          - Once renewed, remove ldapVerifyCert=false from aql_config.xml
 // @todo 40 Add Redis support for long-running query monitoring
 //          - Use CLIENT LIST to get connected clients and current commands
 //          - Use SLOWLOG GET to retrieve slow queries
