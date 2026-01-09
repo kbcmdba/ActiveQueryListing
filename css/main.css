@@ -227,22 +227,33 @@ a:visited {
 	background-color: pink !important ;
 }
 
-/* Lock status indicators */
-.blocked {
+/* Lock status indicators - row borders for process list */
+tr.blocked {
+    border-left: 4px solid hotpink !important;
+}
+
+tr.blocking {
     border-left: 4px solid red !important;
 }
 
-.blocking {
-    border-left: 4px solid orange !important;
-}
-
-.blocked.blocking {
+tr.blocked.blocking {
     border-left: 4px solid purple !important;
 }
 
+/* Lock status indicators - cell backgrounds for overview tables */
+td.blocked {
+    background-color: hotpink !important;
+    color: black !important;
+}
+
+td.blocking {
+    background-color: red !important;
+    color: white !important;
+}
+
 .blockedIndicator {
-    background-color: red;
-    color: white;
+    background-color: hotpink;
+    color: black;
     padding: 2px 6px;
     border-radius: 3px;
     font-size: 10px;
@@ -253,8 +264,8 @@ a:visited {
 }
 
 .blockingIndicator {
-    background-color: orange;
-    color: black;
+    background-color: red;
+    color: white;
     padding: 2px 6px;
     border-radius: 3px;
     font-size: 10px;

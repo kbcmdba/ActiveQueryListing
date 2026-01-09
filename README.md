@@ -82,6 +82,69 @@ instructions, row four of the host database assumes that you have a
 replication slave set up on port 3307. If you want to ignore that "system,"
 simply change the decommissioned setting to 1 and should_monitor to 0.
 
+## Blocked/Blocking Query Detection
+
+AQL can detect and display blocked and blocking queries. When a query is waiting
+for a lock held by another query, you'll see:
+
+- **BLOCKED** (hotpink) - Query is waiting for a lock
+- **BLOCKING** (red) - Query is holding a lock that others are waiting for
+
+Hover over the indicator to see details including the blocking thread ID and query.
+
+### Blocking Cache (Optional Redis Setup)
+
+AQL caches blocking relationships for 60 seconds so you can see "who was blocking"
+even after the blocker finishes. This is especially useful for transient MyISAM
+table-level locks.
+
+**Cache backends (automatic detection):**
+
+1. **Redis (recommended)** - Faster, automatic TTL expiry, no file permission issues
+2. **File-based (fallback)** - Uses `/cache` directory if Redis unavailable
+
+**To enable Redis caching:**
+
+```bash
+# Install Redis server (if not already installed)
+sudo apt install redis-server
+
+# Install PHP Redis extension
+sudo apt install php-redis
+
+# Restart Apache to load the extension
+sudo systemctl restart apache2
+```
+
+The cache directory (`/cache`) must be writable by the web server if using
+file-based caching:
+
+```bash
+sudo chown www-data:www-data /path/to/aql/cache
+```
+
+### Lock Detection Debug Mode
+
+Add `&debugLocks=1` to the URL to enable lock detection debugging. This shows:
+- Cache type (redis/file)
+- Lock wait count
+- Open tables with locks
+- Blocking cache contents
+
+### Additional MySQL Permissions for Lock Detection
+
+For enhanced lock detection on MySQL 8.0+, grant these permissions to the AQL user:
+
+```sql
+-- Optional: for InnoDB row-level and metadata lock detection
+GRANT SELECT ON performance_schema.data_lock_waits TO 'aql_app'@'%';
+GRANT SELECT ON performance_schema.data_locks TO 'aql_app'@'%';
+GRANT SELECT ON performance_schema.metadata_locks TO 'aql_app'@'%';
+GRANT SELECT ON performance_schema.threads TO 'aql_app'@'%';
+```
+
+Note: Basic table-level lock detection works without these additional permissions.
+
 ## SELinux Installation Tips for Fedora/Redhat/CentOS
 
 In order to allow this program to run under Fedora-based systems, it's

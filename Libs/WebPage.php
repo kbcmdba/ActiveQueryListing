@@ -59,6 +59,7 @@ class WebPage
         $cacheBuster = time();
         $this->setHead(
             <<<HTML
+  <link rel="icon" type="image/x-icon" href="Images/favicon.ico" />
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.js"></script>

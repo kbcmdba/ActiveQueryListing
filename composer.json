@@ -10,7 +10,12 @@
             "email" : "kbcmdba@gmail.com"
         }
     ],
-    "require" : {},
+    "require" : {
+        "php" : ">=7.2"
+    },
+    "suggest" : {
+        "ext-redis" : "For Redis-based blocking cache (recommended for better performance)"
+    },
 	"autoload" : {
 		"psr-4" : {
 			"com\\kbcmdba\\aql\\Libs\\" : "Libs/"

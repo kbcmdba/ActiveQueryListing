@@ -22,7 +22,8 @@
 
 const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.get('debug');
-const debugString = ( debug == '1' ) ? '&debug=1' : '' ;
+const debugLocks = urlParams.get('debugLocks');
+const debugString = ( debug == '1' ? '&debug=1' : '' ) + ( debugLocks == '1' ? '&debugLocks=1' : '' ) ;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -280,6 +281,20 @@ function myCallback( i, item ) {
     var myUrl             = '' ;
     var overviewData      = item[ 'overviewData' ] ;
     var slaveData         = item[ 'slaveData' ] ;
+
+    // Debug: log lock detection data if present
+    if ( debugLocks === '1' ) {
+        console.log( 'AQL Lock Debug for ' + item[ 'hostname' ] + ':',
+                     'lockWaitCount=' + ( item[ 'debugLockWaitCount' ] || 0 ),
+                     'waitingThreadsInOutput=' + ( item[ 'debugWaitingThreadsInOutput' ] || 0 ),
+                     'cacheType=' + ( item[ 'debugBlockingCacheType' ] || 'unknown' ),
+                     'tableLockQuery=', item[ 'debugTableLockQuery' ] || 'NOT SET',
+                     'lockWaitData=', item[ 'debugLockWaitData' ] || 'NOT SET',
+                     'openTablesWithLocks=', item[ 'debugOpenTablesWithLocks' ] || [],
+                     'waitingTables=', item[ 'debugWaitingTables' ] || [],
+                     'blockingCache=', item[ 'debugBlockingCache' ] || [] ) ;
+    }
+
     // We get other types of responses here as well. Ignore the noise.
     // If we have an error, assume it's critical and show it at the top of the process listing.
     if ( typeof item[ 'error_output' ] !== 'undefined' ) {
@@ -300,6 +315,8 @@ function myCallback( i, item ) {
             var l9                = ( overviewData[ 'level9' ] > 0 ) ? ' class="level9"' : '' ;
             var ro                = ( overviewData[ 'ro' ] > 0 ) ? ' class="readOnly"' : '' ;
             var rw                = ( overviewData[ 'rw' ] > 0 ) ? ' class="readWrite"' : '' ;
+            var blocking          = ( overviewData[ 'blocking' ] > 0 ) ? ' class="blocking"' : '' ;
+            var blocked           = ( overviewData[ 'blocked' ] > 0 ) ? ' class="blocked"' : '' ;
             var bl                = ( overviewData[ 'blank' ] > 0 ) ? ' class="Blank"' : '' ;
             var un                = ( overviewData[ 'unique' ] > 0 ) ? ' class="Unique"' : '' ;
             var si                = ( overviewData[ 'similar' ] > 0 ) ? ' class="Similar"' : '' ;
@@ -317,6 +334,8 @@ function myCallback( i, item ) {
                                   + "</td><td" + l9 + ">" + overviewData[ 'level9' ]
                                   + "</td><td" + ro + ">" + overviewData[ 'ro' ]
                                   + "</td><td" + rw + ">" + overviewData[ 'rw' ]
+                                  + "</td><td" + blocking + ">" + overviewData[ 'blocking' ]
+                                  + "</td><td" + blocked + ">" + overviewData[ 'blocked' ]
                                   + "</td><td" + bl + ">" + overviewData[ 'blank' ]
                                   + "</td><td" + du + ">" + overviewData[ 'duplicate' ]
                                   + "</td><td" + si + ">" + overviewData[ 'similar' ]
@@ -328,6 +347,8 @@ function myCallback( i, item ) {
                     + overviewData[ 'level3' ]
                     + overviewData[ 'level4' ]
                     + overviewData[ 'level9' ]
+                    + overviewData[ 'blocking' ]
+                    + overviewData[ 'blocked' ]
                     ;
             if ( sum > 0 ) {
                 $(myRow).appendTo( '#nwoverviewtbodyid' ) ;
@@ -426,10 +447,26 @@ function myCallback( i, item ) {
                 var lockClass = '' ;
                 if ( blockInfo ) {
                     if ( blockInfo.isBlocked ) {
-                        lockStatus += '<span class="blockedIndicator" title="Blocked by thread(s) '
-                                   + ( blockInfo.blockedBy ? blockInfo.blockedBy.join(', ') : '?' )
-                                   + ' for ' + blockInfo.waitSeconds + 's on '
-                                   + ( blockInfo.lockedTable || 'unknown' ) + '">BLOCKED</span>' ;
+                        var fromCache = blockInfo.fromCache ? ' (from recent history)' : '' ;
+                        var blockedTitle = 'Blocked by thread(s) '
+                                        + ( blockInfo.blockedBy ? blockInfo.blockedBy.join(', ') : '?' )
+                                        + fromCache
+                                        + ' for ' + blockInfo.waitSeconds + 's on '
+                                        + ( blockInfo.lockedTable || 'unknown' ) ;
+                        // Add blocker query text if available
+                        if ( blockInfo.blockerQueries ) {
+                            for ( var blockerId in blockInfo.blockerQueries ) {
+                                if ( blockInfo.blockerQueries.hasOwnProperty( blockerId ) ) {
+                                    var blockerQuery = blockInfo.blockerQueries[ blockerId ] ;
+                                    if ( blockerQuery ) {
+                                        blockedTitle += '\n\nBlocker #' + blockerId + ' query' + fromCache + ':\n' + blockerQuery ;
+                                    } else {
+                                        blockedTitle += '\n\nBlocker #' + blockerId + ': (transaction holding lock, no active query)' ;
+                                    }
+                                }
+                            }
+                        }
+                        lockStatus += '<span class="blockedIndicator" title="' + blockedTitle.replace(/"/g, '&quot;') + '">BLOCKED</span>' ;
                         lockClass = ' blocked' ;
                     }
                     if ( blockInfo.isBlocking ) {

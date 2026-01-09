@@ -142,7 +142,7 @@ $NWSlaveHeaderFooter = <<<HTML
     $slaveHeaderFooterCols
 HTML;
 
-$overviewCols = 18 ;
+$overviewCols = 20 ;
 $overviewHeaderFooterCols = <<<HTML
 <tr class="mytr">
       <th>Server</th>
@@ -158,6 +158,8 @@ $overviewHeaderFooterCols = <<<HTML
       <th>L9</th>
       <th>RO</th>
       <th>RW</th>
+      <th>Blocking</th>
+      <th>Blocked</th>
       <th>Blank</th>
       <th>Duplicate</th>
       <th>Similar</th>
