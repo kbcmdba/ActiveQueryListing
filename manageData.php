@@ -730,7 +730,7 @@ HTML;
                 $startTimeVal = empty( $startTime ) ? null : $startTime ;
                 $endTimeVal = empty( $endTime ) ? null : $endTime ;
                 $silenceUntilVal = empty( $silenceUntil ) ? null : $silenceUntil ;
-                $createdBy = $_SESSION['userName'] ?? '' ;
+                $createdBy = $_SESSION['AuthUser'] ?? '' ;
                 $sql = 'INSERT INTO maintenance_window SET window_type = ?, schedule_type = ?, days_of_week = ?, day_of_month = ?, month_of_year = ?, period_days = ?, period_start_date = ?, start_time = ?, end_time = ?, timezone = ?, silence_until = ?, description = ?, created_by = ?' ;
                 $stmt = $dbh->prepare( $sql ) ;
                 $stmt->bind_param( 'sssiiiissssss', $windowType, $scheduleTypeVal, $daysSetVal, $dayOfMonthVal, $monthOfYearVal, $periodDaysVal, $periodStartDateVal, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $createdBy ) ;
