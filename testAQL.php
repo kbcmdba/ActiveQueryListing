@@ -66,6 +66,7 @@ $body .= "<li><a href=\"?test=config_validate\">Validate Configuration</a> - Che
 $body .= "<li><a href=\"?test=smoke_test\">Application Smoke Test</a> - Verify main pages load without errors</li>\n" ;
 $body .= "<li><a href=\"?test=db_user_verify\">Database User Verification</a> - Verify DB user privileges on config server and all monitored hosts</li>\n" ;
 $body .= "<li><a href=\"?test=schema_verify\">Schema Verification</a> - Verify aql_db tables and structure (read-only check)</li>\n" ;
+$body .= "<li><a href=\"?test=deploy_ddl_verify\">Deploy DDL Verification</a> - Verify deployDDL.php runs without errors (idempotent check)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_status\">Check Blocking Status</a> - View current blocking on local server</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
@@ -210,11 +211,34 @@ if ( $test === 'config_validate' ) {
     $body .= "<p><strong>Test database (test user):</strong></p>\n" ;
     if ( !empty( $testDbUser ) && !empty( $testDbPass ) && !empty( $testDbName ) ) {
         try {
-            $testDbh = getTestDbConnection( $localHost, $localPort, $testDbUser, $testDbPass, $testDbName ) ;
+            // First try to connect without specifying a database
+            $testDbh = new \mysqli( $localHost, $testDbUser, $testDbPass, '', $localPort ) ;
+            if ( $testDbh->connect_error ) {
+                throw new \Exception( "Connection failed: " . $testDbh->connect_error ) ;
+            }
+
+            // Check if test database exists
+            $result = $testDbh->query( "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '" . $testDbh->real_escape_string( $testDbName ) . "'" ) ;
+            $dbExists = ( $result && $result->num_rows > 0 ) ;
+
+            if ( !$dbExists ) {
+                // Try to create the database
+                $createSql = "CREATE DATABASE IF NOT EXISTS `" . $testDbh->real_escape_string( $testDbName ) . "` DEFAULT CHARACTER SET = 'utf8mb4'" ;
+                if ( $testDbh->query( $createSql ) ) {
+                    $body .= "<p>$passIcon Created test database <code>" . htmlspecialchars( $testDbName ) . "</code></p>\n" ;
+                } else {
+                    throw new \Exception( "Could not create database: " . $testDbh->error ) ;
+                }
+            }
+
+            // Now connect to the test database
+            if ( !$testDbh->select_db( $testDbName ) ) {
+                throw new \Exception( "Could not select database: " . $testDbh->error ) ;
+            }
             $body .= "<p>$passIcon Connected to test database <code>" . htmlspecialchars( $testDbName ) . "</code></p>\n" ;
             $testDbh->close() ;
         } catch ( \Exception $e ) {
-            $body .= "<p>$failIcon Connection failed: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+            $body .= "<p>$failIcon " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
         }
     } else {
         $body .= "<p>$warnIcon Test database not configured (optional) - see <code>README.md</code> section \"Test Harness Setup\"</p>\n" ;
@@ -542,7 +566,117 @@ if ( $test === 'schema_verify' ) {
         if ( $allTablesExist ) {
             $body .= "<p style='color:lime;font-size:18px;'>&#10004; Schema verification complete - all tables present</p>\n" ;
         } else {
-            $body .= "<p style='color:yellow;font-size:18px;'>&#9888; Schema verification complete - some tables missing (run setup_db.sql)</p>\n" ;
+            $body .= "<p style='color:yellow;font-size:18px;'>&#9888; Schema verification complete - some tables missing (run <a href='deployDDL.php'>deployDDL.php</a>)</p>\n" ;
+        }
+
+    } catch ( \Exception $e ) {
+        $body .= "<p>$failIcon Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+    }
+}
+
+if ( $test === 'deploy_ddl_verify' ) {
+    $body .= "<h3>Deploy DDL Verification</h3>\n" ;
+    $body .= "<p><em>Verifies that deployDDL.php runs without errors and reports schema status</em></p>\n" ;
+
+    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
+    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
+    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+
+    try {
+        // Get the config database connection
+        $configDbHost = $config->getDbHost() ;
+        $configDbPort = $config->getDbPort() ;
+        $configDbUser = $config->getDbUser() ;
+        $configDbPass = $config->getDbPass() ;
+        $configDbName = $config->getDbName() ;
+
+        $dbh = new \mysqli( $configDbHost, $configDbUser, $configDbPass, $configDbName, $configDbPort ) ;
+        if ( $dbh->connect_error ) {
+            throw new \Exception( "Connection failed: " . $dbh->connect_error ) ;
+        }
+        $dbh->set_charset( 'utf8' ) ;
+        $body .= "<p>$passIcon Connected to config database $configDbName on $configDbHost:$configDbPort</p>\n" ;
+
+        // Check database exists
+        $dbCheckSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '" . $dbh->real_escape_string( $configDbName ) . "'" ;
+        $dbCheckResult = $dbh->query( $dbCheckSql ) ;
+        if ( $dbCheckResult && $dbCheckResult->num_rows > 0 ) {
+            $body .= "<p>$passIcon Database <code>$configDbName</code> exists</p>\n" ;
+        } else {
+            $body .= "<p>$warnIcon Database <code>$configDbName</code> not found - deployDDL.php would create it</p>\n" ;
+        }
+
+        // Define expected tables
+        $expectedTables = [ 'host', 'host_group', 'host_group_map', 'maintenance_window', 'maintenance_window_host_map', 'maintenance_window_host_group_map' ] ;
+
+        $body .= "<h4>Table Status</h4>\n" ;
+        $body .= "<table class='tablesorter'>\n" ;
+        $body .= "<thead><tr><th>Table</th><th>Status</th><th>deployDDL Action</th></tr></thead>\n" ;
+        $body .= "<tbody>\n" ;
+
+        $allTablesExist = true ;
+        foreach ( $expectedTables as $tableName ) {
+            $sql = "SHOW TABLES LIKE '$tableName'" ;
+            $result = $dbh->query( $sql ) ;
+            if ( $result && $result->num_rows > 0 ) {
+                $body .= "<tr><td>$tableName</td><td style='color:lime;'>EXISTS</td><td>No action needed</td></tr>\n" ;
+            } else {
+                $body .= "<tr><td>$tableName</td><td style='color:yellow;'>MISSING</td><td>Would be created</td></tr>\n" ;
+                $allTablesExist = false ;
+            }
+        }
+
+        $body .= "</tbody>\n</table>\n" ;
+
+        // Check for pending migrations (columns that deployDDL would add)
+        $body .= "<h4>Migration Status</h4>\n" ;
+        $body .= "<table class='tablesorter'>\n" ;
+        $body .= "<thead><tr><th>Column</th><th>Table</th><th>Status</th></tr></thead>\n" ;
+        $body .= "<tbody>\n" ;
+
+        $migrationColumns = [
+            [ 'maintenance_window', 'schedule_type' ],
+            [ 'maintenance_window', 'day_of_month' ],
+            [ 'maintenance_window', 'month_of_year' ],
+            [ 'maintenance_window', 'period_days' ],
+            [ 'maintenance_window', 'period_start_date' ]
+        ] ;
+
+        $pendingMigrations = 0 ;
+        foreach ( $migrationColumns as $col ) {
+            $tableName = $col[0] ;
+            $columnName = $col[1] ;
+            $sql = "SHOW COLUMNS FROM `$tableName` LIKE '$columnName'" ;
+            try {
+                $result = $dbh->query( $sql ) ;
+                if ( $result && $result->num_rows > 0 ) {
+                    $body .= "<tr><td>$columnName</td><td>$tableName</td><td style='color:lime;'>Present</td></tr>\n" ;
+                } else {
+                    $body .= "<tr><td>$columnName</td><td>$tableName</td><td style='color:yellow;'>Would be added</td></tr>\n" ;
+                    $pendingMigrations++ ;
+                }
+            } catch ( \Exception $e ) {
+                // Table might not exist
+                $body .= "<tr><td>$columnName</td><td>$tableName</td><td style='color:gray;'>Table missing</td></tr>\n" ;
+            }
+        }
+
+        $body .= "</tbody>\n</table>\n" ;
+
+        $dbh->close() ;
+
+        $body .= "<hr/>\n" ;
+        if ( $allTablesExist && $pendingMigrations === 0 ) {
+            $body .= "<p style='color:lime;font-size:18px;'>$passIcon deployDDL.php verification passed - schema is up to date</p>\n" ;
+            $body .= "<p>Running <a href='deployDDL.php'>deployDDL.php</a> will report \"Schema is up to date. No changes needed.\"</p>\n" ;
+        } else {
+            $body .= "<p style='color:yellow;font-size:18px;'>$warnIcon Schema changes pending</p>\n" ;
+            if ( !$allTablesExist ) {
+                $body .= "<p>Missing tables will be created when you run <a href='deployDDL.php'>deployDDL.php</a></p>\n" ;
+            }
+            if ( $pendingMigrations > 0 ) {
+                $body .= "<p>$pendingMigrations migration(s) will be applied when you run <a href='deployDDL.php'>deployDDL.php</a></p>\n" ;
+            }
         }
 
     } catch ( \Exception $e ) {

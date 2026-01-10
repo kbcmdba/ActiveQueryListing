@@ -169,6 +169,10 @@ uses a dedicated test database and does not modify production data.
   all required tables are present (host, host_group, maintenance_window, etc.), and
   required columns exist in each table.
 
+- **Deploy DDL Verification** - Verifies that `deployDDL.php` will run without errors.
+  Shows which tables exist vs would be created, and which migrations are pending vs
+  already applied. For up-to-date installs, confirms schema is current.
+
 - **Setup Blocking Test** - Creates a test table in the dedicated test database and
   provides instructions for simulating lock blocking scenarios.
 
@@ -210,6 +214,25 @@ Navigate to `https://your-server.your-company.com/ActiveQueryListing/testAQL.php
 
 **Note:** The test harness only operates on the local configuration database server
 and the dedicated test database. It will not affect production database servers or data.
+
+### Command Line Test Runner
+
+For bash users, a command-line test runner is available:
+
+```bash
+# Run all CLI-compatible tests
+./run_tests.sh
+
+# Run a specific test
+./run_tests.sh config_validate
+./run_tests.sh schema_verify
+
+# Show available tests
+./run_tests.sh --help
+```
+
+Some tests require web context and are skipped when run from CLI (marked with `*` in help).
+Run these tests via browser instead.
 
 ## SELinux Installation Tips for Fedora/Redhat/CentOS
 
