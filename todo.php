@@ -24,6 +24,43 @@
 
 namespace com\kbcmdba\aql ;
 
+// @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
+// @todo 02-10 Config validation tests
+//             - Verify aql_config.xml exists and is readable
+//             - Check all required parameters are present
+//             - Validate parameter values (e.g., port is numeric, URLs are well-formed)
+//             - Test database connectivity with configured credentials
+// @todo 02-15 Application smoke tests
+//             - Fetch index.php and verify HTTP 200 (no error 500)
+//             - Fetch manageData.php and verify it loads (may redirect to login)
+//             - Fetch AJAXgetaql.php with a test host and verify valid JSON response
+//             - Report any PHP errors or warnings in responses
+// @todo 02-20 Main database user verification
+//             - Test connection to local config database with aql_app user
+//             - Verify PROCESS privilege (can see other connections)
+//             - Verify REPLICATION CLIENT privilege (can run SHOW SLAVE STATUS)
+//             - Check SELECT on performance_schema tables for lock detection
+// @todo 02-30 AQL database schema verification
+//             - Verify aql_db database exists
+//             - Check all required tables exist (host, host_group, alert_*level*, etc.)
+//             - Validate table structures match expected schema
+//             - Report missing or altered columns
+// @todo 02-40 deployDDL.php verification
+//             - Run deployDDL.php in dry-run/check mode
+//             - Report any pending schema changes
+//             - Verify DDL scripts are syntactically valid
+// @todo 02-50 Remote host connectivity tests
+//             - Test connection to each configured host in host table
+//             - Verify required privileges on remote hosts
+//             - Report connection failures with helpful diagnostics
+// @todo 02-60 LDAP/authentication tests (when doLDAPAuthentication=true)
+//             - Test LDAP server connectivity
+//             - Verify SSL certificate (if ldapVerifyCert=true)
+//             - Test bind with a known test credential (optional, manual)
+// @todo 02-70 Jira integration tests (when jiraEnabled=true)
+//             - Verify Jira API connectivity
+//             - Check project and issue type IDs are valid
+//             - Test custom field existence
 // @todo 03-20 Log blocking queries for historical analysis
 //             - Store blocking events in database table (host, thread_id, user, query_hash, query_text, blocked_count, timestamp)
 //             - Auto-purge entries older than 90 days to prevent unbounded growth
@@ -81,6 +118,14 @@ namespace com\kbcmdba\aql ;
 //          - Certificate on ce-cook-adc1101.cashtn.com expired Jan 9, 2025
 //          - Currently using ldapVerifyCert=false as workaround (security risk)
 //          - Once renewed, remove ldapVerifyCert=false from aql_config.xml
+// @todo 37 Create verifyAQLConfiguration.php for new user setup guidance
+//          - Show all config parameters (required and optional) with current status
+//          - Green checkmark for configured, red X for missing required, yellow for optional not set
+//          - Test database connectivity and report results
+//          - Test LDAP connectivity if doLDAPAuthentication=true
+//          - Test Jira API if jiraEnabled=true
+//          - Guide users through fixing configuration issues
+//          - Document in README.md alongside testAQL.php
 // @todo 40 Add Redis support for long-running query monitoring
 //          - Use CLIENT LIST to get connected clients and current commands
 //          - Use SLOWLOG GET to retrieve slow queries
