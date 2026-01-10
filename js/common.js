@@ -1005,6 +1005,204 @@ $(document).ready(function() {
     // Only init these if they exist (manageData.php)
     initTableSortWithUrl('#hostEdit', 'host', [[2, 0]]);   // Host Name ascending
     initTableSortWithUrl('#groupEdit', 'group', [[1, 0]]); // Group Name ascending
+    // Blocking history table (blockingHistory.php)
+    initTableSortWithUrl('#blockingHistoryTable', 'blocking', [[4, 1]]); // Times Seen descending
 });
+
+///////////////////////////////////////////////////////////////////////////////
+// Fuzzy Search Autocomplete (fzf-style)
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * fzf-style fuzzy match - characters must appear in order but not consecutively
+ * @param {string} pattern - Search pattern (e.g., "tt")
+ * @param {string} str - String to match against (e.g., "Scott.Adams")
+ * @returns {object|null} - {score, matches} or null if no match
+ */
+function fuzzyMatch(pattern, str) {
+    if (!pattern) return { score: 0, matches: [] };
+
+    pattern = pattern.toLowerCase();
+    var strLower = str.toLowerCase();
+    var patternIdx = 0;
+    var matches = [];
+    var score = 0;
+    var lastMatchIdx = -1;
+
+    for (var i = 0; i < str.length && patternIdx < pattern.length; i++) {
+        if (strLower[i] === pattern[patternIdx]) {
+            matches.push(i);
+            // Bonus for consecutive matches
+            if (lastMatchIdx === i - 1) {
+                score += 10;
+            }
+            // Bonus for start of string or after separator
+            if (i === 0 || /[._\-@\s]/.test(str[i - 1])) {
+                score += 5;
+            }
+            score += 1;
+            lastMatchIdx = i;
+            patternIdx++;
+        }
+    }
+
+    // All pattern characters must be found
+    if (patternIdx !== pattern.length) {
+        return null;
+    }
+
+    // Bonus for shorter strings (more precise match)
+    score += Math.max(0, 20 - str.length);
+
+    return { score: score, matches: matches };
+}
+
+/**
+ * Highlight matched characters in a string
+ * @param {string} str - Original string
+ * @param {array} matches - Array of matched character indices
+ * @returns {string} - HTML with matched chars wrapped in <b>
+ */
+function highlightMatches(str, matches) {
+    if (!matches || matches.length === 0) return escapeHtml(str);
+
+    var result = '';
+    var matchSet = new Set(matches);
+    for (var i = 0; i < str.length; i++) {
+        if (matchSet.has(i)) {
+            result += '<b>' + escapeHtml(str[i]) + '</b>';
+        } else {
+            result += escapeHtml(str[i]);
+        }
+    }
+    return result;
+}
+
+/**
+ * Escape HTML special characters
+ */
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+/**
+ * Initialize fuzzy autocomplete on an input field
+ * @param {string} inputId - ID of the input element
+ * @param {array} options - Array of strings to search
+ * @param {number} maxResults - Maximum results to show (default 10)
+ */
+function initFuzzyAutocomplete(inputId, options, maxResults) {
+    maxResults = maxResults || 10;
+    var input = document.getElementById(inputId);
+    if (!input) return;
+
+    // Create dropdown container
+    var dropdown = document.createElement('div');
+    dropdown.className = 'fuzzy-dropdown';
+    dropdown.style.cssText = 'position:absolute;background:#333;border:1px solid #555;max-height:200px;overflow-y:auto;display:none;z-index:1000;min-width:200px;';
+    input.parentNode.style.position = 'relative';
+    input.parentNode.appendChild(dropdown);
+
+    var selectedIdx = -1;
+
+    function updateDropdown() {
+        var query = input.value;
+        dropdown.innerHTML = '';
+        selectedIdx = -1;
+
+        if (!query) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        // Score and filter options
+        var scored = [];
+        for (var i = 0; i < options.length; i++) {
+            var match = fuzzyMatch(query, options[i]);
+            if (match) {
+                scored.push({ text: options[i], score: match.score, matches: match.matches });
+            }
+        }
+
+        // Sort by score descending
+        scored.sort(function(a, b) { return b.score - a.score; });
+
+        // Take top results
+        var results = scored.slice(0, maxResults);
+
+        if (results.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        // Build dropdown items
+        for (var j = 0; j < results.length; j++) {
+            var item = document.createElement('div');
+            item.className = 'fuzzy-item';
+            item.style.cssText = 'padding:5px 10px;cursor:pointer;color:#fff;';
+            item.innerHTML = highlightMatches(results[j].text, results[j].matches);
+            item.setAttribute('data-value', results[j].text);
+            item.setAttribute('data-index', j);
+
+            item.addEventListener('mouseover', function() {
+                var items = dropdown.querySelectorAll('.fuzzy-item');
+                for (var k = 0; k < items.length; k++) {
+                    items[k].style.background = '';
+                }
+                this.style.background = '#555';
+                selectedIdx = parseInt(this.getAttribute('data-index'));
+            });
+
+            item.addEventListener('click', function() {
+                input.value = this.getAttribute('data-value');
+                dropdown.style.display = 'none';
+            });
+
+            dropdown.appendChild(item);
+        }
+
+        dropdown.style.display = 'block';
+    }
+
+    input.addEventListener('input', updateDropdown);
+    input.addEventListener('focus', updateDropdown);
+
+    input.addEventListener('keydown', function(e) {
+        var items = dropdown.querySelectorAll('.fuzzy-item');
+        if (items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIdx = Math.min(selectedIdx + 1, items.length - 1);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIdx = Math.max(selectedIdx - 1, 0);
+        } else if (e.key === 'Enter' && selectedIdx >= 0) {
+            e.preventDefault();
+            input.value = items[selectedIdx].getAttribute('data-value');
+            dropdown.style.display = 'none';
+            return;
+        } else if (e.key === 'Escape') {
+            dropdown.style.display = 'none';
+            return;
+        } else {
+            return;
+        }
+
+        // Update highlight
+        for (var i = 0; i < items.length; i++) {
+            items[i].style.background = (i === selectedIdx) ? '#555' : '';
+        }
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
 
 ///////////////////////////////////////////////////////////////////////////////

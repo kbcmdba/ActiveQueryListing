@@ -30,7 +30,7 @@ namespace com\kbcmdba\aql ;
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
 // @done 03-20 Log blocking queries for historical analysis (storage + auto-purge implemented)
-// @todo 03-30 UI to view blocking history: filter by host, user, query pattern
+// @done 03-30 UI to view blocking history: filter by host, user, query pattern (blockingHistory.php)
 // @todo 03-40 Add blocking history analysis: identify repeat offenders and problematic query patterns
 // @todo 04 Alternating row colors for all alert levels in Full Process Listing
 //          - Each level gets two shades: bright and muted (e.g., level4: red/dark red)
