@@ -348,6 +348,8 @@ if ( ! tableExists( $dbh, 'blocking_history' ) ) {
                                COMMENT 'Times this query was seen blocking (not total executions)'
          , total_blocked     INT UNSIGNED NOT NULL DEFAULT 1
                                COMMENT 'Sum of blocked queries each time this was seen blocking'
+         , max_block_secs    INT UNSIGNED NOT NULL DEFAULT 0
+                               COMMENT 'Maximum blocking duration seen in seconds'
          , first_seen        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
          , last_seen         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                                ON UPDATE CURRENT_TIMESTAMP
@@ -473,6 +475,26 @@ if ( ! columnExists( $dbh, 'maintenance_window', 'period_start_date' ) ) {
     }
 } else {
     $body .= "<tr><td>period_start_date column</td><td>OK</td><td>-</td></tr>\n" ;
+}
+
+// ---------------------------------------------------------------------------
+// Migration 002: Add max_block_secs to blocking_history
+// ---------------------------------------------------------------------------
+
+if ( tableExists( $dbh, 'blocking_history' ) && ! columnExists( $dbh, 'blocking_history', 'max_block_secs' ) ) {
+    $sql = "ALTER TABLE blocking_history
+              ADD COLUMN max_block_secs INT UNSIGNED NOT NULL DEFAULT 0
+                  COMMENT 'Maximum blocking duration seen in seconds'
+                  AFTER total_blocked" ;
+    if ( $dbh->query( $sql ) ) {
+        $body .= "<tr><td>max_block_secs column</td><td>ADDED</td><td>Column created</td></tr>\n" ;
+        $results[] = "Added max_block_secs column to blocking_history" ;
+    } else {
+        $body .= "<tr><td>max_block_secs column</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to add max_block_secs column: " . $dbh->error ;
+    }
+} else if ( tableExists( $dbh, 'blocking_history' ) ) {
+    $body .= "<tr><td>max_block_secs column</td><td>OK</td><td>-</td></tr>\n" ;
 }
 
 $body .= "</tbody>\n</table>\n" ;

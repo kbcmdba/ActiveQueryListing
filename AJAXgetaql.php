@@ -236,25 +236,30 @@ function hashQueryString( $str ) {
  * @param string $dbName Database name (may be null)
  * @param string $queryText Original query text (will be normalized)
  * @param int $blockedCount Number of queries being blocked
+ * @param int $blockTimeSecs Duration of the blocking in seconds
  */
-function logBlockingQuery( $hostId, $user, $sourceHost, $dbName, $queryText, $blockedCount ) {
+function logBlockingQuery( $hostId, $user, $sourceHost, $dbName, $queryText, $blockedCount, $blockTimeSecs ) {
     try {
         $dbc = new DBConnection() ;
         $dbh = $dbc->getConnection() ;
 
+        // Handle negative time values (possible due to network time sync issues)
+        $blockTimeSecs = max( 0, (int) $blockTimeSecs ) ;
+
         $normalizedQuery = normalizeQueryForHash( $queryText ) ;
         $queryHash = hashQueryString( $normalizedQuery ) ;
 
-        // INSERT or UPDATE - increment counts if exists
+        // INSERT or UPDATE - increment counts if exists, track max block time
         $sql = "INSERT INTO aql_db.blocking_history
-                (host_id, query_hash, user, source_host, db_name, query_text, blocked_count, total_blocked)
-                VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+                (host_id, query_hash, user, source_host, db_name, query_text, blocked_count, total_blocked, max_block_secs)
+                VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     blocked_count = blocked_count + 1,
                     total_blocked = total_blocked + VALUES(total_blocked),
+                    max_block_secs = GREATEST(max_block_secs, VALUES(max_block_secs)),
                     last_seen = CURRENT_TIMESTAMP" ;
         $stmt = $dbh->prepare( $sql ) ;
-        $stmt->bind_param( 'isssssi', $hostId, $queryHash, $user, $sourceHost, $dbName, $normalizedQuery, $blockedCount ) ;
+        $stmt->bind_param( 'isssssii', $hostId, $queryHash, $user, $sourceHost, $dbName, $normalizedQuery, $blockedCount, $blockTimeSecs ) ;
         $stmt->execute() ;
         $stmt->close() ;
     } catch ( \Exception $e ) {
@@ -1047,13 +1052,15 @@ SQL;
                         // Skip if no meaningful query text
                         if ( !empty( $queryText ) && $queryText !== '[Holding lock - no active query]' && $queryText !== '[Holding table lock]' ) {
                             $blockedCount = count( $info['blocking'] ) ;
+                            $blockTimeSecs = (int) ( $thread['time'] ?? 0 ) ;
                             logBlockingQuery(
                                 $hostId,
                                 $thread['user'] ?? 'unknown',
                                 $thread['host'] ?? 'unknown',
                                 $thread['db'],
                                 $queryText,
-                                $blockedCount
+                                $blockedCount,
+                                $blockTimeSecs
                             ) ;
                         }
                         break ;

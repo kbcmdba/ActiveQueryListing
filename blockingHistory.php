@@ -137,6 +137,7 @@ try {
                  , bh.db_name
                  , bh.blocked_count
                  , bh.total_blocked
+                 , bh.max_block_secs
                  , bh.query_text
                  , bh.first_seen
                  , bh.last_seen
@@ -191,6 +192,7 @@ try {
           .  "  <th>Database</th>\n"
           .  "  <th>Times Seen</th>\n"
           .  "  <th>Total Seen Blocked</th>\n"
+          .  "  <th>Max Block Secs Seen</th>\n"
           .  "  <th>Query</th>\n"
           .  "  <th>First Seen</th>\n"
           .  "  <th>Last Seen</th>\n"
@@ -207,6 +209,7 @@ try {
         $dbName = htmlspecialchars( $row['db_name'] ?? '' ) ;
         $blockedCount = intval( $row['blocked_count'] ) ;
         $totalBlocked = intval( $row['total_blocked'] ) ;
+        $maxBlockSecs = intval( $row['max_block_secs'] ?? 0 ) ;
         $queryFull = htmlspecialchars( $row['query_text'] ) ;
         $queryTrunc = htmlspecialchars( mb_substr( $row['query_text'], 0, 80 ) ) ;
         if ( mb_strlen( $row['query_text'] ) > 80 ) {
@@ -222,6 +225,7 @@ try {
               .  "  <td>$dbName</td>\n"
               .  "  <td style=\"text-align:right;\">$blockedCount</td>\n"
               .  "  <td style=\"text-align:right;\">$totalBlocked</td>\n"
+              .  "  <td style=\"text-align:right;\">$maxBlockSecs</td>\n"
               .  "  <td title=\"$queryFull\"><code>$queryTrunc</code></td>\n"
               .  "  <td>$firstSeen</td>\n"
               .  "  <td>$lastSeen</td>\n"
