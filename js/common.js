@@ -470,9 +470,10 @@ function myCallback( i, item ) {
                         lockClass = ' blocked' ;
                     }
                     if ( blockInfo.isBlocking ) {
+                        var blockingCount = blockInfo.blocking ? blockInfo.blocking.length : 0 ;
                         lockStatus += '<span class="blockingIndicator" title="Blocking thread(s) '
                                    + ( blockInfo.blocking ? blockInfo.blocking.join(', ') : '?' )
-                                   + '">BLOCKING</span>' ;
+                                   + '">BLOCKING (' + blockingCount + ')</span>' ;
                         lockClass += ' blocking' ;
                     }
                 }
@@ -494,7 +495,8 @@ function myCallback( i, item ) {
                           + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
                           + "</td></tr>" ;
                 $(myRow).appendTo( "#fullprocesstbodyid" ) ;
-                if ( level > 1 ) {
+                // Show in Noteworthy if level > 1 OR if blocking other queries
+                if ( level > 1 || ( blockInfo && blockInfo.isBlocking ) ) {
                     $(myRow).appendTo( "#nwprocesstbodyid" ) ;
                 }
             }
