@@ -39,9 +39,6 @@ use com\kbcmdba\aql\Libs\WebPage ;
 
 $page = new WebPage( 'Blocking History' ) ;
 $page->setTop( "<h2>AQL: Blocking History</h2>\n"
-             . "<a href=\"index.php\">ActiveQueryListing</a>\n"
-             . " | <a href=\"./manageData.php\">Manage Data</a>\n"
-             . "<p />\n"
              . "<p>This page shows queries that have been observed blocking other queries. "
              . "Query text is normalized (strings/numbers replaced) to avoid storing sensitive data.</p>\n"
              ) ;

@@ -216,15 +216,9 @@ HTML;
 
 $page = new WebPage( 'AQL: Manage Data' ) ;
 $page->setTop( "<h2>AQL: Manage Data</h2>\n"
-             .  "<a href=\"index.php\">ActiveQueryListing</a>\n"
-             .  " | <a href=\"./manageData.php?data=Hosts\">Manage Hosts</a>\n"
-             .  " | <a href=\"./manageData.php?data=Groups\">Manage Groups</a>\n"
-             .  " | <a href=\"./manageData.php?data=MaintenanceWindows\">Manage Maintenance Windows</a>\n"
-             .  " | <a href=\"./deployDDL.php\">Deploy DDL</a>\n"
-             .  " | <a href=\"./manageData.php?logout=logout\">Log out of Manage Data</a>\n"
+             .  "<a href=\"./manageData.php?logout=logout\">Log out of Manage Data</a>\n"
              .  "<p />\n"
              ) ;
-             // .  " | <a href=\"./manageData.php?data=Hosts\">Manage Hosts</a>\n"
 doLoginOrDie( $page ) ;
 switch ( Tools::param( 'data' ) ) {
     case 'Hosts':

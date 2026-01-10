@@ -29,13 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 10 Implement sticky navigation bar with dropdown menus
-//          - Replace current inline nav links with fixed/sticky header
-//          - JavaScript dropdown menus for: AQL, Blocking History, Manage Data, Tests
-//          - Implement in WebPage.php (pageTop or similar)
-//          - Stays at top of page when scrolling (like a frame, but not a frame)
-//          - Remove old $navBar/inline links from individual pages, replacing with <p /> for vertical separation
-//          - Add CSS for sticky header and dropdown styling to main.css
 // @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
 // @todo 17-30 Ad-hoc "do it live" silencing
 //             - Per-host or per-group silence button: "Silence for X minutes/hours"

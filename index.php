@@ -36,28 +36,11 @@ use com\kbcmdba\aql\Libs\Exceptions\DaoException;
 use com\kbcmdba\aql\Libs\Tools ;
 use com\kbcmdba\aql\Libs\WebPage ;
 
-$navBar = <<<HTML
-<br clear="all" />
-Navigate:
- &nbsp; &nbsp; <nobr><a href="#graphs">Top / Graphs</a></nobr>
- &nbsp; &nbsp; <nobr><a href="#nwSlaveStatus">Noteworthy Slave Status</a></nobr>
- &nbsp; &nbsp; <nobr><a href="#nwStatusOverview">Noteworthy Status Overview</a></nobr>
- &nbsp; &nbsp; <nobr><a href="#nwProcessListing">Noteworthy Process Listing</a></nobr>
- &nbsp; &nbsp; <nobr><a href="#fullSlaveStatus">Full Slave Status</a></nobr>
- &nbsp; &nbsp; <nobr><a href="#fullStatusOverview">Full Status Overview</a></nobr>
- &nbsp; &nbsp; <nobr><a href="#fullProcessListing">Full Process Listing</a></nobr>
- &nbsp; &nbsp; <nobr><a href="#versionSummary">Version Summary</a></nobr>
- &nbsp; &nbsp; <nobr><a href="manageData.php">Manage Data</a></nobr>
-<br clear="all" />
-HTML;
-
 // ///////////////////////////////////////////////////////////////////////////
 
 function xTable( $prefix, $linkId, $tableId, $headerFooter, $id, $cols ) {
-    global $navBar;
     return <<<HTML
-$navBar
-
+<p />
 <a id="{$prefix}$linkId"></a>
 <table border=1 cellspacing=0 cellpadding=2 id="{$prefix}{$tableId}Table" width="100%" class="tablesorter aql-listing">
 <thead>
@@ -340,6 +323,7 @@ function loadPage() {
             \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ;
             initTableSorting();
             displayCharts() ;
+            scrollToHashIfPresent() ;
         }
     );
     \$('#nwprocesstbodyid').on('click', '.morelink', flipFlop) ;
@@ -735,7 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {$cb(xTable( 'full', 'StatusOverview', 'Overview', $fullOverviewHeaderFooter, 'overview', $overviewCols ))}
 {$cb(xTable( 'full', 'ProcessListing', 'Process', $fullProcessHeaderFooter, 'process', $processCols ))}
 
-$navBar
+<p />
 
 <a id="versionSummary"></a>
 <table border=1 cellspacing=0 cellpadding=2 id="versionSummaryTable" class="tablesorter aql-listing">
@@ -748,7 +732,7 @@ $navBar
 </tbody>
 </table>
 
-$navBar
+<p />
 
 <table border=1 cellspacing=0 cellpadding=2 id="legend" width="100%">
   <caption>Legend</caption>

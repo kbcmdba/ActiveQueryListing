@@ -24,6 +24,7 @@
 
 namespace com\kbcmdba\aql\Libs ;
 
+use com\kbcmdba\aql\Libs\Config ;
 use com\kbcmdba\aql\Libs\Exceptions\WebPageException ;
 
 /**
@@ -97,6 +98,7 @@ HTML
                    . "</head>\n"
                    . "<body>\n"
                    . $this->getTop()
+                   . $this->getNavBar()
                    . $this->getBody()
                    . $this->getBottom()
                    . "\n<!-- EndOfPage --></body>\n"
@@ -333,5 +335,64 @@ HTML
     public function getData()
     {
         return $this->data ;
+    }
+
+    /**
+     * Generate the sticky navigation bar HTML
+     *
+     * @return string
+     */
+    private function getNavBar()
+    {
+        $version = Config::VERSION ;
+        return <<<HTML
+<nav class="navbar navbar-inverse navbar-fixed-top aql-navbar">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <span class="navbar-brand">AQL $version</span>
+    </div>
+    <ul class="nav navbar-nav">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">AQL <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li><a href="index.php">Active Query Listing</a></li>
+          <li class="divider"></li>
+          <li><a href="index.php#graphs">Top / Graphs</a></li>
+          <li><a href="index.php#nwSlaveStatus">Noteworthy Slave Status</a></li>
+          <li><a href="index.php#nwStatusOverview">Noteworthy Status Overview</a></li>
+          <li><a href="index.php#nwProcessListing">Noteworthy Process Listing</a></li>
+          <li><a href="index.php#fullSlaveStatus">Full Slave Status</a></li>
+          <li><a href="index.php#fullStatusOverview">Full Status Overview</a></li>
+          <li><a href="index.php#fullProcessListing">Full Process Listing</a></li>
+          <li><a href="index.php#versionSummary">Version Summary</a></li>
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">History <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li><a href="blockingHistory.php">Blocking History</a></li>
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Manage <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li><a href="manageData.php?data=Hosts">Manage Hosts</a></li>
+          <li><a href="manageData.php?data=Groups">Manage Groups</a></li>
+          <li><a href="manageData.php?data=MaintenanceWindows">Maintenance Windows</a></li>
+          <li class="divider"></li>
+          <li><a href="deployDDL.php">Deploy DDL</a></li>
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tests <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li><a href="testAQL.php">Test Harness</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+HTML;
     }
 }

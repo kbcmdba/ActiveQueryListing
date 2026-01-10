@@ -16,15 +16,7 @@ use com\kbcmdba\aql\Libs\Config ;
 use com\kbcmdba\aql\Libs\WebPage ;
 
 $page = new WebPage( 'AQL Test Harness' ) ;
-$navBar = <<<HTML
-<br clear="all" />
-Navigate:
- &nbsp; &nbsp; <nobr><a href="index.php">AQL Home</a></nobr>
- &nbsp; &nbsp; <nobr><a href="manageData.php">Manage Data</a></nobr>
- &nbsp; &nbsp; <nobr><a href="testAQL.php">Test Harness</a></nobr>
-<br clear="all" />
-HTML;
-$page->setTop( "<h2>AQL Test Harness</h2>\n$navBar\n" ) ;
+$page->setTop( "<h2>AQL Test Harness</h2>\n" ) ;
 
 $body = '' ;
 $test = $_GET['test'] ?? '' ;

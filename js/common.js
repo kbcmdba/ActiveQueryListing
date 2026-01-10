@@ -1020,6 +1020,49 @@ $(document).ready(function() {
 });
 
 ///////////////////////////////////////////////////////////////////////////////
+// Hash-based Navigation (for AJAX-loaded content)
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Scroll to the element specified by the URL hash, if present.
+ * Call this after AJAX content has loaded.
+ */
+function scrollToHashIfPresent() {
+    var hash = window.location.hash ;
+    if ( hash && hash.length > 1 ) {
+        var targetId = hash.substring( 1 ) ;
+        var target = document.getElementById( targetId ) ;
+        if ( target ) {
+            // Small delay to ensure DOM is fully rendered
+            setTimeout( function() {
+                target.scrollIntoView( { behavior: 'smooth', block: 'start' } ) ;
+            }, 100 ) ;
+        }
+    }
+}
+
+// Intercept clicks on same-page anchor links to avoid full reload
+$(document).ready(function() {
+    $(document).on('click', 'a[href*="index.php#"]', function(e) {
+        // Only intercept if we're already on index.php
+        if ( window.location.pathname.endsWith('index.php') || window.location.pathname.endsWith('/') ) {
+            var href = $(this).attr('href') ;
+            var hashIndex = href.indexOf('#') ;
+            if ( hashIndex !== -1 ) {
+                var targetId = href.substring( hashIndex + 1 ) ;
+                var target = document.getElementById( targetId ) ;
+                if ( target ) {
+                    e.preventDefault() ;
+                    target.scrollIntoView( { behavior: 'smooth', block: 'start' } ) ;
+                    // Update URL hash without reload
+                    history.pushState( null, null, '#' + targetId ) ;
+                }
+            }
+        }
+    }) ;
+}) ;
+
+///////////////////////////////////////////////////////////////////////////////
 // Fuzzy Search Autocomplete (fzf-style)
 ///////////////////////////////////////////////////////////////////////////////
 

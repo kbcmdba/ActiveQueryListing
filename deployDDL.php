@@ -67,11 +67,7 @@ function tableExists( $dbh, $table ) {
 // ///////////////////////////////////////////////////////////////////////////
 
 $page = new WebPage( 'Deploy DDL' ) ;
-$page->setTop( "<h2>AQL: Deploy DDL</h2>\n"
-             . "<a href=\"index.php\">ActiveQueryListing</a>\n"
-             . " | <a href=\"./manageData.php\">Manage Data</a>\n"
-             . "<p />\n"
-             ) ;
+$page->setTop( "<h2>AQL: Deploy DDL</h2>\n" ) ;
 
 $body = "<p>This page checks the current database schema and applies any needed updates.</p>\n" ;
 $body .= "<p><em>Safe for new installs and existing installs - all operations are idempotent.</em></p>\n" ;

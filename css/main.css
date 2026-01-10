@@ -24,6 +24,7 @@
 body {
     background-color: #333 !important ;
     color: white !important ;
+    padding-top: 50px ;
 }
 
 .errorNotice {
@@ -370,4 +371,55 @@ td.blocking {
     content: '▼';
     opacity: 1;
     font-size: inherit;
+}
+
+/* Sticky Navigation Bar */
+.aql-navbar {
+    background-color: #222 !important;
+    border-color: #080808 !important;
+    min-height: 40px !important;
+    margin-bottom: 0 !important;
+}
+
+.aql-navbar .navbar-brand {
+    color: #888 !important;
+    font-size: 12px;
+    padding: 10px 15px;
+}
+
+.aql-navbar .nav > li > a {
+    color: #ccc !important;
+    padding: 10px 15px;
+}
+
+.aql-navbar .nav > li > a:hover,
+.aql-navbar .nav > li > a:focus {
+    color: white !important;
+    background-color: #333 !important;
+}
+
+.aql-navbar .nav .open > a,
+.aql-navbar .nav .open > a:hover,
+.aql-navbar .nav .open > a:focus {
+    background-color: #333 !important;
+    color: white !important;
+}
+
+.aql-navbar .dropdown-menu {
+    background-color: #333;
+    border: 1px solid #444;
+}
+
+.aql-navbar .dropdown-menu > li > a {
+    color: #ccc;
+}
+
+.aql-navbar .dropdown-menu > li > a:hover,
+.aql-navbar .dropdown-menu > li > a:focus {
+    background-color: #444;
+    color: white;
+}
+
+.aql-navbar .dropdown-menu .divider {
+    background-color: #444;
 }
