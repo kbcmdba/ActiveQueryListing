@@ -25,11 +25,6 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
-// @todo 02-20 Main database user verification
-//             - Test connection to local config database with aql_app user
-//             - Verify PROCESS privilege (can see other connections)
-//             - Verify REPLICATION CLIENT privilege (can run SHOW SLAVE STATUS)
-//             - Check SELECT on performance_schema tables for lock detection
 // @todo 02-30 AQL database schema verification
 //             - Verify aql_db database exists
 //             - Check all required tables exist (host, host_group, alert_*level*, etc.)
