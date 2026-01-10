@@ -25,11 +25,6 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
-// @todo 02-30 AQL database schema verification
-//             - Verify aql_db database exists
-//             - Check all required tables exist (host, host_group, alert_*level*, etc.)
-//             - Validate table structures match expected schema
-//             - Report missing or altered columns
 // @todo 02-40 deployDDL.php verification
 //             - Run deployDDL.php in dry-run/check mode
 //             - Report any pending schema changes
