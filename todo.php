@@ -29,11 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 02-80 Verify host permissions when adding new host in manageData.php
-//             - Test connection to new host with configured credentials
-//             - Verify PROCESS privilege before allowing host to be added
-//             - Verify REPLICATION CLIENT if replication monitoring enabled
-//             - Display clear error if permissions are missing
 // @todo 03-20 Log blocking queries for historical analysis
 //             - Store blocking events in database table (host, thread_id, user, query_hash, query_text, blocked_count, timestamp)
 //             - Auto-purge entries older than 90 days to prevent unbounded growth

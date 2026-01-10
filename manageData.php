@@ -79,7 +79,101 @@ function getEnumValues( $dbh, $table, $column ) {
     }
     return $values ;
 }
-  
+
+// ///////////////////////////////////////////////////////////////////////////
+
+/**
+ * Verify that AQL can connect to a host and has required permissions
+ * @param string $hostname Host to connect to
+ * @param int $port Port number
+ * @return array ['success' => bool, 'errors' => string[], 'warnings' => string[]]
+ */
+function verifyHostPermissions( $hostname, $port ) {
+    $result = [
+        'success' => true,
+        'errors' => [],
+        'warnings' => []
+    ] ;
+
+    try {
+        // Step 1: DNS resolution check
+        $ip = @gethostbyname( $hostname ) ;
+        if ( $ip === $hostname && ! filter_var( $hostname, FILTER_VALIDATE_IP ) ) {
+            $result['success'] = false ;
+            $result['errors'][] = "DNS resolution failed: Cannot resolve hostname '$hostname'" ;
+            return $result ;
+        }
+
+        // Step 2: TCP port reachability check (5 second timeout)
+        $socket = @fsockopen( $hostname, $port, $errno, $errstr, 5 ) ;
+        if ( ! $socket ) {
+            $result['success'] = false ;
+            $errorDetail = '' ;
+            switch ( $errno ) {
+                case 110: // Connection timed out
+                case 10060: // Windows timeout
+                    $errorDetail = "Connection timed out - host may be down or firewall is blocking port $port" ;
+                    break ;
+                case 111: // Connection refused
+                case 10061: // Windows connection refused
+                    $errorDetail = "Connection refused - MySQL may not be running on port $port" ;
+                    break ;
+                case 113: // No route to host
+                case 10065: // Windows no route
+                    $errorDetail = "No route to host - network path to '$hostname' is unavailable" ;
+                    break ;
+                default:
+                    $errorDetail = "Cannot reach port $port: $errstr (error $errno)" ;
+            }
+            $result['errors'][] = "Network check failed: $errorDetail" ;
+            return $result ;
+        }
+        fclose( $socket ) ;
+
+        // Step 3: MySQL connection and privilege checks
+        $config = new Config() ;
+        $dbUser = $config->getDbUser() ;
+        $dbPass = $config->getDbPass() ;
+
+        // Try to connect
+        $mysqli = @new \mysqli( $hostname, $dbUser, $dbPass, '', $port ) ;
+        if ( $mysqli->connect_error ) {
+            $result['success'] = false ;
+            $result['errors'][] = "MySQL connection failed: " . $mysqli->connect_error ;
+            return $result ;
+        }
+
+        // Check PROCESS privilege (required for SHOW PROCESSLIST)
+        $processResult = @$mysqli->query( "SHOW PROCESSLIST" ) ;
+        if ( ! $processResult ) {
+            $result['success'] = false ;
+            $result['errors'][] = "PROCESS privilege missing - cannot view queries. Grant with: GRANT PROCESS ON *.* TO '$dbUser'@'%';" ;
+        } else {
+            $processResult->close() ;
+        }
+
+        // Check REPLICATION CLIENT privilege (optional, for replica status)
+        $replResult = @$mysqli->query( "SHOW SLAVE STATUS" ) ;
+        if ( ! $replResult ) {
+            // Try MySQL 8.0.22+ syntax
+            $replResult = @$mysqli->query( "SHOW REPLICA STATUS" ) ;
+        }
+        if ( ! $replResult ) {
+            $result['warnings'][] = "REPLICATION CLIENT privilege missing - replica status unavailable. Grant with: GRANT REPLICATION CLIENT ON *.* TO '$dbUser'@'%';" ;
+        } else {
+            $replResult->close() ;
+        }
+
+        $mysqli->close() ;
+
+    } catch ( \Exception $e ) {
+        $result['success'] = false ;
+        $result['errors'][] = "Error: " . $e->getMessage() ;
+    }
+
+    return $result ;
+}
+
 // ///////////////////////////////////////////////////////////////////////////
 
 function doLoginOrDie( $page ) {
@@ -203,6 +297,36 @@ switch ( Tools::param( 'data' ) ) {
                 break;
             case 'Add':
                 $body .= 'Add - ' ;
+                // Verify host permissions before adding
+                $permCheck = verifyHostPermissions( $hostName, $portNumber ) ;
+                if ( ! $permCheck['success'] ) {
+                    $config = new Config() ;
+                    $dbUser = $config->getDbUser() ;
+                    $body .= "<span style='color:red;'>Failed - Permission verification failed:</span><br />\n" ;
+                    foreach ( $permCheck['errors'] as $err ) {
+                        $body .= "<span style='color:red;'>&bull; " . htmlspecialchars( $err ) . "</span><br />\n" ;
+                    }
+                    $body .= "<p>Run these commands on <strong>" . htmlspecialchars( $hostName ) . ":" . htmlspecialchars( $portNumber ) . "</strong> to fix:</p>\n" ;
+                    $body .= "<div class='code-box'>\n" ;
+                    $body .= "<pre>" ;
+                    $body .= "-- Create user if it doesn't exist\n" ;
+                    $body .= "CREATE USER IF NOT EXISTS '" . htmlspecialchars( $dbUser ) . "'@'%' IDENTIFIED BY 'YourPasswordHere';\n\n" ;
+                    $body .= "-- Grant required privileges\n" ;
+                    $body .= "GRANT PROCESS ON *.* TO '" . htmlspecialchars( $dbUser ) . "'@'%';\n" ;
+                    $body .= "GRANT REPLICATION CLIENT ON *.* TO '" . htmlspecialchars( $dbUser ) . "'@'%';\n\n" ;
+                    $body .= "-- Apply changes\n" ;
+                    $body .= "FLUSH PRIVILEGES;" ;
+                    $body .= "</pre>\n" ;
+                    $body .= "</div>\n" ;
+                    break ;
+                }
+                // Show warnings but proceed with add
+                if ( ! empty( $permCheck['warnings'] ) ) {
+                    $body .= "<span style='color:yellow;'>Warnings:</span><br />\n" ;
+                    foreach ( $permCheck['warnings'] as $warn ) {
+                        $body .= "<span style='color:yellow;'>&bull; " . htmlspecialchars( $warn ) . "</span><br />\n" ;
+                    }
+                }
                 $sql = 'INSERT INTO host SET hostname = ?, port_number = ?'
                      . ', description = ?, should_monitor = ?, should_backup = ?'
                      . ', should_schemaspy = ?, revenue_impacting = ?, decommissioned = ?'
@@ -216,7 +340,7 @@ switch ( Tools::param( 'data' ) ) {
                                  , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
                                  , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs, $dbType
                                  ) ;
-                $body .= ( $stmt->execute() ) ? "Success.<br />\n" : "Failed.<br />\n" ;
+                $body .= ( $stmt->execute() ) ? "<span style='color:lime;'>Success.</span><br />\n" : "Failed.<br />\n" ;
             break ;
             case 'Update':
                 $body .= 'Update - ' ;
