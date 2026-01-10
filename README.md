@@ -157,6 +157,10 @@ uses a dedicated test database and does not modify production data.
   (URLs, ports, timezones), and tests database connectivity. Run this first to ensure
   AQL is properly configured.
 
+- **Application Smoke Test** - Fetches main AQL pages (index.php, manageData.php,
+  testAQL.php) and verifies they return HTTP 200 without PHP errors. Useful for
+  verifying the application is properly installed.
+
 - **Setup Blocking Test** - Creates a test table in the dedicated test database and
   provides instructions for simulating lock blocking scenarios.
 

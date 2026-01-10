@@ -63,6 +63,7 @@ $body .= "<hr/>\n" ;
 $body .= "<h3>Available Tests</h3>\n" ;
 $body .= "<ul>\n" ;
 $body .= "<li><a href=\"?test=config_validate\">Validate Configuration</a> - Check aql_config.xml parameters and connectivity</li>\n" ;
+$body .= "<li><a href=\"?test=smoke_test\">Application Smoke Test</a> - Verify main pages load without errors</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_status\">Check Blocking Status</a> - View current blocking on local server</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
@@ -219,6 +220,87 @@ if ( $test === 'config_validate' ) {
 
     $body .= "<hr/>\n" ;
     $body .= "<p style='color:lime;font-size:18px;'>&#10004; Configuration validation complete</p>\n" ;
+}
+
+if ( $test === 'smoke_test' ) {
+    $body .= "<h3>Application Smoke Test</h3>\n" ;
+    $body .= "<p>Testing that main AQL pages load without errors...</p>\n" ;
+
+    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
+    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
+    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+
+    $baseUrl = "https://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI'] ) ;
+
+    $body .= "<table border='1' cellpadding='8' style='margin:10px 0;'>\n" ;
+    $body .= "<tr><th>Page</th><th>HTTP Status</th><th>Result</th><th>Details</th></tr>\n" ;
+
+    // Test pages
+    $pagesToTest = [
+        'index.php' => [ 'name' => 'index.php (Main AQL)', 'expectCode' => 200 ],
+        'manageData.php' => [ 'name' => 'manageData.php (Manage Data)', 'expectCode' => 200 ],
+        'testAQL.php' => [ 'name' => 'testAQL.php (Test Harness)', 'expectCode' => 200 ]
+    ] ;
+
+    foreach ( $pagesToTest as $pageName => $info ) {
+        $url = $baseUrl . '/' . $pageName ;
+        $ch = curl_init( $url ) ;
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true ) ;
+        curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false ) ;
+        curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true ) ;
+        curl_setopt( $ch, CURLOPT_TIMEOUT, 10 ) ;
+        $response = curl_exec( $ch ) ;
+        $httpCode = curl_getinfo( $ch, CURLINFO_HTTP_CODE ) ;
+        $curlError = curl_error( $ch ) ;
+        curl_close( $ch ) ;
+
+        $details = '' ;
+        if ( $curlError ) {
+            $status = $failIcon ;
+            $result = 'CURL Error' ;
+            $details = htmlspecialchars( $curlError ) ;
+        } elseif ( $httpCode === $info['expectCode'] ) {
+            // Check for PHP errors in response
+            if ( preg_match( '/Fatal error|Parse error|Warning:|Notice:/i', $response ) ) {
+                $status = $warnIcon ;
+                $result = 'PHP Errors' ;
+                $details = 'Page loaded but contains PHP errors/warnings' ;
+            } else {
+                $status = $passIcon ;
+                $result = 'OK' ;
+                $details = 'Page loaded successfully' ;
+            }
+        } elseif ( $httpCode === 302 || $httpCode === 301 ) {
+            $status = $passIcon ;
+            $result = 'Redirect' ;
+            $details = 'Redirected (likely to login)' ;
+        } else {
+            $status = $failIcon ;
+            $result = 'Failed' ;
+            $details = "Expected {$info['expectCode']}, got $httpCode" ;
+        }
+
+        $body .= "<tr>" ;
+        $body .= "<td>{$info['name']}</td>" ;
+        $body .= "<td>$httpCode</td>" ;
+        $body .= "<td>$status $result</td>" ;
+        $body .= "<td>$details</td>" ;
+        $body .= "</tr>\n" ;
+    }
+
+    $body .= "</table>\n" ;
+
+    // Note about AJAXgetaql.php
+    $body .= "<h4>AJAXgetaql.php</h4>\n" ;
+    $body .= "<p>$warnIcon <strong>Note:</strong> Testing AJAXgetaql.php requires:</p>\n" ;
+    $body .= "<ul>\n" ;
+    $body .= "<li>Database user verification complete (see @todo 02-20)</li>\n" ;
+    $body .= "<li>Host data populated in the <code>host</code> table</li>\n" ;
+    $body .= "</ul>\n" ;
+    $body .= "<p>Once hosts are configured, use <a href='?test=blocking_status'>Check Blocking Status</a> to verify AJAXgetaql.php works.</p>\n" ;
+
+    $body .= "<hr/>\n" ;
+    $body .= "<p style='color:lime;font-size:18px;'>&#10004; Smoke test complete</p>\n" ;
 }
 
 if ( $test === 'blocking_setup' ) {
