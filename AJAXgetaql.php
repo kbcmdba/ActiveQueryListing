@@ -742,8 +742,8 @@ SQL;
                     $isWriteOp = false ;
                     $matchedTable = null ;
                     if ( !empty( $threadQuery ) ) {
-                        // Check for write operations (INSERT, UPDATE, DELETE, REPLACE, LOCK)
-                        if ( preg_match( '/^\s*(INSERT|UPDATE|DELETE|REPLACE|LOCK\s+TABLE)/i', $threadQuery ) ) {
+                        // Check for write/DDL operations that hold locks
+                        if ( preg_match( '/^\s*(INSERT|UPDATE|DELETE|REPLACE|LOCK\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE|TRUNCATE|RENAME\s+TABLE|CREATE\s+TABLE)/i', $threadQuery ) ) {
                             foreach ( $waitingTables as $table => $v ) {
                                 if ( preg_match( '/\b' . preg_quote( $table, '/' ) . '\b/i', $threadQuery ) ) {
                                     $isWriteOp = true ;
