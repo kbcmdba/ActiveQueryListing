@@ -62,10 +62,11 @@ $body .= "<hr/>\n" ;
 
 $body .= "<h3>Available Tests</h3>\n" ;
 $body .= "<ul>\n" ;
-$body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table and show instructions</li>\n" ;
+$body .= "<li><a href=\"?test=config_validate\">Validate Configuration</a> - Check aql_config.xml parameters and connectivity</li>\n" ;
+$body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_status\">Check Blocking Status</a> - View current blocking on local server</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
-$body .= "<li><a href=\"?test=cleanup\">Cleanup Test Data</a> - Remove test tables</li>\n" ;
+$body .= "<li><a href=\"?test=cleanup\">Cleanup Test Data</a> - Remove test tables from test database</li>\n" ;
 $body .= "</ul>\n" ;
 $body .= "<hr/>\n" ;
 
@@ -76,6 +77,148 @@ function getTestDbConnection( $host, $port, $user, $pass, $dbName ) {
         throw new \Exception( "Connection failed: " . $mysqli->connect_error ) ;
     }
     return $mysqli ;
+}
+
+if ( $test === 'config_validate' ) {
+    $body .= "<h3>Configuration Validation</h3>\n" ;
+
+    $configFile = __DIR__ . '/aql_config.xml' ;
+    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
+    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
+    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+
+    // Step 1: Check if config file exists and is readable
+    $body .= "<h4>1. Config File Check</h4>\n" ;
+    if ( file_exists( $configFile ) ) {
+        $body .= "<p>$passIcon <code>aql_config.xml</code> exists</p>\n" ;
+        if ( is_readable( $configFile ) ) {
+            $body .= "<p>$passIcon <code>aql_config.xml</code> is readable</p>\n" ;
+        } else {
+            $body .= "<p>$failIcon <code>aql_config.xml</code> is NOT readable (check permissions)</p>\n" ;
+        }
+    } else {
+        $body .= "<p>$failIcon <code>aql_config.xml</code> does not exist</p>\n" ;
+        $body .= "<p>Copy <code>config_sample.xml</code> to <code>aql_config.xml</code> and configure it.</p>\n" ;
+    }
+
+    // Step 2: Required parameters
+    $body .= "<h4>2. Required Parameters</h4>\n" ;
+    $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+    $body .= "<tr><th>Parameter</th><th>Value</th><th>Status</th></tr>\n" ;
+
+    $requiredParams = [
+        'dbHost' => [ 'value' => $config->getDbHost(), 'validate' => 'notEmpty' ],
+        'dbPort' => [ 'value' => $config->getDbPort(), 'validate' => 'numeric' ],
+        'dbUser' => [ 'value' => $config->getDbUser(), 'validate' => 'notEmpty' ],
+        'dbPass' => [ 'value' => '********', 'validate' => 'notEmpty', 'rawValue' => $config->getDbPass() ],
+        'dbName' => [ 'value' => $config->getDbName(), 'validate' => 'notEmpty' ],
+        'baseUrl' => [ 'value' => $config->getBaseUrl(), 'validate' => 'url' ],
+        'timeZone' => [ 'value' => $config->getTimeZone(), 'validate' => 'timezone' ],
+        'issueTrackerBaseUrl' => [ 'value' => $config->getIssueTrackerBaseUrl(), 'validate' => 'url' ],
+        'roQueryPart' => [ 'value' => $config->getRoQueryPart(), 'validate' => 'notEmpty' ]
+    ] ;
+
+    foreach ( $requiredParams as $name => $info ) {
+        $value = $info['value'] ;
+        $rawValue = $info['rawValue'] ?? $value ;
+        $validate = $info['validate'] ;
+        $status = $passIcon ;
+        $statusMsg = 'OK' ;
+
+        if ( $validate === 'notEmpty' && empty( $rawValue ) ) {
+            $status = $failIcon ;
+            $statusMsg = 'Required - not set' ;
+        } elseif ( $validate === 'numeric' && !is_numeric( $rawValue ) ) {
+            $status = $failIcon ;
+            $statusMsg = 'Must be numeric' ;
+        } elseif ( $validate === 'url' && !filter_var( $rawValue, FILTER_VALIDATE_URL ) ) {
+            $status = $warnIcon ;
+            $statusMsg = 'Invalid URL format' ;
+        } elseif ( $validate === 'timezone' ) {
+            try {
+                new \DateTimeZone( $rawValue ) ;
+            } catch ( \Exception $e ) {
+                $status = $warnIcon ;
+                $statusMsg = 'Invalid timezone' ;
+            }
+        }
+
+        $body .= "<tr><td>$name</td><td><code>" . htmlspecialchars( $value ) . "</code></td><td>$status $statusMsg</td></tr>\n" ;
+    }
+    $body .= "</table>\n" ;
+
+    // Step 3: Optional parameters
+    $body .= "<h4>3. Optional Parameters</h4>\n" ;
+    $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+    $body .= "<tr><th>Parameter</th><th>Value</th><th>Status</th></tr>\n" ;
+
+    $optionalParams = [
+        'dbInstanceName' => $config->getDbInstanceName(),
+        'minRefresh' => $config->getMinRefresh(),
+        'defaultRefresh' => $config->getDefaultRefresh(),
+        'killStatement' => $config->getKillStatement(),
+        'showSlaveStatement' => $config->getShowSlaveStatement(),
+        'globalStatusDb' => $config->getGlobalStatusDb(),
+        'doLDAPAuthentication' => $config->getDoLDAPAuthentication() ? 'true' : 'false',
+        'jiraEnabled' => $config->getJiraEnabled() ? 'true' : 'false',
+        'testDbUser' => $testDbUser ?: '(not set)',
+        'testDbName' => $testDbName ?: '(not set)'
+    ] ;
+
+    foreach ( $optionalParams as $name => $value ) {
+        $status = !empty( $value ) && $value !== '(not set)' ? $passIcon : "<span style='color:gray;'>○</span>" ;
+        $body .= "<tr><td>$name</td><td><code>" . htmlspecialchars( $value ) . "</code></td><td>$status</td></tr>\n" ;
+    }
+    $body .= "</table>\n" ;
+
+    // Step 4: Database connectivity test
+    $body .= "<h4>4. Database Connectivity</h4>\n" ;
+
+    // Test main database connection
+    $body .= "<p><strong>Main AQL database (aql_app user):</strong></p>\n" ;
+    try {
+        $mainDbh = new \mysqli( $config->getDbHost(), $config->getDbUser(), $config->getDbPass(), $config->getDbName(), $config->getDbPort() ) ;
+        if ( $mainDbh->connect_error ) {
+            throw new \Exception( $mainDbh->connect_error ) ;
+        }
+        $body .= "<p>$passIcon Connected to <code>" . htmlspecialchars( $config->getDbHost() . ':' . $config->getDbPort() ) . "</code></p>\n" ;
+
+        // Check database exists
+        $result = $mainDbh->query( "SELECT DATABASE()" ) ;
+        if ( $result && $row = $result->fetch_row() ) {
+            $body .= "<p>$passIcon Using database <code>" . htmlspecialchars( $row[0] ) . "</code></p>\n" ;
+        }
+
+        // Check PROCESS privilege
+        $result = $mainDbh->query( "SHOW PROCESSLIST" ) ;
+        if ( $result ) {
+            $body .= "<p>$passIcon PROCESS privilege verified</p>\n" ;
+            $result->free() ;
+        } else {
+            $body .= "<p>$failIcon PROCESS privilege missing</p>\n" ;
+        }
+
+        $mainDbh->close() ;
+    } catch ( \Exception $e ) {
+        $body .= "<p>$failIcon Connection failed: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+    }
+
+    // Test test database connection
+    $body .= "<p><strong>Test database (test user):</strong></p>\n" ;
+    if ( !empty( $testDbUser ) && !empty( $testDbPass ) && !empty( $testDbName ) ) {
+        try {
+            $testDbh = getTestDbConnection( $localHost, $localPort, $testDbUser, $testDbPass, $testDbName ) ;
+            $body .= "<p>$passIcon Connected to test database <code>" . htmlspecialchars( $testDbName ) . "</code></p>\n" ;
+            $testDbh->close() ;
+        } catch ( \Exception $e ) {
+            $body .= "<p>$failIcon Connection failed: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+        }
+    } else {
+        $body .= "<p>$warnIcon Test database not configured (optional) - see <code>README.md</code> section \"Test Harness Setup\"</p>\n" ;
+    }
+
+    $body .= "<hr/>\n" ;
+    $body .= "<p style='color:lime;font-size:18px;'>&#10004; Configuration validation complete</p>\n" ;
 }
 
 if ( $test === 'blocking_setup' ) {

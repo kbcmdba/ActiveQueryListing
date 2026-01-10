@@ -145,12 +145,32 @@ GRANT SELECT ON performance_schema.threads TO 'aql_app'@'%';
 
 Note: Basic table-level lock detection works without these additional permissions.
 
-## Test Harness Setup (Optional)
+## Test Harness (testAQL.php)
 
-AQL includes a test harness (`testAQL.php`) for testing blocking detection and other
-features. This requires a separate database user with privileges to create test tables.
+AQL includes a test harness (`testAQL.php`) for validating your configuration and
+testing AQL features. The test harness is safe to run on production servers as it
+uses a dedicated test database and does not modify production data.
 
-### 1. Create the test user and database
+### Available Tests
+
+- **Validate Configuration** - Checks `aql_config.xml` parameters, validates values
+  (URLs, ports, timezones), and tests database connectivity. Run this first to ensure
+  AQL is properly configured.
+
+- **Setup Blocking Test** - Creates a test table in the dedicated test database and
+  provides instructions for simulating lock blocking scenarios.
+
+- **Check Blocking Status** - Queries the local server to display any current blocking
+  or blocked queries detected by AQL.
+
+- **Test Blocking JavaScript** - Verifies that the JavaScript modifications for the
+  "File Issue" button work correctly when a query is blocking others.
+
+- **Cleanup Test Data** - Removes test tables created during testing.
+
+### Test Database Setup (Optional but Recommended)
+
+To use tests that require database operations, create a dedicated test user and database:
 
 ```sql
 -- Create a database for testing
@@ -164,7 +184,7 @@ GRANT ALL PRIVILEGES ON aql_test.* TO 'aql_test'@'localhost';
 GRANT PROCESS ON *.* TO 'aql_test'@'localhost';
 ```
 
-### 2. Add test configuration to aql_config.xml
+Then add the test configuration to `aql_config.xml`:
 
 ```xml
 <param name="testDbUser">aql_test</param>
@@ -172,12 +192,12 @@ GRANT PROCESS ON *.* TO 'aql_test'@'localhost';
 <param name="testDbName">aql_test</param>
 ```
 
-### 3. Access the test harness
+### Access the Test Harness
 
-Navigate to `https://your-server/ActiveQueryListing2/testAQL.php` to run tests.
+Navigate to `https://your-server.your-company.com/ActiveQueryListing/testAQL.php`
 
 **Note:** The test harness only operates on the local configuration database server
-and the dedicated test database. It will not affect production database servers.
+and the dedicated test database. It will not affect production database servers or data.
 
 ## SELinux Installation Tips for Fedora/Redhat/CentOS
 
