@@ -25,11 +25,6 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
-// @todo 02-15 Application smoke tests
-//             - Fetch index.php and verify HTTP 200 (no error 500)
-//             - Fetch manageData.php and verify it loads (may redirect to login)
-//             - Fetch AJAXgetaql.php with a test host and verify valid JSON response
-//             - Report any PHP errors or warnings in responses
 // @todo 02-20 Main database user verification
 //             - Test connection to local config database with aql_app user
 //             - Verify PROCESS privilege (can see other connections)
