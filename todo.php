@@ -24,10 +24,6 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 03-10 Show blocking queries in Noteworthy Status Overview regardless of time
-//             - A fast query holding locks that block others is noteworthy
-//             - Include count of queries being blocked
-//             - Helps identify lock pile-ups caused by quick queries
 // @todo 03-15 Include blocked victim count when filing issues for blocking queries
 //             - Display "(blocking N)" next to the buttons for blocking threads
 //             - Add "Blocking Count at time issue was filed: N" to Jira issue description
