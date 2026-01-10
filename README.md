@@ -161,6 +161,10 @@ uses a dedicated test database and does not modify production data.
   testAQL.php) and verifies they return HTTP 200 without PHP errors. Useful for
   verifying the application is properly installed.
 
+- **Database User Verification** - Tests the configured database user's privileges on
+  the config server and all monitored MySQL/MariaDB hosts. Checks CONNECTION, PROCESS,
+  REPLICATION CLIENT, and performance_schema access.
+
 - **Setup Blocking Test** - Creates a test table in the dedicated test database and
   provides instructions for simulating lock blocking scenarios.
 

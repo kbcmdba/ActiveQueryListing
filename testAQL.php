@@ -64,6 +64,7 @@ $body .= "<h3>Available Tests</h3>\n" ;
 $body .= "<ul>\n" ;
 $body .= "<li><a href=\"?test=config_validate\">Validate Configuration</a> - Check aql_config.xml parameters and connectivity</li>\n" ;
 $body .= "<li><a href=\"?test=smoke_test\">Application Smoke Test</a> - Verify main pages load without errors</li>\n" ;
+$body .= "<li><a href=\"?test=db_user_verify\">Database User Verification</a> - Verify DB user privileges on config server and all monitored hosts</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_status\">Check Blocking Status</a> - View current blocking on local server</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
@@ -301,6 +302,145 @@ if ( $test === 'smoke_test' ) {
 
     $body .= "<hr/>\n" ;
     $body .= "<p style='color:lime;font-size:18px;'>&#10004; Smoke test complete</p>\n" ;
+}
+
+if ( $test === 'db_user_verify' ) {
+    $body .= "<h3>Database User Verification</h3>\n" ;
+
+    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
+    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
+    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+
+    $dbUser = $config->getDbUser() ;
+    $dbPass = $config->getDbPass() ;
+    $showSlaveStatement = $config->getShowSlaveStatement() ;
+
+    $body .= "<p><strong>Database User:</strong> <code>$dbUser</code></p>\n" ;
+
+    // Helper function to test privileges on a host
+    $testHostPrivileges = function( $host, $port, $user, $pass, $showSlaveStmt ) use ( $passIcon, $failIcon, $warnIcon ) {
+        $results = [] ;
+
+        // Test connection
+        $mysqli = @new \mysqli( $host, $user, $pass, '', $port ) ;
+        if ( $mysqli->connect_error ) {
+            $results['connection'] = [ 'status' => 'fail', 'msg' => $mysqli->connect_error ] ;
+            return $results ;
+        }
+        $results['connection'] = [ 'status' => 'pass', 'msg' => 'Connected successfully' ] ;
+
+        // Test PROCESS privilege
+        $result = @$mysqli->query( "SHOW PROCESSLIST" ) ;
+        if ( $result ) {
+            $count = $result->num_rows ;
+            $results['process'] = [ 'status' => 'pass', 'msg' => "Can see $count processes" ] ;
+            $result->free() ;
+        } else {
+            $results['process'] = [ 'status' => 'fail', 'msg' => 'PROCESS privilege missing' ] ;
+        }
+
+        // Test REPLICATION CLIENT privilege - try multiple syntaxes
+        $replStatements = [ $showSlaveStmt, 'SHOW SLAVE STATUS', 'SHOW REPLICA STATUS' ] ;
+        $replSuccess = false ;
+        foreach ( $replStatements as $stmt ) {
+            try {
+                $result = $mysqli->query( $stmt ) ;
+                if ( $result ) {
+                    $results['replication'] = [ 'status' => 'pass', 'msg' => 'REPLICATION CLIENT verified' ] ;
+                    $result->free() ;
+                    $replSuccess = true ;
+                    break ;
+                }
+            } catch ( \Exception $e ) {
+                // Try next statement
+            }
+        }
+        if ( !$replSuccess ) {
+            $results['replication'] = [ 'status' => 'warn', 'msg' => 'REPLICATION CLIENT not verified (may not be a replica)' ] ;
+        }
+
+        // Test performance_schema access
+        try {
+            $result = $mysqli->query( "SELECT COUNT(*) FROM performance_schema.threads LIMIT 1" ) ;
+            if ( $result ) {
+                $results['perfschema'] = [ 'status' => 'pass', 'msg' => 'performance_schema.threads accessible' ] ;
+                $result->free() ;
+            } else {
+                $results['perfschema'] = [ 'status' => 'warn', 'msg' => 'performance_schema access limited' ] ;
+            }
+        } catch ( \Exception $e ) {
+            $results['perfschema'] = [ 'status' => 'warn', 'msg' => 'performance_schema access limited (lock detection may be reduced)' ] ;
+        }
+
+        $mysqli->close() ;
+        return $results ;
+    } ;
+
+    // Test config server (local)
+    $body .= "<h4>1. Config Server ($localHost:$localPort)</h4>\n" ;
+    $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+    $body .= "<tr><th>Check</th><th>Status</th><th>Details</th></tr>\n" ;
+
+    $localResults = $testHostPrivileges( $localHost, $localPort, $dbUser, $dbPass, $showSlaveStatement ) ;
+    foreach ( $localResults as $check => $info ) {
+        $icon = $info['status'] === 'pass' ? $passIcon : ( $info['status'] === 'fail' ? $failIcon : $warnIcon ) ;
+        $checkName = ucfirst( $check ) ;
+        $body .= "<tr><td>$checkName</td><td>$icon</td><td>" . htmlspecialchars( $info['msg'] ) . "</td></tr>\n" ;
+    }
+    $body .= "</table>\n" ;
+
+    // Get monitored hosts from database (only MySQL-compatible types)
+    $body .= "<h4>2. Monitored Hosts</h4>\n" ;
+
+    try {
+        $mainDbh = new \mysqli( $localHost, $dbUser, $dbPass, $config->getDbName(), $localPort ) ;
+        if ( $mainDbh->connect_error ) {
+            throw new \Exception( $mainDbh->connect_error ) ;
+        }
+
+        $hostQuery = "SELECT hostname, port_number, description, db_type
+                      FROM host
+                      WHERE should_monitor = 1
+                        AND decommissioned = 0
+                        AND db_type IN ('MySQL', 'MariaDB', 'InnoDBCluster')
+                      ORDER BY hostname, port_number" ;
+        $result = $mainDbh->query( $hostQuery ) ;
+
+        if ( $result && $result->num_rows > 0 ) {
+            $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+            $body .= "<tr><th>Host</th><th>Type</th><th>Connection</th><th>PROCESS</th><th>REPLICATION</th><th>perf_schema</th></tr>\n" ;
+
+            while ( $row = $result->fetch_assoc() ) {
+                $hostName = $row['hostname'] ;
+                $hostPort = $row['port_number'] ;
+                $dbType = $row['db_type'] ;
+                $hostResults = $testHostPrivileges( $hostName, $hostPort, $dbUser, $dbPass, $showSlaveStatement ) ;
+
+                $body .= "<tr><td><code>$hostName:$hostPort</code></td><td>$dbType</td>" ;
+                foreach ( [ 'connection', 'process', 'replication', 'perfschema' ] as $check ) {
+                    if ( isset( $hostResults[$check] ) ) {
+                        $info = $hostResults[$check] ;
+                        $icon = $info['status'] === 'pass' ? $passIcon : ( $info['status'] === 'fail' ? $failIcon : $warnIcon ) ;
+                        $body .= "<td title='" . htmlspecialchars( $info['msg'] ) . "'>$icon</td>" ;
+                    } else {
+                        $body .= "<td>-</td>" ;
+                    }
+                }
+                $body .= "</tr>\n" ;
+            }
+            $body .= "</table>\n" ;
+            $body .= "<p><em>Hover over status icons for details</em></p>\n" ;
+        } else {
+            $body .= "<p>$warnIcon No monitored MySQL/MariaDB hosts found. Add hosts via <a href='manageData.php'>Manage Data</a>.</p>\n" ;
+        }
+
+        $mainDbh->close() ;
+    } catch ( \Exception $e ) {
+        $body .= "<p>$failIcon Error querying hosts: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+    }
+
+    $body .= "<hr/>\n" ;
+    $body .= "<p style='color:lime;font-size:18px;'>&#10004; Database user verification complete</p>\n" ;
 }
 
 if ( $test === 'blocking_setup' ) {
