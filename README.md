@@ -145,6 +145,40 @@ GRANT SELECT ON performance_schema.threads TO 'aql_app'@'%';
 
 Note: Basic table-level lock detection works without these additional permissions.
 
+## Test Harness Setup (Optional)
+
+AQL includes a test harness (`testAQL.php`) for testing blocking detection and other
+features. This requires a separate database user with privileges to create test tables.
+
+### 1. Create the test user and database
+
+```sql
+-- Create a database for testing
+CREATE DATABASE IF NOT EXISTS aql_test;
+
+-- Create the test user with privileges on the test database
+CREATE USER 'aql_test'@'localhost' IDENTIFIED BY 'YourTestPassword';
+GRANT ALL PRIVILEGES ON aql_test.* TO 'aql_test'@'localhost';
+
+-- The test user also needs PROCESS privilege to see other connections
+GRANT PROCESS ON *.* TO 'aql_test'@'localhost';
+```
+
+### 2. Add test configuration to aql_config.xml
+
+```xml
+<param name="testDbUser">aql_test</param>
+<param name="testDbPass">YourTestPassword</param>
+<param name="testDbName">aql_test</param>
+```
+
+### 3. Access the test harness
+
+Navigate to `https://your-server/ActiveQueryListing2/testAQL.php` to run tests.
+
+**Note:** The test harness only operates on the local configuration database server
+and the dedicated test database. It will not affect production database servers.
+
 ## SELinux Installation Tips for Fedora/Redhat/CentOS
 
 In order to allow this program to run under Fedora-based systems, it's

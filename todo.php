@@ -24,10 +24,6 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 03-15 Include blocked victim count when filing issues for blocking queries
-//             - Display "(blocking N)" next to the buttons for blocking threads
-//             - Add "Blocking Count at time issue was filed: N" to Jira issue description
-//             - Helps DBAs prioritize and provides context for the issue
 // @todo 03-20 Log blocking queries for historical analysis
 //             - Store blocking events in database table (host, thread_id, user, query_hash, query_text, blocked_count, timestamp)
 //             - Auto-purge entries older than 90 days to prevent unbounded growth

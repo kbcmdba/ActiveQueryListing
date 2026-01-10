@@ -80,6 +80,9 @@ class Config
     private $jiraProjectId = null;
     private $jiraIssueTypeId = null;
     private $jiraQueryHashFieldId = null;
+    private $testDbUser = null;
+    private $testDbPass = null;
+    private $testDbName = null;
 
     /**
      * #@-
@@ -132,7 +135,10 @@ class Config
             'jiraEnabled' => 'false',
             'jiraProjectId' => '',
             'jiraIssueTypeId' => '',
-            'jiraQueryHashFieldId' => ''
+            'jiraQueryHashFieldId' => '',
+            'testDbUser' => '',
+            'testDbPass' => '',
+            'testDbName' => ''
         ] ;
         $paramList = [
             'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],
@@ -160,7 +166,10 @@ class Config
             'jiraEnabled'          => [ 'isRequired' => 0, 'value' => 0 ],
             'jiraProjectId'        => [ 'isRequired' => 0, 'value' => 0 ],
             'jiraIssueTypeId'      => [ 'isRequired' => 0, 'value' => 0 ],
-            'jiraQueryHashFieldId' => [ 'isRequired' => 0, 'value' => 0 ]
+            'jiraQueryHashFieldId' => [ 'isRequired' => 0, 'value' => 0 ],
+            'testDbUser'           => [ 'isRequired' => 0, 'value' => 0 ],
+            'testDbPass'           => [ 'isRequired' => 0, 'value' => 0 ],
+            'testDbName'           => [ 'isRequired' => 0, 'value' => 0 ]
         ] ;
 
         // verify that all the parameters are present and just once.
@@ -215,6 +224,9 @@ class Config
         $this->jiraProjectId = $cfgValues[ 'jiraProjectId' ] ?? '' ;
         $this->jiraIssueTypeId = $cfgValues[ 'jiraIssueTypeId' ] ?? '' ;
         $this->jiraQueryHashFieldId = $cfgValues[ 'jiraQueryHashFieldId' ] ?? '' ;
+        $this->testDbUser = $cfgValues[ 'testDbUser' ] ?? '' ;
+        $this->testDbPass = $cfgValues[ 'testDbPass' ] ?? '' ;
+        $this->testDbName = $cfgValues[ 'testDbName' ] ?? '' ;
     }
 
     /**
@@ -468,6 +480,33 @@ class Config
      */
     public function getJiraQueryHashFieldId() {
         return ( null !== $this->jiraQueryHashFieldId ) ? $this->jiraQueryHashFieldId : '' ;
+    }
+
+    /**
+     * Getter for test database user
+     *
+     * @return string
+     */
+    public function getTestDbUser() {
+        return ( null !== $this->testDbUser ) ? $this->testDbUser : '' ;
+    }
+
+    /**
+     * Getter for test database password
+     *
+     * @return string
+     */
+    public function getTestDbPass() {
+        return ( null !== $this->testDbPass ) ? $this->testDbPass : '' ;
+    }
+
+    /**
+     * Getter for test database name
+     *
+     * @return string
+     */
+    public function getTestDbName() {
+        return ( null !== $this->testDbName ) ? $this->testDbName : '' ;
     }
 
 }
