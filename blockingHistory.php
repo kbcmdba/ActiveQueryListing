@@ -96,6 +96,22 @@ try {
         $queryListResult->close() ;
     }
 
+    // Get total count of entries
+    $totalCount = 0 ;
+    $countResult = $dbh->query( "SELECT COUNT(*) AS cnt FROM aql_db.blocking_history" ) ;
+    if ( $countResult !== false ) {
+        $countRow = $countResult->fetch_assoc() ;
+        $totalCount = intval( $countRow['cnt'] ) ;
+        $countResult->close() ;
+    }
+
+    // Check if any filters are applied
+    $hasFilters = !empty( $filterHostId ) || !empty( $filterUser ) || !empty( $filterQuery )
+                || !empty( $filterDateFrom ) || !empty( $filterDateTo ) ;
+
+    // Show total count
+    $body .= "<p><strong>Total blocking history entries:</strong> " . number_format( $totalCount ) . "</p>\n" ;
+
     // Filter form
     $body .= "<form method=\"get\" action=\"blockingHistory.php\">\n"
           .  "<table border=\"1\" cellspacing=\"0\" cellpadding=\"5\">\n"
@@ -170,7 +186,13 @@ try {
         $types .= 's' ;
     }
 
-    $sql .= " ORDER BY bh.blocked_count DESC, bh.last_seen DESC LIMIT 500" ;
+    // Default: most recent first. With filters: by blocked_count then last_seen
+    if ( $hasFilters ) {
+        $sql .= " ORDER BY bh.blocked_count DESC, bh.last_seen DESC" ;
+    } else {
+        $sql .= " ORDER BY bh.last_seen DESC" ;
+    }
+    $sql .= " LIMIT 100" ;
 
     $stmt = $dbh->prepare( $sql ) ;
     if ( !empty( $params ) ) {
@@ -233,9 +255,14 @@ try {
           .  "</table>\n" ;
 
     if ( $rowCount === 0 ) {
-        $body .= "<p><em>No blocking history found matching the current filters.</em></p>\n" ;
+        if ( $hasFilters ) {
+            $body .= "<p><em>No blocking history found matching the current filters.</em></p>\n" ;
+        } else {
+            $body .= "<p><em>No blocking history recorded yet.</em></p>\n" ;
+        }
     } else {
-        $body .= "<p>Showing $rowCount record" . ( $rowCount !== 1 ? 's' : '' ) . " (limited to 500)</p>\n" ;
+        $showing = $hasFilters ? "Showing $rowCount matching record" : "Showing $rowCount most recent record" ;
+        $body .= "<p>" . $showing . ( $rowCount !== 1 ? 's' : '' ) . " (limit 100)</p>\n" ;
     }
 
     $stmt->close() ;

@@ -298,7 +298,7 @@ function getHostIdFromHostname( $hostnamePort ) {
         $port = isset( $parts[1] ) ? (int) $parts[1] : 3306 ;
         $dbc = new DBConnection() ;
         $dbh = $dbc->getConnection() ;
-        $stmt = $dbh->prepare( "SELECT host_id FROM aql_db.host WHERE hostname = ? AND port = ?" ) ;
+        $stmt = $dbh->prepare( "SELECT host_id FROM aql_db.host WHERE hostname = ? AND port_number = ?" ) ;
         $stmt->bind_param( 'si', $hostname, $port ) ;
         $stmt->execute() ;
         $result = $stmt->get_result() ;
