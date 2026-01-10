@@ -492,7 +492,7 @@ function myCallback( i, item ) {
                           + "</td><td class=\"" + dupeState + "\">" + dupeState
                           + "</td><td>" + lockStatus
                           + "</td><td class=\"comment more\">" + info
-                          + "</td><td>" + item[ 'result' ][ itemNo ][ 'actions'      ]
+                          + "</td><td>" + modifyActionsForBlocking( item[ 'result' ][ itemNo ][ 'actions' ], blockInfo )
                           + "</td></tr>" ;
                 $(myRow).appendTo( "#fullprocesstbodyid" ) ;
                 // Show in Noteworthy if level > 1 OR if blocking other queries
@@ -551,7 +551,29 @@ function hashString(str) {
     return Math.abs(hash).toString(16);
 }
 
-function fileIssue( hostname, ro, fromHost, user, db, time, safeUrl ) {
+/**
+ * Modify the actions HTML to include blocking count for blocking queries
+ */
+function modifyActionsForBlocking( actionsHtml, blockInfo ) {
+    if ( !blockInfo || !blockInfo.isBlocking ) {
+        return actionsHtml ;
+    }
+    var blockingCount = blockInfo.blocking ? blockInfo.blocking.length : 0 ;
+    if ( blockingCount === 0 ) {
+        return actionsHtml ;
+    }
+    // Add blocking count parameter to fileIssue call
+    // fileIssue( hostname, ro, fromHost, user, db, time, safeUrl ) -> add blockingCount
+    var modified = actionsHtml.replace(
+        /fileIssue\(\s*([^)]+)\s*\)/,
+        'fileIssue( $1, ' + blockingCount + ' )'
+    ) ;
+    // Add visual indicator after the buttons
+    modified += ' <span class="blockingIndicator" style="font-size:9px;">(blocking ' + blockingCount + ')</span>' ;
+    return modified ;
+}
+
+function fileIssue( hostname, ro, fromHost, user, db, time, safeUrl, blockingCount ) {
     if (!jiraConfig.enabled) {
         alert('Jira integration is not configured. Set jiraEnabled to true in aql_config.xml.');
         return;
@@ -565,6 +587,9 @@ function fileIssue( hostname, ro, fromHost, user, db, time, safeUrl ) {
     var queryHash = hashString(normalizedQuery);
 
     var summary = 'Long Running Query on ' + hostname + ' from ' + user + '@' + fromHost + ' for ' + time + 's';
+    if ( blockingCount && blockingCount > 0 ) {
+        summary = 'BLOCKING Query on ' + hostname + ' from ' + user + '@' + fromHost + ' (blocking ' + blockingCount + ' queries)';
+    }
 
     var description =
         '*Server:* ' + hostname + '\n' +
@@ -572,8 +597,9 @@ function fileIssue( hostname, ro, fromHost, user, db, time, safeUrl ) {
         '*User:* ' + user + '\n' +
         '*Source Host:* ' + fromHost + '\n' +
         '*Query Time:* ' + time + ' seconds\n' +
-        '*Access:* ' + roLabel + '\n\n' +
-        '*Query:*\n{code:sql}\n' + query + '\n{code}';
+        '*Access:* ' + roLabel + '\n' +
+        ( blockingCount && blockingCount > 0 ? '*Blocking Count at time issue was filed:* ' + blockingCount + '\n' : '' ) +
+        '\n*Query:*\n{code:sql}\n' + query + '\n{code}';
 
     var jiraUrl = jiraConfig.baseUrl + 'secure/CreateIssueDetails!init.jspa?' +
         'pid=' + encodeURIComponent(jiraConfig.projectId) +
