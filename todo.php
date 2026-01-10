@@ -29,7 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 03-40 Add blocking history analysis: identify repeat offenders and problematic query patterns
 // @todo 04 Alternating row colors for all alert levels in Full Process Listing
 //          - Each level gets two shades: bright and muted (e.g., level4: red/dark red)
 //          - Helps visually track consecutive rows of the same level
