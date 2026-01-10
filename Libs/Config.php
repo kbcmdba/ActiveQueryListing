@@ -31,6 +31,10 @@ use com\kbcmdba\aql\Libs\Exceptions\ConfigurationException ;
  */
 class Config
 {
+    /**
+     * AQL Version - update this when releasing new versions
+     */
+    const VERSION = 'v2.5' ;
 
     /**
      * Configuration Class

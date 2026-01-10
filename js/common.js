@@ -408,9 +408,18 @@ function myCallback( i, item ) {
             if ( typeof host_count[ server ] === 'undefined' ) {
                 host_count[ server ] = 0 ;
             }
+            var prevLevel = -1 ;
+            var levelShadeAlt = false ;
             for ( itemNo=0; itemNo<item[ 'result' ].length; itemNo++ ) {
                 host_count[ server ] ++ ;
                 level = item[ 'result' ][ itemNo ][ 'level' ] ;
+                // Alternate shades for consecutive rows of same level
+                if ( level === prevLevel ) {
+                    levelShadeAlt = !levelShadeAlt ;
+                } else {
+                    levelShadeAlt = false ;
+                }
+                prevLevel = level ;
                 if ( 9 == level ) {
                     base_counts['Error'] ++ ;
                 }
@@ -477,7 +486,8 @@ function myCallback( i, item ) {
                         lockClass += ' blocking' ;
                     }
                 }
-                var myRow = "<tr class=\"level" + level + lockClass + "\">"
+                var levelClass = ( level === 9 ? 'error' : 'level' + level ) + ( levelShadeAlt ? '-alt' : '' ) ;
+                var myRow = "<tr class=\"" + levelClass + lockClass + "\">"
                           +      "<td class=\"comment more\">" + serverLinkAddress
                           + "</td><td align=\"center\">" + level
                           + "</td><td align=\"center\">" + item[ 'result' ][ itemNo ][ 'id'           ]

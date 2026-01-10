@@ -29,11 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 04 Alternating row colors for all alert levels in Full Process Listing
-//          - Each level gets two shades: bright and muted (e.g., level4: red/dark red)
-//          - Helps visually track consecutive rows of the same level
-//          - Apply to level0 through level4 (and error level if applicable)
-//          - Add version query param to main.css in WebPage.php for cache busting
 // @todo 10 Implement sticky navigation bar with dropdown menus
 //          - Replace current inline nav links with fixed/sticky header
 //          - JavaScript dropdown menus for: AQL, Blocking History, Manage Data, Tests

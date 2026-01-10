@@ -393,6 +393,7 @@ function addGroupSelection() {
 JS
     );
     $now          = Tools::currentTimestamp();
+    $aqlVersion   = Config::VERSION ;
     $debugChecked = ( $debug ) ? 'checked="checked"' : '' ;
     $muteButtonText = ( $muted ) ? 'Unmute Alerts' : 'Mute Alerts' ;
     $muteToggleValue = ( $muted ) ? '0' : '1' ;
@@ -606,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <a id="graphs"></a>
 <table id="top" width="100%" border="1">
   <tr>
-    <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1></td>
+    <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1><div style="font-size: 10px; color: #888;">$aqlVersion</div></td>
     <td id="updatedAt">Page last updated at $now</td>
     <td class="headerTableTd">
       <center>

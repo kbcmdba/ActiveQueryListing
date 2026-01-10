@@ -79,20 +79,47 @@ body {
   color: black !important ;
 }
 
-/* Alternating row colors for Full Process Listing (level0 and level1 only) */
-#fullProcessTable tbody tr.level0:nth-child(odd),
-#fullProcessTable tbody tr.level0:nth-child(odd) td,
-#fullProcessTable tbody tr.level1:nth-child(odd),
-#fullProcessTable tbody tr.level1:nth-child(odd) td {
-  background-color: black !important ;
-  color: white !important ;
+/* Alternating row colors for Full Process Listing - all levels */
+/* Alternate (muted) shades for consecutive rows of the same level */
+.level0-alt,
+.level0-alt td,
+.legendLevel0Alt {
+  background-color: #009999 !important ;
+  color: black !important ;
 }
 
-#fullProcessTable tbody tr.level0:nth-child(even),
-#fullProcessTable tbody tr.level0:nth-child(even) td,
-#fullProcessTable tbody tr.level1:nth-child(even),
-#fullProcessTable tbody tr.level1:nth-child(even) td {
+.level1-alt,
+.level1-alt td,
+.legendLevel1Alt {
   background-color: #222 !important ;
+  color: #ccc !important ;
+}
+
+.level2-alt,
+.level2-alt td,
+.legendLevel2Alt {
+  background-color: #66b366 !important ;
+  color: black !important ;
+}
+
+.level3-alt,
+.level3-alt td,
+.legendLevel3Alt {
+  background-color: #cccc00 !important ;
+  color: black !important ;
+}
+
+.level4-alt,
+.level4-alt td,
+.legendLevel4Alt {
+  background-color: #cc7000 !important ;
+  color: black !important ;
+}
+
+.error-alt,
+.error-alt td,
+.legendErrorAlt {
+  background-color: #aa0000 !important ;
   color: white !important ;
 }
 
