@@ -25,10 +25,6 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
-// @todo 02-50 Remote host connectivity tests
-//             - Test connection to each configured host in host table
-//             - Verify required privileges on remote hosts
-//             - Report connection failures with helpful diagnostics
 // @todo 02-60 LDAP/authentication tests (when doLDAPAuthentication=true)
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
