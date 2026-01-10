@@ -25,11 +25,6 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
-// @todo 02-10 Config validation tests
-//             - Verify aql_config.xml exists and is readable
-//             - Check all required parameters are present
-//             - Validate parameter values (e.g., port is numeric, URLs are well-formed)
-//             - Test database connectivity with configured credentials
 // @todo 02-15 Application smoke tests
 //             - Fetch index.php and verify HTTP 200 (no error 500)
 //             - Fetch manageData.php and verify it loads (may redirect to login)
