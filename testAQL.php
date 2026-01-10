@@ -350,6 +350,9 @@ if ( $test === 'db_user_verify' ) {
         $body .= "<p><strong>Test User:</strong> <code>$testUser</code></p>\n" ;
     }
 
+    // Track issues for remediation suggestions
+    $issues = [] ;
+
     // Helper function to test just connectivity (for test user)
     $testConnection = function( $host, $port, $user, $pass ) {
         $mysqli = @new \mysqli( $host, $user, $pass, '', $port ) ;
@@ -430,6 +433,11 @@ if ( $test === 'db_user_verify' ) {
         $icon = $info['status'] === 'pass' ? $passIcon : ( $info['status'] === 'fail' ? $failIcon : $warnIcon ) ;
         $checkName = ucfirst( $check ) ;
         $body .= "<tr><td>$checkName</td><td>$icon</td><td>" . htmlspecialchars( $info['msg'] ) . "</td></tr>\n" ;
+
+        // Track issues for remediation
+        if ( $info['status'] !== 'pass' ) {
+            $issues[] = [ 'host' => "$localHost:$localPort", 'user' => $dbUser, 'check' => $check, 'msg' => $info['msg'] ] ;
+        }
     }
     $body .= "</table>\n" ;
 
@@ -439,6 +447,10 @@ if ( $test === 'db_user_verify' ) {
         $testLocalResult = $testConnection( $localHost, $localPort, $testUser, $testPass ) ;
         $icon = $testLocalResult['status'] === 'pass' ? $passIcon : $failIcon ;
         $body .= "<p>$icon Connection: " . htmlspecialchars( $testLocalResult['msg'] ) . "</p>\n" ;
+
+        if ( $testLocalResult['status'] !== 'pass' ) {
+            $issues[] = [ 'host' => "$localHost:$localPort", 'user' => $testUser, 'check' => 'connection', 'msg' => $testLocalResult['msg'] ] ;
+        }
     }
 
     // Get monitored hosts from database (only MySQL-compatible types)
@@ -478,6 +490,11 @@ if ( $test === 'db_user_verify' ) {
                         $info = $hostResults[$check] ;
                         $icon = $info['status'] === 'pass' ? $passIcon : ( $info['status'] === 'fail' ? $failIcon : $warnIcon ) ;
                         $body .= "<td title='" . htmlspecialchars( $info['msg'] ) . "'>$icon</td>" ;
+
+                        // Track issues for remediation
+                        if ( $info['status'] !== 'pass' ) {
+                            $issues[] = [ 'host' => "$hostName:$hostPort", 'user' => $dbUser, 'check' => $check, 'msg' => $info['msg'] ] ;
+                        }
                     } else {
                         $body .= "<td>-</td>" ;
                     }
@@ -488,6 +505,10 @@ if ( $test === 'db_user_verify' ) {
                     $testResult = $testConnection( $hostName, $hostPort, $testUser, $testPass ) ;
                     $icon = $testResult['status'] === 'pass' ? $passIcon : $failIcon ;
                     $body .= "<td title='" . htmlspecialchars( $testResult['msg'] ) . "'>$icon</td>" ;
+
+                    if ( $testResult['status'] !== 'pass' ) {
+                        $issues[] = [ 'host' => "$hostName:$hostPort", 'user' => $testUser, 'check' => 'connection', 'msg' => $testResult['msg'] ] ;
+                    }
                 }
 
                 $body .= "</tr>\n" ;
@@ -503,8 +524,112 @@ if ( $test === 'db_user_verify' ) {
         $body .= "<p>$failIcon Error querying hosts: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
     }
 
+    // Display remediation suggestions if there are issues
+    if ( !empty( $issues ) ) {
+        $body .= "<h4>3. Remediation Suggestions</h4>\n" ;
+        $body .= "<p>The following issues were detected. Run these SQL commands on the affected hosts to fix them:</p>\n" ;
+
+        // Add copy-to-clipboard JavaScript
+        $body .= "<script>
+function copyToClipboard(preId, btnId) {
+    var pre = document.getElementById(preId);
+    var btn = document.getElementById(btnId);
+    var text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        btn.innerText = '✓ Copied';
+        btn.style.background = '#060';
+        setTimeout(function() {
+            btn.innerText = '📋 Copy';
+            btn.style.background = '#555';
+        }, 2000);
+    }).catch(function() {
+        // Fallback for older browsers
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        btn.innerText = '✓ Copied';
+        btn.style.background = '#060';
+        setTimeout(function() {
+            btn.innerText = '📋 Copy';
+            btn.style.background = '#555';
+        }, 2000);
+    });
+}
+</script>\n" ;
+
+        // Group issues by host for cleaner output
+        $issuesByHost = [] ;
+        foreach ( $issues as $issue ) {
+            $host = $issue['host'] ;
+            if ( !isset( $issuesByHost[$host] ) ) {
+                $issuesByHost[$host] = [] ;
+            }
+            $issuesByHost[$host][] = $issue ;
+        }
+
+        $boxId = 0 ;
+        foreach ( $issuesByHost as $host => $hostIssues ) {
+            $boxId++ ;
+            $preId = "remediation_$boxId" ;
+            $btnId = "copy_btn_$boxId" ;
+            $body .= "<div style='background:#444;padding:10px;margin:10px 0;border-radius:5px;border:1px solid #666;position:relative;'>\n" ;
+            $body .= "<p style='color:#fff;margin:0 0 10px 0;'><strong>$host:</strong></p>\n" ;
+            $body .= "<button id='$btnId' onclick=\"copyToClipboard('$preId', '$btnId')\" style='position:absolute;top:10px;right:10px;background:#555;color:#fff;border:1px solid #777;border-radius:3px;padding:4px 8px;cursor:pointer;font-size:12px;'>📋 Copy</button>\n" ;
+            $body .= "<pre id='$preId' style='background:#222;padding:10px;overflow-x:auto;color:#0f0;border:1px solid #555;margin-top:5px;'>" ;
+
+            $sqlStatements = [] ;
+            foreach ( $hostIssues as $issue ) {
+                $user = $issue['user'] ;
+                $check = $issue['check'] ;
+
+                // Generate appropriate SQL based on the issue type
+                if ( $check === 'connection' ) {
+                    if ( strpos( $issue['msg'], 'Access denied' ) !== false ) {
+                        $sqlStatements[] = "-- User '$user' exists but password may be wrong, or missing host grant" ;
+                        $sqlStatements[] = "-- Option 1: Update password" ;
+                        $sqlStatements[] = "ALTER USER '$user'@'%' IDENTIFIED BY 'YourPasswordHere';" ;
+                        $sqlStatements[] = "-- Option 2: Create user if missing for this host" ;
+                        $sqlStatements[] = "CREATE USER IF NOT EXISTS '$user'@'%' IDENTIFIED BY 'YourPasswordHere';" ;
+                    } else {
+                        $sqlStatements[] = "-- Connection failed: " . $issue['msg'] ;
+                        $sqlStatements[] = "-- Check that MySQL is running and accessible from this AQL server" ;
+                    }
+                } elseif ( $check === 'process' ) {
+                    $sqlStatements[] = "-- Grant PROCESS privilege to see all queries" ;
+                    $sqlStatements[] = "GRANT PROCESS ON *.* TO '$user'@'%';" ;
+                } elseif ( $check === 'replication' ) {
+                    $sqlStatements[] = "-- Grant REPLICATION CLIENT to check replica status (optional)" ;
+                    $sqlStatements[] = "GRANT REPLICATION CLIENT ON *.* TO '$user'@'%';" ;
+                } elseif ( $check === 'perfschema' ) {
+                    $sqlStatements[] = "-- Grant performance_schema access for lock detection" ;
+                    $sqlStatements[] = "GRANT SELECT ON performance_schema.* TO '$user'@'%';" ;
+                    $sqlStatements[] = "-- Or for specific tables only:" ;
+                    $sqlStatements[] = "GRANT SELECT ON performance_schema.data_lock_waits TO '$user'@'%';" ;
+                    $sqlStatements[] = "GRANT SELECT ON performance_schema.data_locks TO '$user'@'%';" ;
+                    $sqlStatements[] = "GRANT SELECT ON performance_schema.metadata_locks TO '$user'@'%';" ;
+                    $sqlStatements[] = "GRANT SELECT ON performance_schema.threads TO '$user'@'%';" ;
+                }
+            }
+
+            // Remove duplicates and output
+            $sqlStatements = array_unique( $sqlStatements ) ;
+            $body .= htmlspecialchars( implode( "\n", $sqlStatements ) ) ;
+            $body .= "\nFLUSH PRIVILEGES;" ;
+            $body .= "</pre>\n</div>\n" ;
+        }
+
+        $body .= "<p><em>Note: Replace '%' with specific host patterns for better security. Replace 'YourPasswordHere' with the actual password from aql_config.xml.</em></p>\n" ;
+    }
+
     $body .= "<hr/>\n" ;
-    $body .= "<p style='color:lime;font-size:18px;'>&#10004; Database user verification complete</p>\n" ;
+    if ( empty( $issues ) ) {
+        $body .= "<p style='color:lime;font-size:18px;'>&#10004; Database user verification complete - no issues found</p>\n" ;
+    } else {
+        $body .= "<p style='color:yellow;font-size:18px;'>&#9888; Database user verification complete - " . count( $issues ) . " issue(s) found</p>\n" ;
+    }
 }
 
 if ( $test === 'schema_verify' ) {
