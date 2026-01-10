@@ -203,12 +203,28 @@ function getBlockingCacheType() {
  */
 function normalizeQueryForHash( $query ) {
     $normalized = $query ;
-    // Single-quoted strings -> 'S'
-    $normalized = preg_replace( "/'[^']*'/", "'S'", $normalized ) ;
-    // Double-quoted strings -> "S"
-    $normalized = preg_replace( '/"[^"]*"/', '"S"', $normalized ) ;
-    // Numbers -> N
-    $normalized = preg_replace( '/\b\d+\.?\d*\b/', 'N', $normalized ) ;
+    // Remove SQL comments first (may contain sensitive data)
+    // Multi-line comments: /* ... */
+    $normalized = preg_replace( '/\/\*.*?\*\//s', '/**/deleted', $normalized ) ;
+    // Single-line comments: -- ... (MySQL requires space after --)
+    $normalized = preg_replace( '/-- .*$/m', '-- deleted', $normalized ) ;
+    // Single-line comments: # ... (MySQL style)
+    $normalized = preg_replace( '/#.*$/m', '# deleted', $normalized ) ;
+    // Hex/binary literals BEFORE string literals (they use quotes too)
+    // Hex: 0xDEADBEEF, x'1A2B', X'1A2B'
+    $normalized = preg_replace( '/0x[0-9a-fA-F]+/', 'N', $normalized ) ;
+    $normalized = preg_replace( "/[xX]'[0-9a-fA-F]*'/", 'N', $normalized ) ;
+    // Binary: 0b1010, b'1010', B'1010'
+    $normalized = preg_replace( '/0b[01]+/', 'N', $normalized ) ;
+    $normalized = preg_replace( "/[bB]'[01]*'/", 'N', $normalized ) ;
+    // Single-quoted strings with escaped quotes -> 'S'
+    // Handles: 'simple', 'it\'s escaped', 'has ''doubled'' quotes'
+    $normalized = preg_replace( "/'(?:[^'\\\\]|\\\\.)*'/", "'S'", $normalized ) ;
+    $normalized = preg_replace( "/'(?:[^']|'')*'/", "'S'", $normalized ) ; // MySQL doubled quotes
+    // Double-quoted strings with escaped quotes -> "S"
+    $normalized = preg_replace( '/"(?:[^"\\\\]|\\\\.)*"/', '"S"', $normalized ) ;
+    // Numbers -> N (integers, decimals, scientific notation)
+    $normalized = preg_replace( '/\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/', 'N', $normalized ) ;
     return $normalized ;
 }
 
