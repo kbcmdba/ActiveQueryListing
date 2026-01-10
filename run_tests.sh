@@ -32,7 +32,7 @@ TESTS=(
     "db_user_verify:Database User Verification:yes"
     "schema_verify:Schema Verification:yes"
     "deploy_ddl_verify:Deploy DDL Verification:yes"
-    "blocking_status:Check Blocking Status:no"
+    "blocking_setup:Automated Blocking Test:no"
 )
 
 # Counters

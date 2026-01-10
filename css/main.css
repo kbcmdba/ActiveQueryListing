@@ -275,6 +275,47 @@ td.blocking {
     margin: 1px;
 }
 
+/* Test harness code box styling */
+.code-box {
+    background: #444;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #666;
+    position: relative;
+}
+
+.code-box-title {
+    color: #fff;
+    margin: 0 0 10px 0;
+}
+
+.code-box pre {
+    background: #222;
+    padding: 10px;
+    overflow-x: auto;
+    color: #0f0;
+    border: 1px solid #555;
+    margin-top: 5px;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #555;
+    color: #fff;
+    border: 1px solid #777;
+    border-radius: 3px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.copy-btn:hover {
+    background: #666;
+}
+
 /* TableSorter sort indicators */
 .tablesorter th.tablesorter-header {
     cursor: pointer;

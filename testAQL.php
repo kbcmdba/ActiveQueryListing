@@ -68,7 +68,6 @@ $body .= "<li><a href=\"?test=db_user_verify\">Database User Verification</a> - 
 $body .= "<li><a href=\"?test=schema_verify\">Schema Verification</a> - Verify aql_db tables and structure (read-only check)</li>\n" ;
 $body .= "<li><a href=\"?test=deploy_ddl_verify\">Deploy DDL Verification</a> - Verify deployDDL.php runs without errors (idempotent check)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
-$body .= "<li><a href=\"?test=blocking_status\">Check Blocking Status</a> - View current blocking on local server</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
 $body .= "<li><a href=\"?test=cleanup\">Cleanup Test Data</a> - Remove test tables from test database</li>\n" ;
 $body .= "</ul>\n" ;
@@ -323,7 +322,7 @@ if ( $test === 'smoke_test' ) {
     $body .= "<li>Database user verification complete (see @todo 02-20)</li>\n" ;
     $body .= "<li>Host data populated in the <code>host</code> table</li>\n" ;
     $body .= "</ul>\n" ;
-    $body .= "<p>Once hosts are configured, use <a href='?test=blocking_status'>Check Blocking Status</a> to verify AJAXgetaql.php works.</p>\n" ;
+    $body .= "<p>Once hosts are configured, use <a href='?test=blocking_setup'>Blocking Test</a> to verify lock detection works.</p>\n" ;
 
     $body .= "<hr/>\n" ;
     $body .= "<p style='color:lime;font-size:18px;'>&#10004; Smoke test complete</p>\n" ;
@@ -575,10 +574,10 @@ function copyToClipboard(preId, btnId) {
             $boxId++ ;
             $preId = "remediation_$boxId" ;
             $btnId = "copy_btn_$boxId" ;
-            $body .= "<div style='background:#444;padding:10px;margin:10px 0;border-radius:5px;border:1px solid #666;position:relative;'>\n" ;
-            $body .= "<p style='color:#fff;margin:0 0 10px 0;'><strong>$host:</strong></p>\n" ;
-            $body .= "<button id='$btnId' onclick=\"copyToClipboard('$preId', '$btnId')\" style='position:absolute;top:10px;right:10px;background:#555;color:#fff;border:1px solid #777;border-radius:3px;padding:4px 8px;cursor:pointer;font-size:12px;'>📋 Copy</button>\n" ;
-            $body .= "<pre id='$preId' style='background:#222;padding:10px;overflow-x:auto;color:#0f0;border:1px solid #555;margin-top:5px;'>" ;
+            $body .= "<div class='code-box'>\n" ;
+            $body .= "<p class='code-box-title'><strong>$host:</strong></p>\n" ;
+            $body .= "<button id='$btnId' class='copy-btn' onclick=\"copyToClipboard('$preId', '$btnId')\">📋 Copy</button>\n" ;
+            $body .= "<pre id='$preId'>" ;
 
             $sqlStatements = [] ;
             foreach ( $hostIssues as $issue ) {
@@ -849,138 +848,120 @@ if ( $test === 'deploy_ddl_verify' ) {
 }
 
 if ( $test === 'blocking_setup' ) {
-    $body .= "<h3>Blocking Test Setup</h3>\n" ;
+    $body .= "<h3>Automated Blocking Test</h3>\n" ;
 
     try {
+        // Create test table first
         $dbh = getTestDbConnection( $localHost, $localPort, $testDbUser, $testDbPass, $testDbName ) ;
-
-        // Create test table
         $dbh->query( "CREATE TABLE IF NOT EXISTS blocking_test (id INT AUTO_INCREMENT PRIMARY KEY, data VARCHAR(100)) ENGINE=MyISAM" ) ;
-        $body .= "<p style='color:lime;'>&#10004; Test table <code>$testDbName.blocking_test</code> created/verified</p>\n" ;
-
+        $body .= "<p style='color:lime;'>$passIcon Test table <code>$testDbName.blocking_test</code> created/verified</p>\n" ;
         $dbh->close() ;
 
-        $body .= "<h4>How to Simulate Blocking</h4>\n" ;
-        $body .= "<p>Open two MySQL terminal sessions to <code>$localHost</code>:</p>\n" ;
-        $body .= "<pre style='background:#222;padding:15px;'>\n" ;
-        $body .= "<strong>-- Session 1 (Blocker):</strong>\n" ;
-        $body .= "mysql -h $localHost -u $testDbUser -p $testDbName\n\n" ;
-        $body .= "LOCK TABLES blocking_test WRITE;\n" ;
-        $body .= "SELECT SLEEP(60);  -- Holds lock for 60 seconds\n" ;
-        $body .= "UNLOCK TABLES;\n" ;
-        $body .= "\n" ;
-        $body .= "<strong>-- Session 2 (Waiter - run while Session 1 is sleeping):</strong>\n" ;
-        $body .= "mysql -h $localHost -u $testDbUser -p $testDbName\n\n" ;
-        $body .= "SELECT * FROM blocking_test;  -- This will wait for the lock\n" ;
-        $body .= "</pre>\n" ;
+        $body .= "<h4>Running Blocking Scenario...</h4>\n" ;
 
-        $body .= "<p>Then <a href=\"?test=blocking_status\">check blocking status</a> to verify detection.</p>\n" ;
+        // Session 1: Blocker - holds a table lock while sleeping
+        $session1 = new \mysqli( $localHost, $testDbUser, $testDbPass, $testDbName, $localPort ) ;
+        if ( $session1->connect_error ) {
+            throw new \Exception( "Session 1 connection failed: " . $session1->connect_error ) ;
+        }
+        $session1Id = $session1->thread_id ;
+        $body .= "<p>Session 1 (Blocker) connected, thread ID: <strong>$session1Id</strong></p>\n" ;
+
+        // Acquire the table lock
+        if ( ! $session1->query( "LOCK TABLES blocking_test WRITE" ) ) {
+            throw new \Exception( "Session 1 failed to acquire lock: " . $session1->error ) ;
+        }
+        $body .= "<p style='color:lime;'>$passIcon Session 1 acquired WRITE lock on blocking_test</p>\n" ;
+
+        // Start the sleep query (non-blocking from PHP's perspective using query with MYSQLI_ASYNC)
+        // We'll use a short sleep so we can check blocking, then it will release
+        $session1->query( "SELECT SLEEP(5)", MYSQLI_ASYNC ) ;
+        $body .= "<p>Session 1 executing SLEEP(5) while holding lock...</p>\n" ;
+
+        // Session 2: Waiter - tries to SELECT from the locked table
+        $session2 = new \mysqli( $localHost, $testDbUser, $testDbPass, $testDbName, $localPort ) ;
+        if ( $session2->connect_error ) {
+            $session1->close() ;
+            throw new \Exception( "Session 2 connection failed: " . $session2->connect_error ) ;
+        }
+        $session2Id = $session2->thread_id ;
+        $body .= "<p>Session 2 (Waiter) connected, thread ID: <strong>$session2Id</strong></p>\n" ;
+
+        // Start the SELECT query (will block waiting for the lock)
+        $session2->query( "SELECT * FROM blocking_test", MYSQLI_ASYNC ) ;
+        $body .= "<p>Session 2 attempting SELECT (should block on lock)...</p>\n" ;
+
+        // Give it a moment for the blocking state to be visible
+        usleep( 500000 ) ; // 500ms
+
+        // Now check the processlist for blocking
+        $checkDbh = new \mysqli( $localHost, $testDbUser, $testDbPass, $testDbName, $localPort ) ;
+        if ( $checkDbh->connect_error ) {
+            $session1->close() ;
+            $session2->close() ;
+            throw new \Exception( "Check connection failed: " . $checkDbh->connect_error ) ;
+        }
+
+        $body .= "<h4>Checking Process List...</h4>\n" ;
+        $body .= "<table border='1' cellpadding='8' style='margin:10px 0;'>\n" ;
+        $body .= "<tr><th>Thread ID</th><th>User</th><th>Command</th><th>State</th><th>Info</th><th>Role</th></tr>\n" ;
+
+        $result = $checkDbh->query( "SELECT id, user, command, state, info FROM INFORMATION_SCHEMA.PROCESSLIST WHERE id IN ($session1Id, $session2Id)" ) ;
+        $foundBlocker = false ;
+        $foundWaiter = false ;
+        $waiterState = '' ;
+
+        while ( $row = $result->fetch_assoc() ) {
+            $role = '' ;
+            $roleStyle = '' ;
+            if ( intval( $row['id'] ) === $session1Id ) {
+                $role = 'BLOCKER' ;
+                $roleStyle = 'color:red;font-weight:bold;' ;
+                $foundBlocker = true ;
+            } elseif ( intval( $row['id'] ) === $session2Id ) {
+                $role = 'WAITER' ;
+                $roleStyle = 'color:hotpink;font-weight:bold;' ;
+                $foundWaiter = true ;
+                $waiterState = $row['state'] ?? '' ;
+            }
+            $body .= "<tr>" ;
+            $body .= "<td>" . htmlspecialchars( $row['id'] ) . "</td>" ;
+            $body .= "<td>" . htmlspecialchars( $row['user'] ) . "</td>" ;
+            $body .= "<td>" . htmlspecialchars( $row['command'] ) . "</td>" ;
+            $body .= "<td>" . htmlspecialchars( $row['state'] ) . "</td>" ;
+            $body .= "<td>" . htmlspecialchars( substr( $row['info'] ?? '', 0, 50 ) ) . "</td>" ;
+            $body .= "<td style='$roleStyle'>$role</td>" ;
+            $body .= "</tr>\n" ;
+        }
+        $body .= "</table>\n" ;
+
+        // Check for lock waiting state
+        $lockWaitDetected = ( stripos( $waiterState, 'lock' ) !== false || stripos( $waiterState, 'wait' ) !== false ) ;
+
+        $body .= "<h4>Test Results</h4>\n" ;
+        if ( $foundBlocker && $foundWaiter && $lockWaitDetected ) {
+            $body .= "<p style='color:lime;font-size:16px;'>$passIcon Blocking detection test PASSED!</p>\n" ;
+            $body .= "<ul>\n" ;
+            $body .= "<li>Session 1 (Thread $session1Id) is holding the lock</li>\n" ;
+            $body .= "<li>Session 2 (Thread $session2Id) is waiting (state: <code>$waiterState</code>)</li>\n" ;
+            $body .= "</ul>\n" ;
+        } elseif ( $foundBlocker && $foundWaiter ) {
+            $body .= "<p style='color:yellow;font-size:16px;'>$warnIcon Sessions found but waiter state unclear: <code>$waiterState</code></p>\n" ;
+        } else {
+            $body .= "<p style='color:red;font-size:16px;'>$failIcon Could not verify blocking state</p>\n" ;
+            $body .= "<p>Blocker found: " . ( $foundBlocker ? 'Yes' : 'No' ) . ", Waiter found: " . ( $foundWaiter ? 'Yes' : 'No' ) . "</p>\n" ;
+        }
+
+        // Clean up - close connections (this will kill the queries and release locks)
+        $checkDbh->close() ;
+        $session1->close() ;
+        $session2->close() ;
+        $body .= "<p style='color:gray;'>Test sessions closed, locks released.</p>\n" ;
+
 
     } catch ( \Exception $e ) {
-        $body .= "<p style='color:red;'>Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+        $body .= "<p style='color:red;'>$failIcon Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
     }
-}
-
-if ( $test === 'blocking_status' ) {
-    $body .= "<h3>Current Blocking Status</h3>\n" ;
-    $body .= "<p>Checking AQL data for <code>$localHost:$localPort</code>...</p>\n" ;
-
-    // Fetch AQL data for local host
-    $aqlUrl = "https://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI'] ) . "/AJAXgetaql.php" ;
-    $aqlUrl .= "?hostname=" . urlencode( "$localHost:$localPort" ) ;
-    $aqlUrl .= "&alertCritSecs=60&alertWarnSecs=30&alertInfoSecs=10&alertLowSecs=1&debugLocks=1" ;
-
-    $ch = curl_init( $aqlUrl ) ;
-    curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true ) ;
-    curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false ) ;
-    $response = curl_exec( $ch ) ;
-    $curlError = curl_error( $ch ) ;
-    curl_close( $ch ) ;
-
-    if ( $curlError ) {
-        $body .= "<p style='color:red;'>Curl error: " . htmlspecialchars( $curlError ) . "</p>\n" ;
-    } else {
-        $data = json_decode( $response, true ) ;
-        if ( $data ) {
-            $overview = $data['overviewData'] ?? [] ;
-            $blocking = $overview['blocking'] ?? 0 ;
-            $blocked = $overview['blocked'] ?? 0 ;
-
-            $body .= "<table border='1' cellpadding='8' style='margin:10px 0;'>\n" ;
-            $body .= "<tr><th>Metric</th><th>Value</th><th>Status</th></tr>\n" ;
-            $body .= "<tr><td>Blocking Count</td><td>" . htmlspecialchars( $blocking ) . "</td>" ;
-            $body .= "<td>" . ( $blocking > 0 ? "<span style='color:red;'>&#9888; BLOCKING DETECTED</span>" : "OK" ) . "</td></tr>\n" ;
-            $body .= "<tr><td>Blocked Count</td><td>" . htmlspecialchars( $blocked ) . "</td>" ;
-            $body .= "<td>" . ( $blocked > 0 ? "<span style='color:hotpink;'>&#9888; BLOCKED QUERIES</span>" : "OK" ) . "</td></tr>\n" ;
-            $body .= "<tr><td>Total Threads</td><td>" . htmlspecialchars( $overview['threads'] ?? 0 ) . "</td><td></td></tr>\n" ;
-            $body .= "</table>\n" ;
-
-            // Show threads with blockInfo
-            $blockingThreads = [] ;
-            $blockedThreads = [] ;
-            foreach ( $data['result'] ?? [] as $thread ) {
-                $bi = $thread['blockInfo'] ?? null ;
-                if ( $bi ) {
-                    if ( !empty( $bi['isBlocking'] ) ) {
-                        $blockingThreads[] = $thread ;
-                    }
-                    if ( !empty( $bi['isBlocked'] ) ) {
-                        $blockedThreads[] = $thread ;
-                    }
-                }
-            }
-
-            if ( !empty( $blockingThreads ) ) {
-                $body .= "<h4 style='color:red;'>Blocking Threads</h4>\n" ;
-                foreach ( $blockingThreads as $thread ) {
-                    $bi = $thread['blockInfo'] ;
-                    $count = count( $bi['blocking'] ?? [] ) ;
-                    $body .= "<div style='background:#500;padding:10px;margin:5px 0;border-radius:5px;'>\n" ;
-                    $body .= "<strong>Thread " . htmlspecialchars( $thread['id'] ) . "</strong> " ;
-                    $body .= "<span class='blockingIndicator'>BLOCKING ($count)</span><br/>\n" ;
-                    $body .= "User: " . htmlspecialchars( $thread['user'] ) . "<br/>\n" ;
-                    $body .= "State: " . htmlspecialchars( $thread['state'] ) . "<br/>\n" ;
-                    $body .= "Query: <code>" . htmlspecialchars( substr( $thread['info'] ?? '', 0, 80 ) ) . "</code><br/>\n" ;
-                    $body .= "Blocking threads: " . htmlspecialchars( implode( ', ', $bi['blocking'] ?? [] ) ) . "<br/>\n" ;
-                    $body .= "<p style='color:lime;'><strong>&#10004; This thread would show \"(blocking $count)\" next to File Issue button</strong></p>\n" ;
-                    $body .= "</div>\n" ;
-                }
-            }
-
-            if ( !empty( $blockedThreads ) ) {
-                $body .= "<h4 style='color:hotpink;'>Blocked Threads</h4>\n" ;
-                foreach ( $blockedThreads as $thread ) {
-                    $bi = $thread['blockInfo'] ;
-                    $body .= "<div style='background:#505;padding:10px;margin:5px 0;border-radius:5px;'>\n" ;
-                    $body .= "<strong>Thread " . htmlspecialchars( $thread['id'] ) . "</strong> " ;
-                    $body .= "<span class='blockedIndicator'>BLOCKED</span><br/>\n" ;
-                    $body .= "User: " . htmlspecialchars( $thread['user'] ) . "<br/>\n" ;
-                    $body .= "State: " . htmlspecialchars( $thread['state'] ) . "<br/>\n" ;
-                    $body .= "Blocked by: " . htmlspecialchars( implode( ', ', $bi['blockedBy'] ?? [] ) ) . "<br/>\n" ;
-                    $body .= "</div>\n" ;
-                }
-            }
-
-            if ( empty( $blockingThreads ) && empty( $blockedThreads ) ) {
-                $body .= "<p>No blocking detected. <a href=\"?test=blocking_setup\">Set up a blocking test</a> to verify detection.</p>\n" ;
-            }
-
-            // Show raw debug data if requested
-            if ( isset( $_GET['debug'] ) ) {
-                $body .= "<h4>Debug: lockWaitData</h4>\n" ;
-                $body .= "<pre style='background:#222;padding:10px;max-height:300px;overflow:auto;'>" ;
-                $body .= htmlspecialchars( json_encode( $data['debugLockWaitData'] ?? [], JSON_PRETTY_PRINT ) ) ;
-                $body .= "</pre>\n" ;
-            } else {
-                $body .= "<p><a href=\"?test=blocking_status&debug=1\">Show debug data</a></p>\n" ;
-            }
-        } else {
-            $body .= "<p style='color:red;'>Error parsing AQL response</p>\n" ;
-            $body .= "<pre>" . htmlspecialchars( substr( $response, 0, 500 ) ) . "</pre>\n" ;
-        }
-    }
-
-    $body .= "<p><a href=\"?test=blocking_status\">Refresh</a></p>\n" ;
 }
 
 if ( $test === 'blocking_js' ) {
@@ -989,11 +970,64 @@ if ( $test === 'blocking_js' ) {
 
     $body .= "<h4>Test Case: Thread blocking 5 queries</h4>\n" ;
 
-    $sampleActions = '<button type="button" onclick="killProcOnHost( \'localhost:3306\', 12345, \'testuser\', \'127.0.0.1\', \'testdb\', \'Query\', 10, \'Sending data\', \'SELECT%20*%20FROM%20foo\' ) ; return false ;">Kill Thread</button>'
-                   . '<button type="button" onclick="fileIssue( \'localhost:3306\', \'0\', \'127.0.0.1\', \'testuser\', \'testdb\', 10, \'SELECT%20*%20FROM%20foo\' ) ; return false ;">File Issue</button>' ;
+    // Add copy-to-clipboard JavaScript if not already added
+    $body .= "<script>
+if (typeof copyToClipboard !== 'function') {
+    function copyToClipboard(preId, btnId) {
+        var pre = document.getElementById(preId);
+        var btn = document.getElementById(btnId);
+        var text = pre.innerText || pre.textContent;
+        navigator.clipboard.writeText(text).then(function() {
+            btn.innerText = '✓ Copied';
+            btn.style.background = '#060';
+            setTimeout(function() {
+                btn.innerText = '📋 Copy';
+                btn.style.background = '';
+            }, 2000);
+        }).catch(function() {
+            var textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            btn.innerText = '✓ Copied';
+            btn.style.background = '#060';
+            setTimeout(function() {
+                btn.innerText = '📋 Copy';
+                btn.style.background = '';
+            }, 2000);
+        });
+    }
+}
+</script>\n" ;
 
-    $body .= "<p><strong>Original actions HTML:</strong></p>\n" ;
-    $body .= "<pre style='background:#222;padding:10px;overflow-x:auto;font-size:11px;'>" . htmlspecialchars( $sampleActions ) . "</pre>\n" ;
+    $sampleActions = '<button type="button" onclick="killProcOnHost(' . "\n"
+                   . '    \'localhost:3306\',' . "\n"
+                   . '    12345,' . "\n"
+                   . '    \'testuser\',' . "\n"
+                   . '    \'127.0.0.1\',' . "\n"
+                   . '    \'testdb\',' . "\n"
+                   . '    \'Query\',' . "\n"
+                   . '    10,' . "\n"
+                   . '    \'Sending data\',' . "\n"
+                   . '    \'SELECT%20*%20FROM%20foo\'' . "\n"
+                   . ') ; return false ;">Kill Thread</button>' . "\n\n"
+                   . '<button type="button" onclick="fileIssue(' . "\n"
+                   . '    \'localhost:3306\',' . "\n"
+                   . '    \'0\',' . "\n"
+                   . '    \'127.0.0.1\',' . "\n"
+                   . '    \'testuser\',' . "\n"
+                   . '    \'testdb\',' . "\n"
+                   . '    10,' . "\n"
+                   . '    \'SELECT%20*%20FROM%20foo\'' . "\n"
+                   . ') ; return false ;">File Issue</button>' ;
+
+    $body .= "<div class='code-box'>\n" ;
+    $body .= "<p class='code-box-title'><strong>Original actions HTML:</strong></p>\n" ;
+    $body .= "<button id='copy_btn_orig' class='copy-btn' onclick=\"copyToClipboard('pre_orig', 'copy_btn_orig')\">📋 Copy</button>\n" ;
+    $body .= "<pre id='pre_orig' style='font-size:11px;'>" . htmlspecialchars( $sampleActions ) . "</pre>\n" ;
+    $body .= "</div>\n" ;
 
     // Simulate the JavaScript regex replacement
     $blockingCount = 5 ;
@@ -1004,11 +1038,16 @@ if ( $test === 'blocking_js' ) {
     ) ;
     $modified .= ' <span class="blockingIndicator" style="font-size:9px;">(blocking ' . $blockingCount . ')</span>' ;
 
-    $body .= "<p><strong>After modifyActionsForBlocking() with blockingCount=5:</strong></p>\n" ;
-    $body .= "<pre style='background:#222;padding:10px;overflow-x:auto;font-size:11px;'>" . htmlspecialchars( $modified ) . "</pre>\n" ;
+    $body .= "<div class='code-box'>\n" ;
+    $body .= "<p class='code-box-title'><strong>After modifyActionsForBlocking() with blockingCount=5:</strong></p>\n" ;
+    $body .= "<button id='copy_btn_mod' class='copy-btn' onclick=\"copyToClipboard('pre_mod', 'copy_btn_mod')\">📋 Copy</button>\n" ;
+    $body .= "<pre id='pre_mod' style='font-size:11px;'>" . htmlspecialchars( $modified ) . "</pre>\n" ;
+    $body .= "</div>\n" ;
 
-    $body .= "<p><strong>Visual rendering:</strong></p>\n" ;
-    $body .= "<div style='background:#444;padding:10px;'>" . $modified . "</div>\n" ;
+    $body .= "<div class='code-box'>\n" ;
+    $body .= "<p class='code-box-title'><strong>Visual rendering:</strong></p>\n" ;
+    $body .= "<div style='margin-top:5px;'>" . $modified . "</div>\n" ;
+    $body .= "</div>\n" ;
 
     $body .= "<h4>Expected Jira Issue Fields</h4>\n" ;
     $body .= "<table border='1' cellpadding='8'>\n" ;
