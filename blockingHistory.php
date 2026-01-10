@@ -229,11 +229,7 @@ try {
         $blockedCount = intval( $row['blocked_count'] ) ;
         $totalBlocked = intval( $row['total_blocked'] ) ;
         $maxBlockSecs = intval( $row['max_block_secs'] ?? 0 ) ;
-        $queryFull = htmlspecialchars( $row['query_text'] ) ;
-        $queryTrunc = htmlspecialchars( mb_substr( $row['query_text'], 0, 80 ) ) ;
-        if ( mb_strlen( $row['query_text'] ) > 80 ) {
-            $queryTrunc .= '...' ;
-        }
+        $queryText = htmlspecialchars( $row['query_text'] ) ;
         $firstSeen = htmlspecialchars( $row['first_seen'] ) ;
         $lastSeen = htmlspecialchars( $row['last_seen'] ) ;
 
@@ -245,7 +241,7 @@ try {
               .  "  <td style=\"text-align:right;\">$blockedCount</td>\n"
               .  "  <td style=\"text-align:right;\">$totalBlocked</td>\n"
               .  "  <td style=\"text-align:right;\">$maxBlockSecs</td>\n"
-              .  "  <td title=\"$queryFull\"><code>$queryTrunc</code></td>\n"
+              .  "  <td><pre style=\"margin:0; white-space:pre-wrap; word-break:break-word;\">$queryText</pre></td>\n"
               .  "  <td>$firstSeen</td>\n"
               .  "  <td>$lastSeen</td>\n"
               .  "</tr>\n" ;
