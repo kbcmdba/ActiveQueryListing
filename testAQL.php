@@ -65,6 +65,7 @@ $body .= "<ul>\n" ;
 $body .= "<li><a href=\"?test=config_validate\">Validate Configuration</a> - Check aql_config.xml parameters and connectivity</li>\n" ;
 $body .= "<li><a href=\"?test=smoke_test\">Application Smoke Test</a> - Verify main pages load without errors</li>\n" ;
 $body .= "<li><a href=\"?test=db_user_verify\">Database User Verification</a> - Verify DB user privileges on config server and all monitored hosts</li>\n" ;
+$body .= "<li><a href=\"?test=schema_verify\">Schema Verification</a> - Verify aql_db tables and structure (read-only check)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_status\">Check Blocking Status</a> - View current blocking on local server</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
@@ -441,6 +442,112 @@ if ( $test === 'db_user_verify' ) {
 
     $body .= "<hr/>\n" ;
     $body .= "<p style='color:lime;font-size:18px;'>&#10004; Database user verification complete</p>\n" ;
+}
+
+if ( $test === 'schema_verify' ) {
+    $body .= "<h3>Schema Verification</h3>\n" ;
+    $body .= "<p><em>Read-only check of aql_db database structure</em></p>\n" ;
+
+    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
+    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
+    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+
+    $dbName = $config->getDbName() ;
+    $dbUser = $config->getDbUser() ;
+    $dbPass = $config->getDbPass() ;
+
+    // Expected tables and their required columns
+    $expectedSchema = [
+        'host' => [ 'host_id', 'hostname', 'port_number', 'db_type', 'should_monitor', 'decommissioned', 'alert_crit_secs', 'alert_warn_secs', 'alert_info_secs', 'alert_low_secs' ],
+        'host_group' => [ 'host_group_id', 'tag', 'short_description' ],
+        'host_group_map' => [ 'host_group_id', 'host_id' ],
+        'maintenance_window' => [ 'window_id', 'window_type', 'days_of_week', 'start_time', 'end_time', 'silence_until' ],
+        'maintenance_window_host_map' => [ 'window_id', 'host_id' ],
+        'maintenance_window_host_group_map' => [ 'window_id', 'host_group_id' ]
+    ] ;
+
+    try {
+        $dbh = new \mysqli( $localHost, $dbUser, $dbPass, 'information_schema', $localPort ) ;
+        if ( $dbh->connect_error ) {
+            throw new \Exception( $dbh->connect_error ) ;
+        }
+
+        // Step 1: Check database exists
+        $body .= "<h4>1. Database Check</h4>\n" ;
+        $result = $dbh->query( "SELECT SCHEMA_NAME FROM SCHEMATA WHERE SCHEMA_NAME = '" . $dbh->real_escape_string( $dbName ) . "'" ) ;
+        if ( $result && $result->num_rows > 0 ) {
+            $body .= "<p>$passIcon Database <code>$dbName</code> exists</p>\n" ;
+        } else {
+            $body .= "<p>$failIcon Database <code>$dbName</code> does not exist</p>\n" ;
+            throw new \Exception( "Database $dbName not found" ) ;
+        }
+
+        // Step 2: Check tables exist
+        $body .= "<h4>2. Required Tables</h4>\n" ;
+        $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+        $body .= "<tr><th>Table</th><th>Status</th><th>Row Count</th></tr>\n" ;
+
+        $allTablesExist = true ;
+        foreach ( $expectedSchema as $tableName => $columns ) {
+            $result = $dbh->query( "SELECT TABLE_NAME FROM TABLES WHERE TABLE_SCHEMA = '" . $dbh->real_escape_string( $dbName ) . "' AND TABLE_NAME = '" . $dbh->real_escape_string( $tableName ) . "'" ) ;
+            if ( $result && $result->num_rows > 0 ) {
+                // Get row count (read-only)
+                $countResult = $dbh->query( "SELECT TABLE_ROWS FROM TABLES WHERE TABLE_SCHEMA = '" . $dbh->real_escape_string( $dbName ) . "' AND TABLE_NAME = '" . $dbh->real_escape_string( $tableName ) . "'" ) ;
+                $rowCount = 0 ;
+                if ( $countResult && $row = $countResult->fetch_assoc() ) {
+                    $rowCount = $row['TABLE_ROWS'] ?? 0 ;
+                }
+                $body .= "<tr><td><code>$tableName</code></td><td>$passIcon Exists</td><td>~$rowCount</td></tr>\n" ;
+            } else {
+                $body .= "<tr><td><code>$tableName</code></td><td>$failIcon Missing</td><td>-</td></tr>\n" ;
+                $allTablesExist = false ;
+            }
+        }
+        $body .= "</table>\n" ;
+
+        // Step 3: Check columns for each table
+        $body .= "<h4>3. Table Structure</h4>\n" ;
+
+        foreach ( $expectedSchema as $tableName => $requiredColumns ) {
+            // Get actual columns from INFORMATION_SCHEMA
+            $result = $dbh->query( "SELECT COLUMN_NAME FROM COLUMNS WHERE TABLE_SCHEMA = '" . $dbh->real_escape_string( $dbName ) . "' AND TABLE_NAME = '" . $dbh->real_escape_string( $tableName ) . "'" ) ;
+
+            if ( !$result ) {
+                $body .= "<p>$warnIcon Could not check columns for <code>$tableName</code></p>\n" ;
+                continue ;
+            }
+
+            $actualColumns = [] ;
+            while ( $row = $result->fetch_assoc() ) {
+                $actualColumns[] = $row['COLUMN_NAME'] ;
+            }
+
+            if ( empty( $actualColumns ) ) {
+                // Table doesn't exist, already reported above
+                continue ;
+            }
+
+            $missingColumns = array_diff( $requiredColumns, $actualColumns ) ;
+
+            if ( empty( $missingColumns ) ) {
+                $body .= "<p>$passIcon <code>$tableName</code>: All required columns present (" . count( $requiredColumns ) . " checked)</p>\n" ;
+            } else {
+                $body .= "<p>$failIcon <code>$tableName</code>: Missing columns: <code>" . implode( ', ', $missingColumns ) . "</code></p>\n" ;
+            }
+        }
+
+        $dbh->close() ;
+
+        $body .= "<hr/>\n" ;
+        if ( $allTablesExist ) {
+            $body .= "<p style='color:lime;font-size:18px;'>&#10004; Schema verification complete - all tables present</p>\n" ;
+        } else {
+            $body .= "<p style='color:yellow;font-size:18px;'>&#9888; Schema verification complete - some tables missing (run setup_db.sql)</p>\n" ;
+        }
+
+    } catch ( \Exception $e ) {
+        $body .= "<p>$failIcon Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+    }
 }
 
 if ( $test === 'blocking_setup' ) {

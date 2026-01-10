@@ -165,6 +165,10 @@ uses a dedicated test database and does not modify production data.
   the config server and all monitored MySQL/MariaDB hosts. Checks CONNECTION, PROCESS,
   REPLICATION CLIENT, and performance_schema access.
 
+- **Schema Verification** - Read-only check that verifies the aql_db database exists,
+  all required tables are present (host, host_group, maintenance_window, etc.), and
+  required columns exist in each table.
+
 - **Setup Blocking Test** - Creates a test table in the dedicated test database and
   provides instructions for simulating lock blocking scenarios.
 
