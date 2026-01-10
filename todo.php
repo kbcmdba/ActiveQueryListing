@@ -25,10 +25,6 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
-// @todo 02-40 deployDDL.php verification
-//             - Run deployDDL.php in dry-run/check mode
-//             - Report any pending schema changes
-//             - Verify DDL scripts are syntactically valid
 // @todo 02-50 Remote host connectivity tests
 //             - Test connection to each configured host in host table
 //             - Verify required privileges on remote hosts
