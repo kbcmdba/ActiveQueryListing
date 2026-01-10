@@ -69,6 +69,7 @@ $body .= "<li><a href=\"?test=schema_verify\">Schema Verification</a> - Verify a
 $body .= "<li><a href=\"?test=deploy_ddl_verify\">Deploy DDL Verification</a> - Verify deployDDL.php runs without errors (idempotent check)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
+$body .= "<li><a href=\"?test=jira_test\">Jira Integration Test</a> - Manual test instructions for Jira issue filing</li>\n" ;
 $body .= "<li><a href=\"?test=cleanup\">Cleanup Test Data</a> - Remove test tables from test database</li>\n" ;
 $body .= "</ul>\n" ;
 $body .= "<hr/>\n" ;
@@ -1057,6 +1058,56 @@ if (typeof copyToClipboard !== 'function') {
     $body .= "</table>\n" ;
 
     $body .= "<p style='color:lime;font-size:18px;'>&#10004; JavaScript regex replacement verified</p>\n" ;
+}
+
+if ( $test === 'jira_test' ) {
+    $body .= "<h3>Jira Integration Test (Manual)</h3>\n" ;
+
+    // Check current Jira configuration
+    $body .= "<h4>Current Configuration Status</h4>\n" ;
+    $body .= "<table border='1' cellpadding='8' style='margin:10px 0;'>\n" ;
+    $body .= "<tr><th>Setting</th><th>Value</th><th>Status</th></tr>\n" ;
+
+    $jiraEnabled = $config->getJiraEnabled() ;
+    $jiraProjectId = $config->getJiraProjectId() ;
+    $jiraIssueTypeId = $config->getJiraIssueTypeId() ;
+    $jiraQueryHashFieldId = $config->getJiraQueryHashFieldId() ;
+    $issueTrackerBaseUrl = $config->getIssueTrackerBaseUrl() ;
+
+    $body .= "<tr><td>jiraEnabled</td><td>" . ( $jiraEnabled ? 'true' : 'false' ) . "</td>" ;
+    $body .= "<td>" . ( $jiraEnabled ? "<span style='color:lime;'>$passIcon Enabled</span>" : "<span style='color:yellow;'>$warnIcon Disabled</span>" ) . "</td></tr>\n" ;
+
+    $body .= "<tr><td>issueTrackerBaseUrl</td><td>" . htmlspecialchars( $issueTrackerBaseUrl ) . "</td>" ;
+    $body .= "<td>" . ( !empty( $issueTrackerBaseUrl ) ? "<span style='color:lime;'>$passIcon Set</span>" : "<span style='color:red;'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
+
+    $body .= "<tr><td>jiraProjectId</td><td>" . htmlspecialchars( $jiraProjectId ) . "</td>" ;
+    $body .= "<td>" . ( !empty( $jiraProjectId ) ? "<span style='color:lime;'>$passIcon Set</span>" : "<span style='color:red;'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
+
+    $body .= "<tr><td>jiraIssueTypeId</td><td>" . htmlspecialchars( $jiraIssueTypeId ) . "</td>" ;
+    $body .= "<td>" . ( !empty( $jiraIssueTypeId ) ? "<span style='color:lime;'>$passIcon Set</span>" : "<span style='color:red;'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
+
+    $body .= "<tr><td>jiraQueryHashFieldId</td><td>" . htmlspecialchars( $jiraQueryHashFieldId ) . "</td>" ;
+    $body .= "<td>" . ( !empty( $jiraQueryHashFieldId ) ? "<span style='color:lime;'>$passIcon Set</span>" : "<span style='color:gray;'>Optional (not set)</span>" ) . "</td></tr>\n" ;
+
+    $body .= "</table>\n" ;
+
+    if ( !$jiraEnabled ) {
+        $body .= "<p style='color:yellow;'>$warnIcon Jira integration is disabled. Set <code>jiraEnabled</code> to <code>true</code> in aql_config.xml to enable.</p>\n" ;
+    }
+
+    // Simple manual test instructions
+    $body .= "<h4>Test Steps</h4>\n" ;
+    $body .= "<ol>\n" ;
+    $body .= "<li>Run this query on any monitored host:<br/><code>SELECT SLEEP(120) FROM DUAL;</code></li>\n" ;
+    $body .= "<li>Go to <a href='index.php' target='_blank'>AQL Home</a> in your browser</li>\n" ;
+    $body .= "<li>Find the SLEEP query in the listing and click the <strong>File Issue</strong> button</li>\n" ;
+    $body .= "</ol>\n" ;
+
+    $body .= "<h4>Expected Results</h4>\n" ;
+    $body .= "<ul>\n" ;
+    $body .= "<li>$passIcon <strong>Success:</strong> Jira opens with a pre-filled issue ready for your details</li>\n" ;
+    $body .= "<li>$failIcon <strong>Failure:</strong> You'll see an error message indicating what needs to be fixed</li>\n" ;
+    $body .= "</ul>\n" ;
 }
 
 if ( $test === 'cleanup' ) {

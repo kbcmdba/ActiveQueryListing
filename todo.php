@@ -29,10 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 02-70 Jira integration tests (when jiraEnabled=true)
-//             - Verify Jira API connectivity
-//             - Check project and issue type IDs are valid
-//             - Test custom field existence
 // @todo 02-80 Verify host permissions when adding new host in manageData.php
 //             - Test connection to new host with configured credentials
 //             - Verify PROCESS privilege before allowing host to be added

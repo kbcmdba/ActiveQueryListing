@@ -174,14 +174,14 @@ uses a dedicated test database and does not modify production data.
   Shows which tables exist vs would be created, and which migrations are pending vs
   already applied. For up-to-date installs, confirms schema is current.
 
-- **Setup Blocking Test** - Creates a test table in the dedicated test database and
-  provides instructions for simulating lock blocking scenarios.
-
-- **Check Blocking Status** - Queries the local server to display any current blocking
-  or blocked queries detected by AQL.
+- **Automated Blocking Test** - Creates a test table, runs two MySQL sessions in parallel
+  (one holding a lock, one waiting), and verifies lock detection works correctly.
 
 - **Test Blocking JavaScript** - Verifies that the JavaScript modifications for the
   "File Issue" button work correctly when a query is blocking others.
+
+- **Jira Integration Test** - Manual test with step-by-step instructions for verifying
+  Jira issue filing works. Shows current Jira configuration status and simple test steps.
 
 - **Cleanup Test Data** - Removes test tables created during testing.
 
