@@ -161,9 +161,10 @@ uses a dedicated test database and does not modify production data.
   testAQL.php) and verifies they return HTTP 200 without PHP errors. Useful for
   verifying the application is properly installed.
 
-- **Database User Verification** - Tests the configured database user's privileges on
-  the config server and all monitored MySQL/MariaDB hosts. Checks CONNECTION, PROCESS,
-  REPLICATION CLIENT, and performance_schema access.
+- **Database User Verification** - Tests both the application user (usually `aql_app`) and
+  test user (usually `aql_test`) connectivity on the config server and all monitored
+  MySQL/MariaDB hosts. For the app user, also checks PROCESS, REPLICATION CLIENT, and
+  performance_schema privileges.
 
 - **Schema Verification** - Read-only check that verifies the aql_db database exists,
   all required tables are present (host, host_group, maintenance_window, etc.), and

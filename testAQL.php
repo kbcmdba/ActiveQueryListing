@@ -64,7 +64,7 @@ $body .= "<h3>Available Tests</h3>\n" ;
 $body .= "<ul>\n" ;
 $body .= "<li><a href=\"?test=config_validate\">Validate Configuration</a> - Check aql_config.xml parameters and connectivity</li>\n" ;
 $body .= "<li><a href=\"?test=smoke_test\">Application Smoke Test</a> - Verify main pages load without errors</li>\n" ;
-$body .= "<li><a href=\"?test=db_user_verify\">Database User Verification</a> - Verify DB user privileges on config server and all monitored hosts</li>\n" ;
+$body .= "<li><a href=\"?test=db_user_verify\">Database User Verification</a> - Verify both app and test user connectivity on config server and all monitored hosts</li>\n" ;
 $body .= "<li><a href=\"?test=schema_verify\">Schema Verification</a> - Verify aql_db tables and structure (read-only check)</li>\n" ;
 $body .= "<li><a href=\"?test=deploy_ddl_verify\">Deploy DDL Verification</a> - Verify deployDDL.php runs without errors (idempotent check)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
@@ -340,7 +340,25 @@ if ( $test === 'db_user_verify' ) {
     $dbPass = $config->getDbPass() ;
     $showSlaveStatement = $config->getShowSlaveStatement() ;
 
-    $body .= "<p><strong>Database User:</strong> <code>$dbUser</code></p>\n" ;
+    // Also get test user credentials if configured
+    $testUser = $testDbUser ;
+    $testPass = $testDbPass ;
+    $testUserConfigured = !empty( $testUser ) && !empty( $testPass ) ;
+
+    $body .= "<p><strong>Application User:</strong> <code>$dbUser</code></p>\n" ;
+    if ( $testUserConfigured ) {
+        $body .= "<p><strong>Test User:</strong> <code>$testUser</code></p>\n" ;
+    }
+
+    // Helper function to test just connectivity (for test user)
+    $testConnection = function( $host, $port, $user, $pass ) {
+        $mysqli = @new \mysqli( $host, $user, $pass, '', $port ) ;
+        if ( $mysqli->connect_error ) {
+            return [ 'status' => 'fail', 'msg' => $mysqli->connect_error ] ;
+        }
+        $mysqli->close() ;
+        return [ 'status' => 'pass', 'msg' => 'Connected successfully' ] ;
+    } ;
 
     // Helper function to test privileges on a host
     $testHostPrivileges = function( $host, $port, $user, $pass, $showSlaveStmt ) use ( $passIcon, $failIcon, $warnIcon ) {
@@ -403,6 +421,7 @@ if ( $test === 'db_user_verify' ) {
 
     // Test config server (local)
     $body .= "<h4>1. Config Server ($localHost:$localPort)</h4>\n" ;
+    $body .= "<p><strong>Application user ($dbUser):</strong></p>\n" ;
     $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
     $body .= "<tr><th>Check</th><th>Status</th><th>Details</th></tr>\n" ;
 
@@ -413,6 +432,14 @@ if ( $test === 'db_user_verify' ) {
         $body .= "<tr><td>$checkName</td><td>$icon</td><td>" . htmlspecialchars( $info['msg'] ) . "</td></tr>\n" ;
     }
     $body .= "</table>\n" ;
+
+    // Test test user on config server if configured
+    if ( $testUserConfigured ) {
+        $body .= "<p><strong>Test user ($testUser):</strong></p>\n" ;
+        $testLocalResult = $testConnection( $localHost, $localPort, $testUser, $testPass ) ;
+        $icon = $testLocalResult['status'] === 'pass' ? $passIcon : $failIcon ;
+        $body .= "<p>$icon Connection: " . htmlspecialchars( $testLocalResult['msg'] ) . "</p>\n" ;
+    }
 
     // Get monitored hosts from database (only MySQL-compatible types)
     $body .= "<h4>2. Monitored Hosts</h4>\n" ;
@@ -433,7 +460,11 @@ if ( $test === 'db_user_verify' ) {
 
         if ( $result && $result->num_rows > 0 ) {
             $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
-            $body .= "<tr><th>Host</th><th>Type</th><th>Connection</th><th>PROCESS</th><th>REPLICATION</th><th>perf_schema</th></tr>\n" ;
+            if ( $testUserConfigured ) {
+                $body .= "<tr><th>Host</th><th>Type</th><th>$dbUser</th><th>PROCESS</th><th>REPL</th><th>perf_schema</th><th>$testUser</th></tr>\n" ;
+            } else {
+                $body .= "<tr><th>Host</th><th>Type</th><th>Connection</th><th>PROCESS</th><th>REPLICATION</th><th>perf_schema</th></tr>\n" ;
+            }
 
             while ( $row = $result->fetch_assoc() ) {
                 $hostName = $row['hostname'] ;
@@ -451,6 +482,14 @@ if ( $test === 'db_user_verify' ) {
                         $body .= "<td>-</td>" ;
                     }
                 }
+
+                // Test test user connection if configured
+                if ( $testUserConfigured ) {
+                    $testResult = $testConnection( $hostName, $hostPort, $testUser, $testPass ) ;
+                    $icon = $testResult['status'] === 'pass' ? $passIcon : $failIcon ;
+                    $body .= "<td title='" . htmlspecialchars( $testResult['msg'] ) . "'>$icon</td>" ;
+                }
+
                 $body .= "</tr>\n" ;
             }
             $body .= "</table>\n" ;
