@@ -195,6 +195,119 @@ function getBlockingCacheType() {
     return $_blockingCacheType ;
 }
 
+/**
+ * Normalize query for hashing - replace literals to create fingerprint
+ * Matches JavaScript normalizeQueryForHash() in common.js
+ * @param string $query SQL query text
+ * @return string Normalized query
+ */
+function normalizeQueryForHash( $query ) {
+    $normalized = $query ;
+    // Single-quoted strings -> 'S'
+    $normalized = preg_replace( "/'[^']*'/", "'S'", $normalized ) ;
+    // Double-quoted strings -> "S"
+    $normalized = preg_replace( '/"[^"]*"/', '"S"', $normalized ) ;
+    // Numbers -> N
+    $normalized = preg_replace( '/\b\d+\.?\d*\b/', 'N', $normalized ) ;
+    return $normalized ;
+}
+
+/**
+ * Hash string using djb2 algorithm - matches JavaScript hashString() in common.js
+ * @param string $str String to hash
+ * @return string Hex hash (16 chars)
+ */
+function hashQueryString( $str ) {
+    $hash = 5381 ;
+    $len = strlen( $str ) ;
+    for ( $i = 0 ; $i < $len ; $i++ ) {
+        $hash = ( ( $hash << 5 ) + $hash ) + ord( $str[$i] ) ;
+        $hash = $hash & 0xFFFFFFFF ; // Keep as 32-bit
+    }
+    return str_pad( dechex( abs( $hash ) ), 16, '0', STR_PAD_LEFT ) ;
+}
+
+/**
+ * Log a blocking query to the blocking_history table
+ * Uses INSERT ... ON DUPLICATE KEY UPDATE for deduplication by query_hash
+ * @param int $hostId Host ID from aql_db.host table
+ * @param string $user MySQL user executing the blocking query
+ * @param string $sourceHost Source host/IP of the connection
+ * @param string $dbName Database name (may be null)
+ * @param string $queryText Original query text (will be normalized)
+ * @param int $blockedCount Number of queries being blocked
+ */
+function logBlockingQuery( $hostId, $user, $sourceHost, $dbName, $queryText, $blockedCount ) {
+    try {
+        $dbc = new DBConnection() ;
+        $dbh = $dbc->getConnection() ;
+
+        $normalizedQuery = normalizeQueryForHash( $queryText ) ;
+        $queryHash = hashQueryString( $normalizedQuery ) ;
+
+        // INSERT or UPDATE - increment counts if exists
+        $sql = "INSERT INTO aql_db.blocking_history
+                (host_id, query_hash, user, source_host, db_name, query_text, blocked_count, total_blocked)
+                VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+                ON DUPLICATE KEY UPDATE
+                    blocked_count = blocked_count + 1,
+                    total_blocked = total_blocked + VALUES(total_blocked),
+                    last_seen = CURRENT_TIMESTAMP" ;
+        $stmt = $dbh->prepare( $sql ) ;
+        $stmt->bind_param( 'isssssi', $hostId, $queryHash, $user, $sourceHost, $dbName, $normalizedQuery, $blockedCount ) ;
+        $stmt->execute() ;
+        $stmt->close() ;
+    } catch ( \Exception $e ) {
+        // Silently fail - don't break AQL if logging fails
+        error_log( "AQL blocking_history logging failed: " . $e->getMessage() ) ;
+    }
+}
+
+/**
+ * Purge old entries from blocking_history (older than 90 days)
+ * Called occasionally to prevent unbounded table growth
+ */
+function purgeOldBlockingHistory() {
+    try {
+        $dbc = new DBConnection() ;
+        $dbh = $dbc->getConnection() ;
+        $dbh->query( "DELETE FROM aql_db.blocking_history WHERE last_seen < DATE_SUB(NOW(), INTERVAL 90 DAY)" ) ;
+    } catch ( \Exception $e ) {
+        error_log( "AQL blocking_history purge failed: " . $e->getMessage() ) ;
+    }
+}
+
+/**
+ * Look up host_id from hostname:port string
+ * @param string $hostnamePort Format "hostname:port"
+ * @return int|null Host ID or null if not found
+ */
+function getHostIdFromHostname( $hostnamePort ) {
+    static $cache = [] ;
+    if ( isset( $cache[$hostnamePort] ) ) {
+        return $cache[$hostnamePort] ;
+    }
+    try {
+        $parts = explode( ':', $hostnamePort ) ;
+        $hostname = $parts[0] ;
+        $port = isset( $parts[1] ) ? (int) $parts[1] : 3306 ;
+        $dbc = new DBConnection() ;
+        $dbh = $dbc->getConnection() ;
+        $stmt = $dbh->prepare( "SELECT host_id FROM aql_db.host WHERE hostname = ? AND port = ?" ) ;
+        $stmt->bind_param( 'si', $hostname, $port ) ;
+        $stmt->execute() ;
+        $result = $stmt->get_result() ;
+        $row = $result->fetch_assoc() ;
+        $stmt->close() ;
+        $hostId = $row ? (int) $row['host_id'] : null ;
+        $cache[$hostnamePort] = $hostId ;
+        return $hostId ;
+    } catch ( \Exception $e ) {
+        error_log( "AQL getHostIdFromHostname failed: " . $e->getMessage() ) ;
+        return null ;
+    }
+}
+
 try {
     $config        = new Config() ;
     $roQueryPart   = $config->getRoQueryPart() ;
@@ -920,6 +1033,38 @@ SQL;
     }
     if ( !empty( $cacheEntries ) ) {
         writeBlockingCache( $hostname, $cacheEntries ) ;
+    }
+
+    // 6b. Log blocking queries to blocking_history table for pattern analysis
+    $hostId = getHostIdFromHostname( $hostname ) ;
+    if ( $hostId !== null ) {
+        foreach ( $lockWaitData as $threadId => $info ) {
+            if ( !empty( $info['isBlocking'] ) && !empty( $info['blocking'] ) ) {
+                // Find the blocking thread's details in outputList
+                foreach ( $outputList as $thread ) {
+                    if ( (int) $thread['id'] === (int) $threadId ) {
+                        $queryText = html_entity_decode( $thread['info'] ?? '' ) ;
+                        // Skip if no meaningful query text
+                        if ( !empty( $queryText ) && $queryText !== '[Holding lock - no active query]' && $queryText !== '[Holding table lock]' ) {
+                            $blockedCount = count( $info['blocking'] ) ;
+                            logBlockingQuery(
+                                $hostId,
+                                $thread['user'] ?? 'unknown',
+                                $thread['host'] ?? 'unknown',
+                                $thread['db'],
+                                $queryText,
+                                $blockedCount
+                            ) ;
+                        }
+                        break ;
+                    }
+                }
+            }
+        }
+        // Occasionally purge old entries (1% of requests)
+        if ( mt_rand( 1, 100 ) === 1 ) {
+            purgeOldBlockingHistory() ;
+        }
     }
 
     // 7. For waiting threads without identified blockers, check cache for recent blockers

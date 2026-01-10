@@ -145,6 +145,29 @@ GRANT SELECT ON performance_schema.threads TO 'aql_app'@'%';
 
 Note: Basic table-level lock detection works without these additional permissions.
 
+### Blocking History Logging
+
+AQL automatically logs blocking queries to the `blocking_history` table for pattern analysis.
+This helps identify repeat offender queries that frequently cause lock contention.
+
+**Features:**
+- Queries are normalized (strings/numbers replaced with placeholders) to avoid storing sensitive data
+- Deduplication via query hash - each unique query pattern stored once per host
+- Tracks how many times a query was seen blocking and total blocked queries
+- Auto-purges entries older than 90 days (runs on ~1% of requests)
+
+**Table schema:** Run `deployDDL.php` to create the `blocking_history` table.
+
+**Viewing history:** Query the table directly:
+```sql
+-- Top 10 most frequent blocking queries
+SELECT h.hostname, bh.user, bh.blocked_count, bh.total_blocked, bh.query_text, bh.last_seen
+FROM aql_db.blocking_history bh
+JOIN aql_db.host h ON h.host_id = bh.host_id
+ORDER BY bh.blocked_count DESC
+LIMIT 10;
+```
+
 ## Test Harness (testAQL.php)
 
 AQL includes a test harness (`testAQL.php`) for validating your configuration and

@@ -29,12 +29,9 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 03-20 Log blocking queries for historical analysis
-//             - Store blocking events in database table (host, thread_id, user, query_hash, query_text, blocked_count, timestamp)
-//             - Auto-purge entries older than 90 days to prevent unbounded growth
-//             - UI to view blocking history: filter by host, user, query pattern
-//             - Identify repeat offenders and problematic query patterns
-//             - Could feed into automation/alerting for known bad queries
+// @done 03-20 Log blocking queries for historical analysis (storage + auto-purge implemented)
+// @todo 03-30 UI to view blocking history: filter by host, user, query pattern
+// @todo 03-40 Add blocking history analysis: identify repeat offenders and problematic query patterns
 // @todo 04 Alternating row colors for all alert levels in Full Process Listing
 //          - Each level gets two shades: bright and muted (e.g., level4: red/dark red)
 //          - Helps visually track consecutive rows of the same level

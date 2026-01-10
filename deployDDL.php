@@ -330,6 +330,45 @@ if ( ! tableExists( $dbh, 'maintenance_window_host_group_map' ) ) {
     $body .= "<tr><td>maintenance_window_host_group_map table</td><td>OK</td><td>-</td></tr>\n" ;
 }
 
+// ---------------------------------------------------------------------------
+// Base table: blocking_history
+// ---------------------------------------------------------------------------
+if ( ! tableExists( $dbh, 'blocking_history' ) ) {
+    $sql = "CREATE TABLE blocking_history (
+           blocking_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+         , host_id           INT UNSIGNED NOT NULL
+         , query_hash        CHAR( 16 ) NOT NULL
+                               COMMENT 'Hash of normalized query for deduplication'
+         , user              VARCHAR( 64 ) NOT NULL
+         , source_host       VARCHAR( 255 ) NOT NULL
+         , db_name           VARCHAR( 64 ) NULL DEFAULT NULL
+         , query_text        TEXT NOT NULL
+                               COMMENT 'Normalized query text (strings/numbers replaced to avoid sensitive data)'
+         , blocked_count     INT UNSIGNED NOT NULL DEFAULT 1
+                               COMMENT 'Times this query was seen blocking (not total executions)'
+         , total_blocked     INT UNSIGNED NOT NULL DEFAULT 1
+                               COMMENT 'Sum of blocked queries each time this was seen blocking'
+         , first_seen        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+         , last_seen         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                               ON UPDATE CURRENT_TIMESTAMP
+         , UNIQUE KEY ux_host_hash ( host_id, query_hash )
+         , KEY idx_last_seen ( last_seen )
+         , KEY idx_blocked_count ( blocked_count DESC )
+         , FOREIGN KEY fk_bh_host ( host_id ) REFERENCES host( host_id )
+                       ON DELETE CASCADE ON UPDATE CASCADE
+         ) ENGINE=InnoDB
+           COMMENT='Historical record of blocking queries seen for pattern analysis'" ;
+    if ( $dbh->query( $sql ) ) {
+        $body .= "<tr><td>blocking_history table</td><td>CREATED</td><td>Table created</td></tr>\n" ;
+        $results[] = "Created blocking_history table" ;
+    } else {
+        $body .= "<tr><td>blocking_history table</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to create blocking_history table: " . $dbh->error ;
+    }
+} else {
+    $body .= "<tr><td>blocking_history table</td><td>OK</td><td>-</td></tr>\n" ;
+}
+
 $body .= "</tbody>\n</table>\n" ;
 
 // ///////////////////////////////////////////////////////////////////////////
