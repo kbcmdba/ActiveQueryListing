@@ -301,6 +301,7 @@ function myCallback( i, item ) {
         var errorServer = item[ 'hostname' ] ;
         var errorHostId = item[ 'hostId' ] ;
         var errorHostGroups = item[ 'hostGroups' ] || [] ;
+        var errorMaintenanceInfo = item[ 'maintenanceInfo' ] ;
 
         // Track for klaxon silencing even on errors
         if ( typeof window.hostIdMap === 'undefined' ) { window.hostIdMap = {} ; }
@@ -308,11 +309,28 @@ function myCallback( i, item ) {
         if ( typeof window.hostsInMaintenance === 'undefined' ) { window.hostsInMaintenance = {} ; }
         window.hostIdMap[ errorServer ] = errorHostId ;
         window.hostGroupMap[ errorServer ] = errorHostGroups ;
-        window.hostsInMaintenance[ errorServer ] = false ; // errors aren't in maintenance by default
+        window.hostsInMaintenance[ errorServer ] = ( errorMaintenanceInfo && errorMaintenanceInfo.active ) ? true : false ;
 
         // Check recovery - error state resets healthy count
         if ( errorHostId ) {
             checkHostRecovery( errorHostId, 9, true ) ; // isError = true resets count
+        }
+
+        // Build maintenance indicator for error row (if in maintenance)
+        var errorMaintenanceIndicator = '' ;
+        if ( errorMaintenanceInfo && errorMaintenanceInfo.active ) {
+            var mwType = ( errorMaintenanceInfo.windowType === 'adhoc' ) ? 'Ad-hoc' : 'Scheduled' ;
+            var mwExpiry = errorMaintenanceInfo.expiresAt || ( errorMaintenanceInfo.timeWindow || 'per schedule' ) ;
+            var mwDesc = errorMaintenanceInfo.description || '' ;
+            var mwTarget = ( errorMaintenanceInfo.targetType === 'group' )
+                ? 'via group: ' + errorMaintenanceInfo.groupName
+                : 'direct' ;
+            var tooltipText = mwType + ' maintenance (' + mwTarget + ')' ;
+            if ( mwExpiry ) { tooltipText += '\\nExpires: ' + mwExpiry ; }
+            if ( mwDesc ) { tooltipText += '\\nNote: ' + mwDesc ; }
+            var icon = ( errorMaintenanceInfo.windowType === 'adhoc' ) ? '&#128263;' : '&#128295;' ;
+            errorMaintenanceIndicator = ' <span class="maintenanceIndicator ' + errorMaintenanceInfo.windowType
+                + '" title="' + tooltipText.replace( /"/g, '&quot;' ) + '">' + icon + '</span>' ;
         }
 
         // Build silence icons for error row
@@ -322,7 +340,7 @@ function myCallback( i, item ) {
                               + ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + errorHostId + '" title="Manage maintenance windows" class="maintenance-link">⚙</a>' ;
         }
 
-        var myRow = "<tr data-hostname=\"" + errorServer + "\"><td class=\"errorNotice\">" + errorServer + errorSilenceIcons
+        var myRow = "<tr data-hostname=\"" + errorServer + "\"><td class=\"errorNotice\">" + errorServer + errorMaintenanceIndicator + errorSilenceIcons
                   + "</td><td class=\"errorNotice\">9</td><td colspan=\"13\" class=\"errorNotice\">" + item[ 'error_output' ]
                   + "</td></tr>" ;
         $(myRow).prependTo( "#nwprocesstbodyid" ) ;

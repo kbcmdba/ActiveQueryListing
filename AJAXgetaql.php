@@ -361,8 +361,23 @@ if ( $hostId !== null ) {
     }
 }
 
+// Check maintenance window status early (needed for both success and error responses)
+$maintenanceInfo = null ;
+$config = new Config() ;
+if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {
+    try {
+        $aqlDbc = new DBConnection() ;
+        $aqlDbh = $aqlDbc->getConnection() ;
+        $maintenanceInfo = MaintenanceWindow::getActiveWindowForHost( $hostId, $aqlDbh ) ;
+        if ( $maintenanceInfo === null ) {
+            $maintenanceInfo = MaintenanceWindow::getActiveWindowForHostViaGroup( $hostId, $aqlDbh ) ;
+        }
+    } catch ( \Exception $e ) {
+        // Silently ignore - don't break AQL if maintenance check fails
+    }
+}
+
 try {
-    $config        = new Config() ;
     $roQueryPart   = $config->getRoQueryPart() ;
     $debug         = Tools::param('debug') === "1" ;
     $debugLocks    = Tools::param('debugLocks') === "1" ;
@@ -1157,28 +1172,12 @@ catch (\Exception $e) {
         'hostname' => $hostname,
         'hostId' => $hostId,
         'hostGroups' => $hostGroups,
-        'error_output' => $e->getMessage()
+        'error_output' => $e->getMessage(),
+        'maintenanceInfo' => $maintenanceInfo
     ]) ;
     exit(1) ;
 }
 $overviewData[ 'longest_running' ] = $longestRunning ;
-
-// Check if this host is in a maintenance window (if feature enabled)
-// Note: hostId and hostGroups are looked up at the top of the file (before try block)
-$maintenanceInfo = null ;
-$config = new Config() ;
-if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {
-    try {
-        $aqlDbc = new DBConnection() ;
-        $aqlDbh = $aqlDbc->getConnection() ;
-        $maintenanceInfo = MaintenanceWindow::getActiveWindowForHost( $hostId, $aqlDbh ) ;
-        if ( $maintenanceInfo === null ) {
-            $maintenanceInfo = MaintenanceWindow::getActiveWindowForHostViaGroup( $hostId, $aqlDbh ) ;
-        }
-    } catch ( \Exception $e ) {
-        // Silently ignore - don't break AQL if maintenance check fails
-    }
-}
 
 $output = [ 'hostname'        => $hostname
           , 'hostId'          => $hostId
