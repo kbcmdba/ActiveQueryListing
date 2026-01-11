@@ -349,6 +349,9 @@ function loadPage() {
     \$('input[name="refresh"], input[name="debug"]').on('focus change input', resetRefreshTimer);
     // Mute duration inputs and datetime picker
     \$('#muteDays, #muteHours, #muteMinutes, #muteUntilDateTime').on('focus change input', resetRefreshTimer);
+    // Navigation menu dropdowns - reset timer when opened or interacted with
+    \$('.navbar .dropdown').on('show.bs.dropdown hide.bs.dropdown', resetRefreshTimer);
+    \$('.navbar .dropdown-menu').on('click', 'a', resetRefreshTimer);
     refreshLog('Event listeners attached for refresh timer reset');
 });
 
