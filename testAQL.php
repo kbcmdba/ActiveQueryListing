@@ -240,7 +240,7 @@ if ( $test === 'config_validate' ) {
     }
 
     $body .= "<hr/>\n" ;
-    $body .= "<p style='color:lime;font-size:18px;'>&#10004; Configuration validation complete</p>\n" ;
+    $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; Configuration validation complete</p>\n" ;
 }
 
 if ( $test === 'smoke_test' ) {
@@ -321,7 +321,7 @@ if ( $test === 'smoke_test' ) {
     $body .= "<p>Once hosts are configured, use <a href='?test=blocking_setup'>Blocking Test</a> to verify lock detection works.</p>\n" ;
 
     $body .= "<hr/>\n" ;
-    $body .= "<p style='color:lime;font-size:18px;'>&#10004; Smoke test complete</p>\n" ;
+    $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; Smoke test complete</p>\n" ;
 }
 
 if ( $test === 'db_user_verify' ) {
@@ -621,9 +621,9 @@ function copyToClipboard(preId, btnId) {
 
     $body .= "<hr/>\n" ;
     if ( empty( $issues ) ) {
-        $body .= "<p style='color:lime;font-size:18px;'>&#10004; Database user verification complete - no issues found</p>\n" ;
+        $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; Database user verification complete - no issues found</p>\n" ;
     } else {
-        $body .= "<p style='color:yellow;font-size:18px;'>&#9888; Database user verification complete - " . count( $issues ) . " issue(s) found</p>\n" ;
+        $body .= "<p style='color:yellow;font-size:1.125rem;'>&#9888; Database user verification complete - " . count( $issues ) . " issue(s) found</p>\n" ;
     }
 }
 
@@ -723,9 +723,9 @@ if ( $test === 'schema_verify' ) {
 
         $body .= "<hr/>\n" ;
         if ( $allTablesExist ) {
-            $body .= "<p style='color:lime;font-size:18px;'>&#10004; Schema verification complete - all tables present</p>\n" ;
+            $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; Schema verification complete - all tables present</p>\n" ;
         } else {
-            $body .= "<p style='color:yellow;font-size:18px;'>&#9888; Schema verification complete - some tables missing (run <a href='deployDDL.php'>deployDDL.php</a>)</p>\n" ;
+            $body .= "<p style='color:yellow;font-size:1.125rem;'>&#9888; Schema verification complete - some tables missing (run <a href='deployDDL.php'>deployDDL.php</a>)</p>\n" ;
         }
 
     } catch ( \Exception $e ) {
@@ -826,10 +826,10 @@ if ( $test === 'deploy_ddl_verify' ) {
 
         $body .= "<hr/>\n" ;
         if ( $allTablesExist && $pendingMigrations === 0 ) {
-            $body .= "<p style='color:lime;font-size:18px;'>$passIcon deployDDL.php verification passed - schema is up to date</p>\n" ;
+            $body .= "<p style='color:lime;font-size:1.125rem;'>$passIcon deployDDL.php verification passed - schema is up to date</p>\n" ;
             $body .= "<p>Running <a href='deployDDL.php'>deployDDL.php</a> will report \"Schema is up to date. No changes needed.\"</p>\n" ;
         } else {
-            $body .= "<p style='color:yellow;font-size:18px;'>$warnIcon Schema changes pending</p>\n" ;
+            $body .= "<p style='color:yellow;font-size:1.125rem;'>$warnIcon Schema changes pending</p>\n" ;
             if ( !$allTablesExist ) {
                 $body .= "<p>Missing tables will be created when you run <a href='deployDDL.php'>deployDDL.php</a></p>\n" ;
             }
@@ -936,15 +936,15 @@ if ( $test === 'blocking_setup' ) {
 
         $body .= "<h4>Test Results</h4>\n" ;
         if ( $foundBlocker && $foundWaiter && $lockWaitDetected ) {
-            $body .= "<p style='color:lime;font-size:16px;'>$passIcon Blocking detection test PASSED!</p>\n" ;
+            $body .= "<p style='color:lime;font-size:2rem;'>$passIcon Blocking detection test PASSED!</p>\n" ;
             $body .= "<ul>\n" ;
             $body .= "<li>Session 1 (Thread $session1Id) is holding the lock</li>\n" ;
             $body .= "<li>Session 2 (Thread $session2Id) is waiting (state: <code>$waiterState</code>)</li>\n" ;
             $body .= "</ul>\n" ;
         } elseif ( $foundBlocker && $foundWaiter ) {
-            $body .= "<p style='color:yellow;font-size:16px;'>$warnIcon Sessions found but waiter state unclear: <code>$waiterState</code></p>\n" ;
+            $body .= "<p style='color:yellow;font-size:2rem;'>$warnIcon Sessions found but waiter state unclear: <code>$waiterState</code></p>\n" ;
         } else {
-            $body .= "<p style='color:red;font-size:16px;'>$failIcon Could not verify blocking state</p>\n" ;
+            $body .= "<p style='color:red;font-size:2rem;'>$failIcon Could not verify blocking state</p>\n" ;
             $body .= "<p>Blocker found: " . ( $foundBlocker ? 'Yes' : 'No' ) . ", Waiter found: " . ( $foundWaiter ? 'Yes' : 'No' ) . "</p>\n" ;
         }
 
@@ -1022,7 +1022,7 @@ if (typeof copyToClipboard !== 'function') {
     $body .= "<div class='code-box'>\n" ;
     $body .= "<p class='code-box-title'><strong>Original actions HTML:</strong></p>\n" ;
     $body .= "<button id='copy_btn_orig' class='copy-btn' onclick=\"copyToClipboard('pre_orig', 'copy_btn_orig')\">📋 Copy</button>\n" ;
-    $body .= "<pre id='pre_orig' style='font-size:11px;'>" . htmlspecialchars( $sampleActions ) . "</pre>\n" ;
+    $body .= "<pre id='pre_orig' style='font-size:1.5rem;'>" . htmlspecialchars( $sampleActions ) . "</pre>\n" ;
     $body .= "</div>\n" ;
 
     // Simulate the JavaScript regex replacement
@@ -1032,12 +1032,12 @@ if (typeof copyToClipboard !== 'function') {
         'fileIssue( $1, ' . $blockingCount . ' )',
         $sampleActions
     ) ;
-    $modified .= ' <span class="blockingIndicator" style="font-size:9px;">(blocking ' . $blockingCount . ')</span>' ;
+    $modified .= ' <span class="blockingIndicator" style="font-size:2rem;">(blocking ' . $blockingCount . ')</span>' ;
 
     $body .= "<div class='code-box'>\n" ;
     $body .= "<p class='code-box-title'><strong>After modifyActionsForBlocking() with blockingCount=5:</strong></p>\n" ;
     $body .= "<button id='copy_btn_mod' class='copy-btn' onclick=\"copyToClipboard('pre_mod', 'copy_btn_mod')\">📋 Copy</button>\n" ;
-    $body .= "<pre id='pre_mod' style='font-size:11px;'>" . htmlspecialchars( $modified ) . "</pre>\n" ;
+    $body .= "<pre id='pre_mod' style='font-size:1.5rem;'>" . htmlspecialchars( $modified ) . "</pre>\n" ;
     $body .= "</div>\n" ;
 
     $body .= "<div class='code-box'>\n" ;
@@ -1052,7 +1052,7 @@ if (typeof copyToClipboard !== 'function') {
     $body .= "<tr><td>Description includes</td><td>*Blocking Count at time issue was filed:* 5</td></tr>\n" ;
     $body .= "</table>\n" ;
 
-    $body .= "<p style='color:lime;font-size:18px;'>&#10004; JavaScript regex replacement verified</p>\n" ;
+    $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; JavaScript regex replacement verified</p>\n" ;
 }
 
 if ( $test === 'jira_test' ) {
@@ -1216,7 +1216,7 @@ if ( $test === 'maintenance_windows' ) {
 
                 // Final status
                 $inMaintenance = ( $directResult !== null || $groupResult !== null ) ;
-                $body .= "<p style='font-size:16px;'><strong>Final Status:</strong> " ;
+                $body .= "<p style='font-size:2rem;'><strong>Final Status:</strong> " ;
                 $body .= $inMaintenance ? "<span style='color:lime;'>IN MAINTENANCE</span>" : "<span style='color:yellow;'>NOT IN MAINTENANCE</span>" ;
                 $body .= "</p>\n" ;
             }

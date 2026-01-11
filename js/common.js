@@ -26,6 +26,118 @@ const debugLocks = urlParams.get('debugLocks');
 const debugString = ( debug == '1' ? '&debug=1' : '' ) + ( debugLocks == '1' ? '&debugLocks=1' : '' ) ;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Theme Toggle Support
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Get the current theme from URL param or cookie
+ * URL param takes precedence over cookie
+ * @returns {string} 'dark' or 'light'
+ */
+function getTheme() {
+    // Check URL param first
+    const urlTheme = urlParams.get('theme');
+    if (urlTheme === 'light' || urlTheme === 'dark') {
+        // Sync to cookie
+        setThemeCookie(urlTheme);
+        return urlTheme;
+    }
+
+    // Check cookie
+    const cookieTheme = getThemeCookie();
+    if (cookieTheme === 'light' || cookieTheme === 'dark') {
+        return cookieTheme;
+    }
+
+    // Default to dark
+    return 'dark';
+}
+
+/**
+ * Get theme from cookie
+ * @returns {string|null}
+ */
+function getThemeCookie() {
+    const match = document.cookie.match(/(?:^|; )aql_theme=([^;]*)/);
+    return match ? match[1] : null;
+}
+
+/**
+ * Set theme cookie (expires in 1 year)
+ * @param {string} theme - 'dark' or 'light'
+ */
+function setThemeCookie(theme) {
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    document.cookie = 'aql_theme=' + theme + '; expires=' + expires.toUTCString() + '; path=/; SameSite=Lax';
+}
+
+/**
+ * Apply theme to the page
+ * @param {string} theme - 'dark' or 'light'
+ */
+function applyTheme(theme) {
+    if (theme === 'light') {
+        document.body.classList.add('theme-light');
+    } else {
+        document.body.classList.remove('theme-light');
+    }
+    // Update toggle button if it exists
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeLabel = document.getElementById('themeLabel');
+    if (toggleBtn) {
+        toggleBtn.title = theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
+    }
+    if (themeIcon) {
+        themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+    }
+    if (themeLabel) {
+        themeLabel.textContent = theme === 'light' ? 'Dark Mode' : 'Light Mode';
+    }
+}
+
+/**
+ * Toggle between light and dark themes
+ */
+function toggleTheme() {
+    const currentTheme = document.body.classList.contains('theme-light') ? 'light' : 'dark';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setThemeCookie(newTheme);
+    applyTheme(newTheme);
+    // Redraw charts if they exist
+    if (typeof redrawCharts === 'function') {
+        redrawCharts();
+    }
+}
+
+/**
+ * Get chart colors based on current theme
+ * @returns {object} Chart color configuration
+ */
+function getChartColors() {
+    const isLight = document.body.classList.contains('theme-light');
+    return {
+        backgroundColor: isLight ? '#f5f5f5' : '#333333',
+        titleColor: isLight ? '#222222' : '#ffffff',
+        legendTextColor: isLight ? '#222222' : '#ffffff'
+    };
+}
+
+// Apply theme on page load (before DOMContentLoaded to prevent flash)
+(function() {
+    const theme = getTheme();
+    // Apply immediately if body exists, otherwise wait
+    if (document.body) {
+        applyTheme(theme);
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            applyTheme(theme);
+        });
+    }
+})();
+
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * Make sure that the passed value is valid for the proposed condition. If
@@ -704,7 +816,7 @@ function modifyActionsForBlocking( actionsHtml, blockInfo ) {
         'fileIssue( $1, ' + blockingCount + ' )'
     ) ;
     // Add visual indicator after the buttons
-    modified += ' <span class="blockingIndicator" style="font-size:9px;">(blocking ' + blockingCount + ')</span>' ;
+    modified += ' <span class="blockingIndicator" style="font-size:2rem;">(blocking ' + blockingCount + ')</span>' ;
     return modified ;
 }
 
@@ -775,6 +887,7 @@ function makeHref( item ) {
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByLevel() {
+    var chartColors = getChartColors();
     var data = google.visualization.arrayToDataTable(
              [ [ 'Label', 'Count' ]
              , [ 'Error (' + base_counts['Error'] + ')', base_counts['Error'] ]
@@ -786,7 +899,9 @@ function drawPieChartByLevel() {
              ] ) ;
     var options = {
                   title : 'Level Counts'
-                , backgroundColor: { fill: '#333333' }
+                , backgroundColor: chartColors.backgroundColor
+                , titleTextStyle: { color: chartColors.titleColor }
+                , legendTextStyle: { color: chartColors.legendTextColor }
                 , is3D : true
                 , slices : { 0 : { color : 'red'        }
                            , 1 : { color : 'orange'     }
@@ -804,6 +919,7 @@ function drawPieChartByLevel() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByHost() {
+    var chartColors = getChartColors();
     Object
         .keys( host_count )
         .forEach( function(item) {
@@ -815,7 +931,9 @@ function drawPieChartByHost() {
     var options = {
             title : 'Queries by Host'
           , is3D : true
-          , backgroundColor: '#333333'
+          , backgroundColor: chartColors.backgroundColor
+          , titleTextStyle: { color: chartColors.titleColor }
+          , legendTextStyle: { color: chartColors.legendTextColor }
           } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByHost'));
@@ -829,6 +947,7 @@ function drawPieChartByHost() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByDB() {
+    var chartColors = getChartColors();
     Object
           .keys( db_count )
           .forEach( function(item) {
@@ -838,7 +957,9 @@ function drawPieChartByDB() {
     var options = {
             title : 'Queries by DB'
           , is3D : true
-          , backgroundColor: '#333333'
+          , backgroundColor: chartColors.backgroundColor
+          , titleTextStyle: { color: chartColors.titleColor }
+          , legendTextStyle: { color: chartColors.legendTextColor }
           } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByDB'));
@@ -848,6 +969,7 @@ function drawPieChartByDB() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByDupeState() {
+    var chartColors = getChartColors();
     var dupe = base_counts['Duplicate'] ;
     var similar = base_counts['Similar'] ;
     var unique = base_counts['Unique'] ;
@@ -867,7 +989,9 @@ function drawPieChartByDupeState() {
                           , 2 : { color : 'silver' }
                           , 3 : { color : 'white'  }
                           }
-               , backgroundColor: '#333333'
+               , backgroundColor: chartColors.backgroundColor
+               , titleTextStyle: { color: chartColors.titleColor }
+               , legendTextStyle: { color: chartColors.legendTextColor }
                } ;
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByDupeState'));
@@ -877,6 +1001,7 @@ function drawPieChartByDupeState() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function drawPieChartByReadWrite() {
+    var chartColors = getChartColors();
     var data = google.visualization.arrayToDataTable(
             [ [ 'Label', 'Count' ]
             , [ 'Read-Only (' + base_counts['RO'] + ')', base_counts['RO'] ]
@@ -887,8 +1012,11 @@ function drawPieChartByReadWrite() {
                , is3D : true
                , slices : { 0 : { color : 'cyan'   }
                           , 1 : { color : 'yellow' }
-               , backgroundColor: '#333333'
-                          } };
+                          }
+               , backgroundColor: chartColors.backgroundColor
+               , titleTextStyle: { color: chartColors.titleColor }
+               , legendTextStyle: { color: chartColors.legendTextColor }
+               };
     var chart = new google.visualization.PieChart(document
               .getElementById('pieChartByReadWrite'));
     chart.draw(data, options);
@@ -910,6 +1038,33 @@ function displayCharts() {
     google.charts.setOnLoadCallback(drawPieChartByDB);
     google.charts.setOnLoadCallback(drawPieChartByReadWrite);
     google.charts.setOnLoadCallback(drawPieChartByDupeState);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Redraw all charts with current theme colors
+ * Called when theme is toggled
+ */
+function redrawCharts() {
+    // Only redraw if Google Charts is loaded and chart elements exist
+    if (typeof google !== 'undefined' && google.visualization) {
+        if (document.getElementById('pieChartByLevel')) {
+            drawPieChartByLevel();
+        }
+        if (document.getElementById('pieChartByHost')) {
+            drawPieChartByHost();
+        }
+        if (document.getElementById('pieChartByDB')) {
+            drawPieChartByDB();
+        }
+        if (document.getElementById('pieChartByReadWrite')) {
+            drawPieChartByReadWrite();
+        }
+        if (document.getElementById('pieChartByDupeState')) {
+            drawPieChartByDupeState();
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -651,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <a id="graphs"></a>
 <table id="top" width="100%" border="1">
   <tr>
-    <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1><div style="font-size: 10px; color: #888;">$aqlVersion</div></td>
+    <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1><div style="font-size: 1.5rem; color: #888;">$aqlVersion</div></td>
     <td id="updatedAt">Page last updated at $now</td>
     <td class="headerTableTd">
       <center>
@@ -677,14 +677,14 @@ document.addEventListener('DOMContentLoaded', function() {
             <button onclick="applyQuickMute('indef'); return false;" title="Mute indefinitely">∞</button>
           </nobr>
           <br />
-          <nobr style="font-size: 11px;">
+          <nobr style="font-size: 1.5rem;">
             <input type="number" id="muteDays" value="0" min="0" max="90" style="width: 40px;" title="Days"/>d
             <input type="number" id="muteHours" value="0" min="0" max="23" style="width: 40px;" title="Hours"/>h
             <input type="number" id="muteMinutes" value="0" min="0" max="59" style="width: 40px;" title="Minutes"/>m
             <button onclick="applyCustomMute(); return false;">Set</button>
           </nobr>
           <br />
-          <nobr style="font-size: 11px;">
+          <nobr style="font-size: 1.5rem;">
             Until: <input type="datetime-local" id="muteUntilDateTime" step="60" style="width: 150px;"/>
             <button onclick="applyDateTimeMute(); return false;">Set</button>
           </nobr>
@@ -807,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <p>
             <label>Duration (minutes):</label><br/>
             <input type="number" id="silenceDuration" name="duration" min="1" max="10080" value="60" style="width:100px" />
-            <span style="color:#888; font-size:11px;">(max 7 days)</span>
+            <span style="color:#888; font-size:0.75rem;">(max 7 days)</span>
           </p>
           <p>
             <label>Description (optional):</label><br/>

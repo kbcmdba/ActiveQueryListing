@@ -389,6 +389,12 @@ HTML
           <li><a href="testAQL.php">Test Harness</a></li>
         </ul>
       </li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Settings <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li><a href="#" id="themeToggleBtn" onclick="toggleTheme(); return false;" title="Switch to Light Mode"><span id="themeIcon">☀️</span> <span id="themeLabel">Light Mode</span></a></li>
+        </ul>
+      </li>
     </ul>
   </div>
 </nav>

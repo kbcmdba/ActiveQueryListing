@@ -21,16 +21,118 @@
  *
  */
 
+/* ========== Theme Variables (Dark Mode Default) ========== */
+:root {
+    /* Background colors */
+    --bg-body: #333;
+    --bg-secondary: #222;
+    --bg-tertiary: #444;
+    --bg-header: #555;
+    --bg-darkest: black;
+
+    /* Text colors */
+    --text-primary: white;
+    --text-secondary: #ccc;
+    --text-muted: silver;
+    --text-dimmed: #888;
+
+    /* Border colors */
+    --border-light: #666;
+    --border-medium: #555;
+    --border-dark: #444;
+
+    /* Link color */
+    --link-color: #0254EB;
+
+    /* Form control colors */
+    --input-bg: #333;
+    --input-text: white;
+    --input-border: #555;
+
+    /* Navbar colors */
+    --navbar-bg: #222;
+    --navbar-border: #080808;
+    --navbar-brand: #888;
+    --navbar-link: #ccc;
+    --navbar-hover-bg: #333;
+
+    /* Level 1 (normal) row colors - theme dependent */
+    --level1-bg: #333;
+    --level1-text: white;
+    --level1-alt-bg: #222;
+    --level1-alt-text: #ccc;
+}
+
+/* ========== Light Theme Overrides ========== */
+.theme-light {
+    /* Background colors */
+    --bg-body: #f5f5f5;
+    --bg-secondary: #e8e8e8;
+    --bg-tertiary: #ddd;
+    --bg-header: #ccc;
+    --bg-darkest: #eee;
+
+    /* Text colors */
+    --text-primary: #222;
+    --text-secondary: #444;
+    --text-muted: #666;
+    --text-dimmed: #888;
+
+    /* Border colors */
+    --border-light: #bbb;
+    --border-medium: #aaa;
+    --border-dark: #999;
+
+    /* Link color */
+    --link-color: #0254EB;
+
+    /* Form control colors */
+    --input-bg: white;
+    --input-text: #222;
+    --input-border: #aaa;
+
+    /* Navbar colors */
+    --navbar-bg: #ddd;
+    --navbar-border: #ccc;
+    --navbar-brand: #666;
+    --navbar-link: #444;
+    --navbar-hover-bg: #ccc;
+
+    /* Level 1 (normal) row colors - theme dependent */
+    --level1-bg: #f5f5f5;
+    --level1-text: #222;
+    --level1-alt-bg: #e8e8e8;
+    --level1-alt-text: #444;
+}
+
+/* ========== Base Styles ========== */
 body {
-    background-color: #333 !important ;
-    color: white !important ;
-    padding-top: 50px ;
+    background-color: var(--bg-body) !important ;
+    color: var(--text-primary) !important ;
+    padding-top: 12.5rem ;
+    font-size: 2.5rem ;
+}
+
+p, li, span, div, label {
+    font-size: 2.5rem ;
+}
+
+h1 { font-size: 5rem ; }
+h2 { font-size: 4rem ; }
+h3 { font-size: 3.5rem ; }
+h4 { font-size: 3rem ; }
+h5 { font-size: 2.75rem ; }
+h6 { font-size: 2.5rem ; }
+
+pre, code {
+    font-size: 2.25rem ;
 }
 
 .errorNotice {
-	background-color: red ;
-	color: white ;
-	font: 20pt bold ;
+	background-color: red !important ;
+	color: white !important ;
+	font-size: 3rem !important ;
+	font-weight: bold !important ;
 	text-align: center ;
     /* 1-frame noop animation purely to raise an event */
     animation: klaxon-ping 0.001s linear 1;
@@ -39,10 +141,17 @@ body {
 @keyframes klaxon-ping { from { opacity: 1 } to { opacity:1 } }
 
 .error,
-.error td,
+.error td {
+  background-color: red !important ;
+  color: white !important ;
+  font-size: 3rem !important ;
+  font-weight: bold !important ;
+}
+
 .legendError {
   background-color: red !important ;
   color: white !important ;
+  font-weight: bold !important ;
 }
 
 .level4,
@@ -50,6 +159,7 @@ body {
 .legendLevel4 {
   background-color: orange !important ;
   color: black !important ;
+  font-size: 5.5rem ;
 }
 
 .level3,
@@ -69,8 +179,8 @@ body {
 .level1,
 .level1 td,
 .legendLevel1 {
-  background-color: #333 !important ;
-  color: white !important ;
+  background-color: var(--level1-bg) !important ;
+  color: var(--level1-text) !important ;
 }
 
 .level0,
@@ -92,8 +202,8 @@ body {
 .level1-alt,
 .level1-alt td,
 .legendLevel1Alt {
-  background-color: #222 !important ;
-  color: #ccc !important ;
+  background-color: var(--level1-alt-bg) !important ;
+  color: var(--level1-alt-text) !important ;
 }
 
 .level2-alt,
@@ -126,13 +236,13 @@ body {
 
 /* Boolean column styling for manageData tables */
 .bool-yes {
-  background-color: #333 !important ;
+  background-color: var(--bg-body) !important ;
   color: lightgreen !important ;
   text-align: center ;
 }
 
 .bool-no {
-  background-color: #333 !important ;
+  background-color: var(--bg-body) !important ;
   color: yellow !important ;
   text-align: center ;
 }
@@ -150,48 +260,54 @@ body {
 }
 
 th {
-  background-color: #555 ;
-  color: white ;
+  background-color: var(--bg-header) ;
+  color: var(--text-primary) ;
   text-align: center !important ;
-  padding: 2px !important ;
+  padding: 0.5rem !important ;
+  font-size: 2.5rem ;
 }
 
 td {
-  padding: 2px !important ;
+  padding: 0.5rem !important ;
+  font-size: 2.5rem ;
 }
 
 .aql-listing tbody tr:nth-child(odd) {
-  background-color: black ;
-  color: white ;
+  background-color: var(--bg-darkest) ;
+  color: var(--text-primary) ;
 }
 
 .aql-listing tbody tr:nth-child(even) {
-  background-color: #222 ;
-  color: white ;
+  background-color: var(--bg-secondary) ;
+  color: var(--text-primary) ;
 }
 
 select {
-  background-color: #333 !important ;
-  color: white !important ;
+  background-color: var(--input-bg) !important ;
+  color: var(--input-text) !important ;
+  font-size: 2.5rem ;
 }
 
 input {
-  background-color: #333 !important ;
-  color: white !important ;
+  background-color: var(--input-bg) !important ;
+  color: var(--input-text) !important ;
+  font-size: 2.5rem ;
 }
 
 textarea {
-  background-color: #333 !important ;
-  color: white !important ;
+  background-color: var(--input-bg) !important ;
+  color: var(--input-text) !important ;
+  font-size: 2.5rem ;
 }
 
 button {
-  background-color: #333 !important ;
-  color: white !important ;
+  background-color: var(--input-bg) !important ;
+  color: var(--input-text) !important ;
+  font-size: 2.5rem ;
 }
 
 .comment {
-	margin: 2px ;
+	margin: 0.5rem ;
     color: #444 ;
 	background-color: #f0f0f0 ;
 }
@@ -206,11 +322,12 @@ a.morelink {
 }
 
 a {
-	color: #0254EB ;
+	color: var(--link-color) ;
+	font-size: inherit ;
 }
 
 a:visited {
-	color: #0254EB ;
+	color: var(--link-color) ;
 }
 
 .headerTableTd {
@@ -219,22 +336,22 @@ a:visited {
 }
 
 .chartImage {
-    width:275px ;
-    height:250px ;
+    width: 44rem ;
+    height: 40rem ;
 }
 
 #updatedAt {
-	background-color: #333 ;
-	color: silver ;
-	font-size: 8pt ;
+	background-color: var(--bg-body) ;
+	color: var(--text-muted) ;
+	font-size: 2.668rem ;
 	vertical-align: middle ;
 	text-align: center ;
 }
 
 .Blank,
 .Blank td {
-	color: white !important ;
-	background-color: #333 !important ;
+	color: var(--text-primary) !important ;
+	background-color: var(--bg-body) !important ;
 }
 
 .Unique,
@@ -257,15 +374,15 @@ a:visited {
 
 /* Lock status indicators - row borders for process list */
 tr.blocked {
-    border-left: 4px solid hotpink !important;
+    border-left: 8px solid hotpink !important;
 }
 
 tr.blocking {
-    border-left: 4px solid red !important;
+    border-left: 8px solid red !important;
 }
 
 tr.blocked.blocking {
-    border-left: 4px solid purple !important;
+    border-left: 8px solid purple !important;
 }
 
 /* Lock status indicators - cell backgrounds for overview tables */
@@ -282,83 +399,83 @@ td.blocking {
 .blockedIndicator {
     background-color: hotpink;
     color: black;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 10px;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 2.5rem;
     font-weight: bold;
     cursor: help;
     display: inline-block;
-    margin: 1px;
+    margin: 0.25rem;
 }
 
 .blockingIndicator {
     background-color: red;
     color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 10px;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 2.5rem;
     font-weight: bold;
     cursor: help;
     display: inline-block;
-    margin: 1px;
+    margin: 0.25rem;
 }
 
 /* Test harness code box styling */
 .code-box {
-    background: #444;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid #666;
+    background: var(--bg-tertiary);
+    padding: 2.5rem;
+    margin: 2.5rem 0;
+    border-radius: 1.25rem;
+    border: 1px solid var(--border-light);
     position: relative;
 }
 
 .code-box-title {
-    color: #fff;
-    margin: 0 0 10px 0;
+    color: var(--text-primary);
+    margin: 0 0 2.5rem 0;
 }
 
 .code-box pre {
-    background: #222;
-    padding: 10px;
+    background: var(--bg-secondary);
+    padding: 2.5rem;
     overflow-x: auto;
     color: #0f0;
-    border: 1px solid #555;
-    margin-top: 5px;
+    border: 1px solid var(--border-medium);
+    margin-top: 1.25rem;
 }
 
 .copy-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #555;
-    color: #fff;
-    border: 1px solid #777;
-    border-radius: 3px;
-    padding: 4px 8px;
+    top: 2.5rem;
+    right: 2.5rem;
+    background: var(--bg-header);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 0.75rem;
+    padding: 1rem 2rem;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 3rem;
 }
 
 .copy-btn:hover {
-    background: #666;
+    background: var(--border-light);
 }
 
 /* TableSorter sort indicators */
 .tablesorter th.tablesorter-header {
     cursor: pointer;
     position: relative;
-    padding-right: 18px !important;
+    padding-right: 4.5rem !important;
 }
 
 .tablesorter th.tablesorter-header::after {
     content: '●';
     position: absolute;
-    right: 4px;
+    right: 1rem;
     top: 50%;
     transform: translateY(-50%);
     opacity: 0.4;
-    font-size: 8px;
+    font-size: 2rem;
 }
 
 .tablesorter th.tablesorter-headerAsc::after {
@@ -375,60 +492,70 @@ td.blocking {
 
 /* Sticky Navigation Bar */
 .aql-navbar {
-    background-color: #222 !important;
-    border-color: #080808 !important;
-    min-height: 40px !important;
+    background-color: var(--navbar-bg) !important;
+    border-color: var(--navbar-border) !important;
+    min-height: 10rem !important;
     margin-bottom: 0 !important;
 }
 
 .aql-navbar .navbar-brand {
-    color: #888 !important;
-    font-size: 12px;
-    padding: 10px 15px;
+    color: var(--navbar-brand) !important;
+    font-size: 3rem;
+    padding: 2.5rem 3.75rem;
 }
 
 .aql-navbar .nav > li > a {
-    color: #ccc !important;
-    padding: 10px 15px;
+    color: var(--navbar-link) !important;
+    padding: 2.5rem 3.75rem;
 }
 
 .aql-navbar .nav > li > a:hover,
 .aql-navbar .nav > li > a:focus {
-    color: white !important;
-    background-color: #333 !important;
+    color: var(--text-primary) !important;
+    background-color: var(--navbar-hover-bg) !important;
 }
 
 .aql-navbar .nav .open > a,
 .aql-navbar .nav .open > a:hover,
 .aql-navbar .nav .open > a:focus {
-    background-color: #333 !important;
-    color: white !important;
+    background-color: var(--navbar-hover-bg) !important;
+    color: var(--text-primary) !important;
 }
 
 .aql-navbar .dropdown-menu {
-    background-color: #333;
-    border: 1px solid #444;
+    background-color: var(--bg-body);
+    border: 1px solid var(--border-dark);
 }
 
 .aql-navbar .dropdown-menu > li > a {
-    color: #ccc;
+    color: var(--text-secondary);
+    font-size: 2.5rem;
 }
 
 .aql-navbar .dropdown-menu > li > a:hover,
 .aql-navbar .dropdown-menu > li > a:focus {
-    background-color: #444;
-    color: white;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 
 .aql-navbar .dropdown-menu .divider {
-    background-color: #444;
+    background-color: var(--border-dark);
 }
 
-/* Maintenance Window Indicators */
+/* Theme Toggle in Settings Menu */
+#themeToggleBtn {
+    cursor: pointer;
+}
+
+#themeIcon {
+    font-size: 4rem;
+}
+
+/* Maintenance Window Indicators - keep these sizes stable */
 .maintenanceIndicator {
-    margin-left: 5px;
+    margin-left: 1.25rem;
     cursor: help;
-    font-size: 20px;
+    font-size: 2.5rem;
 }
 
 .maintenanceIndicator.adhoc {
@@ -444,15 +571,15 @@ td.blocking {
 }
 
 .in-maintenance td:first-child {
-    border-left: 3px solid #ffcc00;
+    border-left: 6px solid #ffcc00;
 }
 
-/* Quick management links (silence/gear icons) */
+/* Quick management links (silence/gear icons) - keep these sizes stable */
 .silence-link,
 .maintenance-link {
     text-decoration: none;
-    margin-left: 3px;
-    font-size: 12px;
+    margin-left: 0.75rem;
+    font-size: 2.5rem;
     opacity: 0.6;
 }
 
@@ -461,62 +588,62 @@ td.blocking {
     opacity: 1;
 }
 
-/* Silence Modal - Dark Theme */
+/* Silence Modal */
 #silenceModal .modal-content {
-    background-color: #333;
-    color: #ccc;
-    border: 1px solid #444;
+    background-color: var(--bg-body);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-dark);
 }
 
 #silenceModal .modal-header {
-    background-color: #222;
-    border-bottom: 1px solid #444;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-dark);
 }
 
 #silenceModal .modal-header h4 {
-    color: #fff;
+    color: var(--text-primary);
 }
 
 #silenceModal .modal-header .close {
-    color: #ccc;
+    color: var(--text-secondary);
     opacity: 0.8;
 }
 
 #silenceModal .modal-header .close:hover {
-    color: #fff;
+    color: var(--text-primary);
     opacity: 1;
 }
 
 #silenceModal .modal-body {
-    background-color: #333;
+    background-color: var(--bg-body);
 }
 
 #silenceModal .modal-body label {
-    color: #ccc;
+    color: var(--text-secondary);
 }
 
 #silenceModal .modal-footer {
-    background-color: #222;
-    border-top: 1px solid #444;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-dark);
 }
 
 #silenceModal input[type="text"],
 #silenceModal input[type="number"] {
-    background-color: #444;
-    color: #fff;
-    border: 1px solid #555;
-    padding: 5px 8px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-medium);
+    padding: 1.25rem 2rem;
 }
 
 #silenceModal .btn-default {
-    background-color: #444;
-    color: #ccc;
-    border-color: #555;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-color: var(--border-medium);
 }
 
 #silenceModal .btn-default:hover {
-    background-color: #555;
-    color: #fff;
+    background-color: var(--bg-header);
+    color: var(--text-primary);
 }
 
 #silenceModal .btn-primary {
@@ -527,42 +654,42 @@ td.blocking {
 /* Local Silences Panel */
 .local-silences-container {
     display: none;
-    margin-top: 10px;
-    padding: 8px;
-    background: #444;
-    border: 1px solid #666;
-    border-radius: 4px;
+    margin-top: 2.5rem;
+    padding: 2rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: 1rem;
     text-align: left;
-    font-size: 11px;
-    max-width: 280px;
+    font-size: 2.75rem;
+    max-width: 70rem;
 }
 
 .local-silences-header {
-    margin-bottom: 5px;
+    margin-bottom: 1.25rem;
     color: #ffcc00;
     font-weight: bold;
 }
 
 .local-silences-clear-all {
     float: right;
-    font-size: 10px;
-    color: #ccc;
+    font-size: 2.5rem;
+    color: var(--text-secondary);
 }
 
 .local-silences-clear-all:hover {
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .local-silences-list {
-    max-height: 150px;
+    max-height: 37.5rem;
     overflow-y: auto;
 }
 
 .local-silence-item {
-    margin: 3px 0;
-    padding: 2px 6px;
-    background: #555;
-    border-radius: 3px;
+    margin: 0.75rem 0;
+    padding: 0.5rem 1.5rem;
+    background: var(--bg-header);
+    border-radius: 0.75rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -573,7 +700,7 @@ td.blocking {
 }
 
 .local-silence-name {
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .local-silence-item.group .local-silence-name {
@@ -581,16 +708,16 @@ td.blocking {
 }
 
 .local-silence-expiry {
-    color: #888;
-    font-size: 10px;
-    margin-left: 5px;
+    color: var(--text-dimmed);
+    font-size: 2.5rem;
+    margin-left: 1.25rem;
 }
 
 .local-silence-remove {
     color: #f88;
     text-decoration: none;
     font-weight: bold;
-    padding: 0 4px;
+    padding: 0 1rem;
 }
 
 .local-silence-remove:hover {
@@ -598,61 +725,61 @@ td.blocking {
 }
 
 .local-silences-empty {
-    color: #888;
+    color: var(--text-dimmed);
     font-style: italic;
 }
 
 .local-silence-recovered {
-    margin: 3px 0;
-    padding: 4px 6px;
+    margin: 0.75rem 0;
+    padding: 1rem 1.5rem;
     background: #354535;
-    border-radius: 3px;
+    border-radius: 0.75rem;
     color: #8f8;
-    font-size: 10px;
+    font-size: 2.5rem;
 }
 
 .local-silence-auto-badge {
-    font-size: 9px;
+    font-size: 2.25rem;
     color: #8cf;
-    margin-left: 4px;
+    margin-left: 1rem;
 }
 
 /* Auto-recover options in silence modal */
 .silence-auto-recover-options {
-    margin-top: 8px;
-    padding: 8px;
-    background: #3a3a3a;
-    border-radius: 4px;
+    margin-top: 2rem;
+    padding: 2rem;
+    background: var(--bg-tertiary);
+    border-radius: 1rem;
     display: none;
 }
 
 .silence-auto-recover-options label {
     display: block;
-    margin: 4px 0;
+    margin: 1rem 0;
     font-weight: normal;
 }
 
 .silence-auto-recover-options select {
-    margin-left: 10px;
+    margin-left: 2.5rem;
 }
 
 /* Alert Debug Box */
 .alert-debug-box {
-    background: #222;
-    color: #ccc;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
     border: 2px solid #0f0;
-    border-radius: 5px;
-    padding: 12px;
-    margin: 10px 0;
+    border-radius: 1.25rem;
+    padding: 3rem;
+    margin: 2.5rem 0;
     font-family: monospace;
-    font-size: 12px;
+    font-size: 3rem;
 }
 
 .alert-debug-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 2rem;
 }
 
 .alert-debug-title {
@@ -661,31 +788,33 @@ td.blocking {
 }
 
 .alert-debug-btn {
-    background: #555;
-    color: #fff;
-    border: 1px solid #777;
-    border-radius: 3px;
-    padding: 2px 8px;
+    background: var(--bg-header);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 0.75rem;
+    padding: 0.5rem 2rem;
     cursor: pointer;
-    margin-left: 5px;
+    margin-left: 1.25rem;
 }
 
 .alert-debug-btn:hover {
-    background: #666;
+    background: var(--border-light);
 }
 
 /* Active Maintenance Windows Panel */
 .maintenance-windows-panel {
-    margin-bottom: 15px;
-    padding: 10px;
-    background-color: #444;
-    border: 1px solid #666;
-    border-radius: 5px;
+    margin-bottom: 3.75rem;
+    padding: 2.5rem;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: 1.25rem;
 }
 
 .maintenance-windows-panel h4 {
     margin-top: 0;
-    color: #ffcc00;
+    color: var(--text-primary);
+    text-align: center;
+    font-size: 2.5rem;
 }
 
 .maintenance-windows-table {
@@ -696,36 +825,75 @@ td.blocking {
 
 .maintenance-windows-table th,
 .maintenance-windows-table td {
-    border: 1px solid #666;
-    padding: 4px 8px;
+    border: 1px solid var(--border-light);
+    padding: 1rem 2rem;
     text-align: left;
     vertical-align: top;
 }
 
 .maintenance-windows-table th {
-    background-color: #555;
-    color: white;
+    background-color: var(--bg-header);
+    color: var(--text-primary);
 }
 
 .maintenance-windows-table td {
-    background-color: #333;
-    color: #ccc;
+    background-color: var(--bg-body);
+    color: var(--text-secondary);
 }
 
 .maintenance-windows-table .mw-type {
-    width: 100px;
+    width: 25rem;
     white-space: nowrap;
-    font-size: 20px;
+    font-size: 2.5rem;
 }
 
 .maintenance-windows-table .mw-desc {
-    width: 200px;
+    width: 50rem;
 }
 
 .maintenance-windows-table .mw-details {
-    width: 200px;
+    width: 50rem;
 }
 
 .maintenance-windows-table .mw-hosts {
     /* Takes remaining width */
+}
+
+/* ========== Test Harness Styles ========== */
+.test-success {
+    color: lime;
+    font-size: 2.25rem;
+}
+
+.test-warning {
+    color: yellow;
+    font-size: 2.25rem;
+}
+
+.test-error {
+    color: red;
+    font-size: 2rem;
+}
+
+.test-status {
+    font-size: 2rem;
+}
+
+.test-pre {
+    font-size: 1.5rem;
+}
+
+/* ========== Index Page Styles ========== */
+.version-display {
+    font-size: 1.5rem;
+    color: var(--text-dimmed);
+}
+
+.compact-controls {
+    font-size: 1.5rem;
+}
+
+.hint-text {
+    color: var(--text-dimmed);
+    font-size: 1.5rem;
 }
