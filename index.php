@@ -33,6 +33,7 @@ use com\kbcmdba\aql\Libs\Config ;
 use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\Exceptions\ConfigurationException ;
 use com\kbcmdba\aql\Libs\Exceptions\DaoException;
+use com\kbcmdba\aql\Libs\MaintenanceWindow ;
 use com\kbcmdba\aql\Libs\Tools ;
 use com\kbcmdba\aql\Libs\WebPage ;
 
@@ -189,6 +190,13 @@ catch ( ConfigurationException $e ) {
 $dbc = new DBConnection();
 $dbh = $dbc->getConnection();
 $dbh->set_charset('utf8');
+
+// Fetch active maintenance windows for display
+$activeMaintenanceWindows = [] ;
+if ( $config->getEnableMaintenanceWindows() ) {
+    $activeMaintenanceWindows = MaintenanceWindow::getAllActiveWindows( $dbh ) ;
+}
+
 $allHostsQuery = <<<SQL
 SELECT CONCAT( h.hostname, ':', h.port_number )
      , h.alert_crit_secs
@@ -397,6 +405,41 @@ JS
         }
     } catch ( \Exception $e ) {
         // Silently ignore errors loading groups
+    }
+
+    // Build active maintenance windows display HTML
+    $maintenanceWindowsHtml = '' ;
+    if ( ! empty( $activeMaintenanceWindows ) ) {
+        $maintenanceWindowsHtml = '<div id="activeMaintenanceWindows" class="maintenance-windows-panel">' ;
+        $maintenanceWindowsHtml .= '<h4>Active Maintenance Windows</h4>' ;
+        $maintenanceWindowsHtml .= '<table class="maintenance-windows-table">' ;
+        $maintenanceWindowsHtml .= '<thead><tr><th class="mw-type">Type</th><th class="mw-desc">Description</th><th class="mw-details">Details</th><th class="mw-hosts">Affected Hosts</th></tr></thead>' ;
+        $maintenanceWindowsHtml .= '<tbody>' ;
+        foreach ( $activeMaintenanceWindows as $win ) {
+            $typeIcon = ( $win['windowType'] === 'adhoc' ) ? '🔇' : '🔧' ;
+            $typeLabel = ucfirst( $win['windowType'] ) ;
+            $desc = htmlspecialchars( $win['description'] ?? 'No description' ) ;
+
+            // Build details column
+            $details = '' ;
+            if ( $win['windowType'] === 'adhoc' && ! empty( $win['expiresAt'] ) ) {
+                $details = 'Expires: ' . htmlspecialchars( $win['expiresAt'] ) ;
+            } elseif ( ! empty( $win['timeWindow'] ) ) {
+                $details = htmlspecialchars( $win['timeWindow'] ) ;
+                if ( ! empty( $win['daysOfWeek'] ) ) {
+                    $details .= ' (' . htmlspecialchars( $win['daysOfWeek'] ) . ')' ;
+                }
+            }
+
+            // Build hosts list
+            $hostsHtml = '' ;
+            if ( ! empty( $win['hosts'] ) ) {
+                $hostsHtml = implode( ', ', array_map( 'htmlspecialchars', $win['hosts'] ) ) ;
+            }
+
+            $maintenanceWindowsHtml .= "<tr><td class=\"mw-type\">{$typeIcon} {$typeLabel}</td><td class=\"mw-desc\">{$desc}</td><td class=\"mw-details\">{$details}</td><td class=\"mw-hosts\">{$hostsHtml}</td></tr>" ;
+        }
+        $maintenanceWindowsHtml .= '</tbody></table></div>' ;
     }
 
     $page->setBody(
@@ -821,6 +864,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <h2>Noteworthy Data</h2>
+{$maintenanceWindowsHtml}
 {$cb(xTable( 'nw', 'SlaveStatus', 'Slave', $NWSlaveHeaderFooter, 'slave', $slaveCols ))}
 {$cb(xTable( 'nw', 'StatusOverview', 'Overview', $NWOverviewHeaderFooter, 'overview', $overviewCols ))}
 {$cb(xTable( 'nw', 'ProcessListing', 'Process', $NWProcessHeaderFooter, 'process', $processCols ))}

@@ -428,7 +428,7 @@ td.blocking {
 .maintenanceIndicator {
     margin-left: 5px;
     cursor: help;
-    font-size: 14px;
+    font-size: 20px;
 }
 
 .maintenanceIndicator.adhoc {
@@ -672,4 +672,60 @@ td.blocking {
 
 .alert-debug-btn:hover {
     background: #666;
+}
+
+/* Active Maintenance Windows Panel */
+.maintenance-windows-panel {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #444;
+    border: 1px solid #666;
+    border-radius: 5px;
+}
+
+.maintenance-windows-panel h4 {
+    margin-top: 0;
+    color: #ffcc00;
+}
+
+.maintenance-windows-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.maintenance-windows-table th,
+.maintenance-windows-table td {
+    border: 1px solid #666;
+    padding: 4px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.maintenance-windows-table th {
+    background-color: #555;
+    color: white;
+}
+
+.maintenance-windows-table td {
+    background-color: #333;
+    color: #ccc;
+}
+
+.maintenance-windows-table .mw-type {
+    width: 100px;
+    white-space: nowrap;
+    font-size: 20px;
+}
+
+.maintenance-windows-table .mw-desc {
+    width: 200px;
+}
+
+.maintenance-windows-table .mw-details {
+    width: 200px;
+}
+
+.maintenance-windows-table .mw-hosts {
+    /* Takes remaining width */
 }

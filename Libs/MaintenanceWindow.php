@@ -523,4 +523,111 @@ class MaintenanceWindow
 
         return $info ;
     }
+
+    /**
+     * Get all currently active maintenance windows with their affected hosts
+     *
+     * @param \mysqli $dbh Database connection
+     * @return array Array of active windows with host lists
+     */
+    public static function getAllActiveWindows( $dbh )
+    {
+        $activeWindows = [] ;
+        $config = new Config() ;
+        $tz = new \DateTimeZone( $config->getTimeZone() ) ;
+        $now = new \DateTime( 'now', $tz ) ;
+
+        // Get all maintenance windows
+        $sql = "SELECT mw.window_id, mw.window_type, mw.schedule_type, mw.days_of_week,
+                       mw.day_of_month, mw.month_of_year, mw.period_days, mw.period_start_date,
+                       mw.start_time, mw.end_time, mw.timezone, mw.silence_until, mw.description
+                FROM maintenance_window mw
+                ORDER BY mw.window_id" ;
+
+        $result = $dbh->query( $sql ) ;
+        if ( ! $result ) {
+            return [] ;
+        }
+
+        while ( $window = $result->fetch_assoc() ) {
+            // Check if this window is currently active
+            $isActive = false ;
+            if ( $window['window_type'] === 'adhoc' ) {
+                $isActive = self::isAdhocWindowActive( $window ) ;
+            } else {
+                $isActive = self::isScheduledWindowActive( $window ) ;
+            }
+
+            if ( ! $isActive ) {
+                continue ;
+            }
+
+            // Get hosts affected by this window
+            $windowId = (int) $window['window_id'] ;
+            $hosts = [] ;
+
+            // Direct host mappings
+            $hostSql = "SELECT h.hostname, h.port_number
+                        FROM maintenance_window_host_map mwhm
+                        JOIN host h ON mwhm.host_id = h.host_id
+                        WHERE mwhm.window_id = ?
+                        ORDER BY h.hostname" ;
+            $hostStmt = $dbh->prepare( $hostSql ) ;
+            if ( $hostStmt ) {
+                $hostStmt->bind_param( 'i', $windowId ) ;
+                $hostStmt->execute() ;
+                $hostResult = $hostStmt->get_result() ;
+                while ( $h = $hostResult->fetch_assoc() ) {
+                    $hosts[] = $h['hostname'] . ':' . $h['port_number'] ;
+                }
+                $hostStmt->close() ;
+            }
+
+            // Hosts via group mappings
+            $groupSql = "SELECT h.hostname, h.port_number, hg.tag as group_name
+                         FROM maintenance_window_host_group_map mwgm
+                         JOIN host_group hg ON mwgm.host_group_id = hg.host_group_id
+                         JOIN host_group_map hgm ON hg.host_group_id = hgm.host_group_id
+                         JOIN host h ON hgm.host_id = h.host_id
+                         WHERE mwgm.window_id = ?
+                         ORDER BY hg.tag, h.hostname" ;
+            $groupStmt = $dbh->prepare( $groupSql ) ;
+            if ( $groupStmt ) {
+                $groupStmt->bind_param( 'i', $windowId ) ;
+                $groupStmt->execute() ;
+                $groupResult = $groupStmt->get_result() ;
+                while ( $h = $groupResult->fetch_assoc() ) {
+                    $hostEntry = $h['hostname'] . ':' . $h['port_number'] . ' (via ' . $h['group_name'] . ')' ;
+                    if ( ! in_array( $h['hostname'] . ':' . $h['port_number'], $hosts ) ) {
+                        $hosts[] = $hostEntry ;
+                    }
+                }
+                $groupStmt->close() ;
+            }
+
+            if ( count( $hosts ) > 0 ) {
+                $windowInfo = [
+                    'windowId'    => $windowId,
+                    'windowType'  => $window['window_type'],
+                    'description' => $window['description'],
+                    'hosts'       => $hosts
+                ] ;
+
+                if ( $window['window_type'] === 'adhoc' ) {
+                    $windowInfo['expiresAt'] = $window['silence_until'] ;
+                } else {
+                    $windowInfo['scheduleType'] = $window['schedule_type'] ;
+                    $windowInfo['daysOfWeek'] = $window['days_of_week'] ;
+                    if ( ! empty( $window['start_time'] ) && ! empty( $window['end_time'] ) ) {
+                        $windowInfo['timeWindow'] = substr( $window['start_time'], 0, 5 ) . ' - ' . substr( $window['end_time'], 0, 5 ) ;
+                    }
+                }
+
+                $activeWindows[] = $windowInfo ;
+            }
+        }
+        $result->close() ;
+
+        return $activeWindows ;
+    }
 }
