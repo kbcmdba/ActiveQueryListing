@@ -423,3 +423,103 @@ td.blocking {
 .aql-navbar .dropdown-menu .divider {
     background-color: #444;
 }
+
+/* Maintenance Window Indicators */
+.maintenanceIndicator {
+    margin-left: 5px;
+    cursor: help;
+    font-size: 14px;
+}
+
+.maintenanceIndicator.adhoc {
+    color: #ffcc00;
+}
+
+.maintenanceIndicator.scheduled {
+    color: #00ccff;
+}
+
+.in-maintenance {
+    opacity: 0.7;
+}
+
+.in-maintenance td:first-child {
+    border-left: 3px solid #ffcc00;
+}
+
+/* Quick management links (silence/gear icons) */
+.silence-link,
+.maintenance-link {
+    text-decoration: none;
+    margin-left: 3px;
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.silence-link:hover,
+.maintenance-link:hover {
+    opacity: 1;
+}
+
+/* Silence Modal - Dark Theme */
+#silenceModal .modal-content {
+    background-color: #333;
+    color: #ccc;
+    border: 1px solid #444;
+}
+
+#silenceModal .modal-header {
+    background-color: #222;
+    border-bottom: 1px solid #444;
+}
+
+#silenceModal .modal-header h4 {
+    color: #fff;
+}
+
+#silenceModal .modal-header .close {
+    color: #ccc;
+    opacity: 0.8;
+}
+
+#silenceModal .modal-header .close:hover {
+    color: #fff;
+    opacity: 1;
+}
+
+#silenceModal .modal-body {
+    background-color: #333;
+}
+
+#silenceModal .modal-body label {
+    color: #ccc;
+}
+
+#silenceModal .modal-footer {
+    background-color: #222;
+    border-top: 1px solid #444;
+}
+
+#silenceModal input[type="text"],
+#silenceModal input[type="number"] {
+    background-color: #444;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 5px 8px;
+}
+
+#silenceModal .btn-default {
+    background-color: #444;
+    color: #ccc;
+    border-color: #555;
+}
+
+#silenceModal .btn-default:hover {
+    background-color: #555;
+    color: #fff;
+}
+
+#silenceModal .btn-primary {
+    background-color: #337ab7;
+    border-color: #2e6da4;
+}

@@ -1077,6 +1077,34 @@ function toggleTargetFields() {
 document.addEventListener('DOMContentLoaded', function() {
     toggleWindowTypeFields();
     toggleTargetFields();
+
+    // Handle preselection from URL parameters (e.g., from index.php quick link)
+    var urlParams = new URLSearchParams(window.location.search);
+    var preselectType = urlParams.get('preselect');
+    var preselectId = urlParams.get('preselectId');
+
+    if (preselectType && preselectId) {
+        // Set target type
+        document.getElementById('targetType').value = preselectType;
+        toggleTargetFields();
+
+        // Set the target ID in the appropriate select
+        if (preselectType === 'host') {
+            document.getElementById('targetHost').value = preselectId;
+        } else if (preselectType === 'group') {
+            document.getElementById('targetGroup').value = preselectId;
+        }
+
+        // Default to ad-hoc for quick silencing from index.php
+        document.getElementById('windowType').value = 'adhoc';
+        toggleWindowTypeFields();
+
+        // Set default silence time (1 hour from now)
+        var now = new Date();
+        now.setHours(now.getHours() + 1);
+        var isoStr = now.toISOString().slice(0, 16);
+        document.getElementById('silenceUntil').value = isoStr;
+    }
 });
 </script>
 

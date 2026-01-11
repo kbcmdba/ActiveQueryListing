@@ -382,6 +382,23 @@ JS
     $muteButtonText = ( $muted ) ? 'Unmute Alerts' : 'Mute Alerts' ;
     $muteToggleValue = ( $muted ) ? '0' : '1' ;
     $cb = function ($fn) { return $fn; };
+
+    // Generate group options for silence modal
+    $groupOptionsHtml = '' ;
+    try {
+        $groupDbc = new DBConnection() ;
+        $groupDbh = $groupDbc->getConnection() ;
+        $groupResult = $groupDbh->query( "SELECT host_group_id, tag, short_description FROM aql_db.host_group ORDER BY tag" ) ;
+        if ( $groupResult !== false ) {
+            while ( $row = $groupResult->fetch_assoc() ) {
+                $groupOptionsHtml .= "              <option value=\"" . intval( $row['host_group_id'] ) . "\">" . htmlspecialchars( $row['tag'] . ' - ' . $row['short_description'] ) . "</option>\n" ;
+            }
+            $groupResult->close() ;
+        }
+    } catch ( \Exception $e ) {
+        // Silently ignore errors loading groups
+    }
+
     $page->setBody(
         <<<HTML
 <script>
@@ -642,6 +659,7 @@ document.addEventListener('DOMContentLoaded', function() {
             $allGroupsList
           </select><br />
           <button id="groupSelect" onclick="addGroupSelection(); return false;">Add Group Selection</button>
+          <button onclick="openSilenceGroupModal(); return false;" title="Silence a group for maintenance">🔇 Silence Group</button>
         </form>
       </center>
     </td>
@@ -697,6 +715,65 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
 </div>
+
+<!-- Silence Host/Group Modal -->
+<div class="modal fade" id="silenceModal" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4>Silence Alerts</h4>
+      </div>
+      <div class="modal-body">
+        <form id="silenceForm">
+          <input type="hidden" id="silenceTargetType" name="targetType" value="host" />
+          <input type="hidden" id="silenceTargetId" name="targetId" value="" />
+          <p id="silenceTargetRow"><strong>Target:</strong> <span id="silenceTargetDisplay"></span></p>
+          <p id="silenceGroupRow" style="display:none;">
+            <label>Select Group:</label><br/>
+            <select id="silenceGroupSelect" style="min-width:200px;">
+              <option value="">-- Select a Group --</option>
+{$groupOptionsHtml}            </select>
+          </p>
+          <p>
+            <label>Scope:</label><br/>
+            <label style="font-weight:normal; margin-right:15px;">
+              <input type="radio" name="silenceScope" id="silenceScopeLocal" value="local" checked />
+              This browser only
+            </label>
+            <label style="font-weight:normal;">
+              <input type="radio" name="silenceScope" id="silenceScopeGlobal" value="global" />
+              Everyone <span style="color:#888;">(requires authorization)</span>
+            </label>
+          </p>
+          <p>
+            <label>Quick presets:</label><br/>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(30)">30m</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(60)">1h</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(120)">2h</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(240)">4h</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(480)">8h</button>
+          </p>
+          <p>
+            <label>Duration (minutes):</label><br/>
+            <input type="number" id="silenceDuration" name="duration" min="1" max="10080" value="60" style="width:100px" />
+            <span style="color:#888; font-size:11px;">(max 7 days)</span>
+          </p>
+          <p>
+            <label>Description (optional):</label><br/>
+            <input type="text" id="silenceDescription" name="description" size="40"
+                   placeholder="e.g., Working on issue JIRA-1234" />
+          </p>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="submitSilence()">Silence</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
   $(function() {
       $('#modalForm').on('submit', function(e){

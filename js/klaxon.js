@@ -98,14 +98,98 @@
         document.body.appendChild(div);
     };
 
-    // -- detect alerts: errorNotice gets klaxon, level4 gets warning
-    const runTest = () => {
-        // errorNotice (most severe) gets the klaxon horn
-        if (document.querySelector('.errorNotice')) {
-            fireKlaxon();
+    // -- helper to extract hostname from a table row/cell
+    const getHostnameFromElement = (element) => {
+        // Navigate up to find the row
+        const row = element.closest('tr');
+        if (!row) return null;
+        // Get first cell which contains the server link
+        const serverCell = row.querySelector('td:first-child a');
+        if (serverCell) {
+            // Extract hostname from link text (format: hostname:port)
+            return serverCell.textContent.trim();
         }
-        // level4 (critical but not error) gets warning ding
-        else if (document.querySelector('.level4')) {
+        return null;
+    };
+
+    // -- check if a host is in maintenance window (database-level)
+    const isHostInMaintenance = (hostname) => {
+        if (typeof window.hostsInMaintenance === 'undefined') return false;
+        return window.hostsInMaintenance[hostname] === true;
+    };
+
+    // -- check if a host is locally silenced (browser-level)
+    const isHostLocallySilenced = (hostname) => {
+        // Use hostId lookup
+        if (typeof window.hostIdMap === 'undefined') return false;
+        const hostId = window.hostIdMap[hostname];
+        if (!hostId) return false;
+        if (typeof window.isHostLocallySilenced === 'function' && window.isHostLocallySilenced(hostId)) {
+            return true;
+        }
+        // Also check group silencing
+        if (typeof window.hostGroupMap !== 'undefined' && typeof window.isHostGroupLocallySilenced === 'function') {
+            const groups = window.hostGroupMap[hostname];
+            if (groups && window.isHostGroupLocallySilenced(groups)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // -- combined check: database maintenance OR local silencing
+    const isHostSilenced = (hostname) => {
+        return isHostInMaintenance(hostname) || isHostLocallySilenced(hostname);
+    };
+
+    // -- check if ALL displayed hosts are silenced (maintenance or local)
+    const areAllHostsSilenced = () => {
+        if (typeof window.hostsInMaintenance === 'undefined' && typeof window.hostIdMap === 'undefined') return false;
+        const hosts = Object.keys(window.hostsInMaintenance || window.hostIdMap || {});
+        if (hosts.length === 0) return false;
+        return hosts.every(h => isHostSilenced(h));
+    };
+
+    // Legacy function for compatibility
+    const areAllHostsInMaintenance = () => areAllHostsSilenced();
+
+    // -- detect alerts: errorNotice gets klaxon, level4 gets warning
+    // Suppresses alerts for hosts in maintenance windows or locally silenced
+    const runTest = () => {
+        // Skip all alerts if all hosts are silenced
+        if (areAllHostsSilenced()) {
+            log('runTest: All hosts silenced, skipping alerts');
+            return;
+        }
+
+        // Check for errorNotice (most severe) - gets the klaxon horn
+        const errorElements = document.querySelectorAll('.errorNotice');
+        let hasActiveError = false;
+        errorElements.forEach(el => {
+            const hostname = getHostnameFromElement(el);
+            if (!hostname || !isHostSilenced(hostname)) {
+                hasActiveError = true;
+            }
+        });
+
+        if (hasActiveError && errorElements.length > 0) {
+            log('runTest: Active error found (not silenced)');
+            fireKlaxon();
+            return;
+        }
+
+        // Check for level4 (critical but not error) - gets warning ding
+        const level4Elements = document.querySelectorAll('.level4');
+        let hasActiveLevel4 = false;
+        level4Elements.forEach(el => {
+            const hostname = getHostnameFromElement(el);
+            if (!hostname || !isHostSilenced(hostname)) {
+                hasActiveLevel4 = true;
+            }
+        });
+
+        if (hasActiveLevel4 && level4Elements.length > 0) {
+            log('runTest: Active level4 found (not silenced)');
             fireWarning();
         }
     };

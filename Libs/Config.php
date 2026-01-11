@@ -87,6 +87,8 @@ class Config
     private $testDbUser = null;
     private $testDbPass = null;
     private $testDbName = null;
+    private $enableMaintenanceWindows = null;
+    private $dbaSessionTimeout = null;
 
     /**
      * #@-
@@ -142,7 +144,9 @@ class Config
             'jiraQueryHashFieldId' => '',
             'testDbUser' => '',
             'testDbPass' => '',
-            'testDbName' => ''
+            'testDbName' => '',
+            'enableMaintenanceWindows' => 'false',
+            'dbaSessionTimeout' => '86400'
         ] ;
         $paramList = [
             'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],
@@ -171,9 +175,11 @@ class Config
             'jiraProjectId'        => [ 'isRequired' => 0, 'value' => 0 ],
             'jiraIssueTypeId'      => [ 'isRequired' => 0, 'value' => 0 ],
             'jiraQueryHashFieldId' => [ 'isRequired' => 0, 'value' => 0 ],
-            'testDbUser'           => [ 'isRequired' => 0, 'value' => 0 ],
-            'testDbPass'           => [ 'isRequired' => 0, 'value' => 0 ],
-            'testDbName'           => [ 'isRequired' => 0, 'value' => 0 ]
+            'testDbUser'               => [ 'isRequired' => 0, 'value' => 0 ],
+            'testDbPass'               => [ 'isRequired' => 0, 'value' => 0 ],
+            'testDbName'               => [ 'isRequired' => 0, 'value' => 0 ],
+            'enableMaintenanceWindows' => [ 'isRequired' => 0, 'value' => 0 ],
+            'dbaSessionTimeout'        => [ 'isRequired' => 0, 'value' => 0 ]
         ] ;
 
         // verify that all the parameters are present and just once.
@@ -511,6 +517,24 @@ class Config
      */
     public function getTestDbName() {
         return ( null !== $this->testDbName ) ? $this->testDbName : '' ;
+    }
+
+    /**
+     * Check if maintenance windows feature is enabled
+     *
+     * @return bool
+     */
+    public function getEnableMaintenanceWindows() {
+        return ( 'true' === $this->enableMaintenanceWindows ) ;
+    }
+
+    /**
+     * Get DBA session timeout in seconds
+     *
+     * @return int
+     */
+    public function getDbaSessionTimeout() {
+        return (int) ( $this->dbaSessionTimeout ?? 86400 ) ;
     }
 
 }

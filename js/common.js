@@ -307,6 +307,56 @@ function myCallback( i, item ) {
         if ( typeof overviewData !== 'undefined' ) {
             var server            = item[ 'hostname' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
+
+            // Check for maintenance window and add indicator
+            var maintenanceInfo = item[ 'maintenanceInfo' ] ;
+            var hostId = item[ 'hostId' ] ;
+            var hostGroups = item[ 'hostGroups' ] || [] ;
+
+            // Initialize tracking objects for klaxon.js
+            if ( typeof window.hostsInMaintenance === 'undefined' ) {
+                window.hostsInMaintenance = {} ;
+            }
+            if ( typeof window.hostIdMap === 'undefined' ) {
+                window.hostIdMap = {} ;
+            }
+            if ( typeof window.hostGroupMap === 'undefined' ) {
+                window.hostGroupMap = {} ;
+            }
+
+            window.hostsInMaintenance[ server ] = ( maintenanceInfo && maintenanceInfo.active ) ? true : false ;
+            window.hostIdMap[ server ] = hostId ;
+            window.hostGroupMap[ server ] = hostGroups ;
+
+            if ( maintenanceInfo && maintenanceInfo.active ) {
+                var mwType = ( maintenanceInfo.windowType === 'adhoc' ) ? 'Ad-hoc' : 'Scheduled' ;
+                var mwExpiry = maintenanceInfo.expiresAt || ( maintenanceInfo.timeWindow || 'per schedule' ) ;
+                var mwDesc = maintenanceInfo.description || '' ;
+                var mwTarget = ( maintenanceInfo.targetType === 'group' )
+                    ? 'via group: ' + maintenanceInfo.groupName
+                    : 'direct' ;
+                var tooltipText = mwType + ' maintenance (' + mwTarget + ')' ;
+                if ( mwExpiry ) {
+                    tooltipText += '\\nExpires: ' + mwExpiry ;
+                }
+                if ( mwDesc ) {
+                    tooltipText += '\\nNote: ' + mwDesc ;
+                }
+                var icon = ( maintenanceInfo.windowType === 'adhoc' ) ? '&#128263;' : '&#128295;' ; // muted speaker / wrench
+                serverLinkAddress += ' <span class="maintenanceIndicator ' + maintenanceInfo.windowType
+                    + '" title="' + tooltipText.replace( /"/g, '&quot;' ) + '">' + icon + '</span>' ;
+            }
+
+            // Add quick management links if hostId is available
+            if ( hostId ) {
+                // Silence icon - opens modal for quick silencing
+                serverLinkAddress += ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + server.replace(/'/g, "\\'") + '\'); return false;"'
+                    + ' title="Silence alerts for this host" class="silence-link">&#128263;</a>' ;
+                // Gear icon - links to manage maintenance windows with host preselected
+                serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
+                    + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
+            }
+
             var l0                = ( overviewData[ 'level0' ] > 0 ) ? ' class="level0"' : '' ;
             var l1                = ( overviewData[ 'level1' ] > 0 ) ? ' class="level1"' : '' ;
             var l2                = ( overviewData[ 'level2' ] > 0 ) ? ' class="level2"' : '' ;
@@ -370,7 +420,17 @@ function myCallback( i, item ) {
         }
         if ( ( typeof slaveData !== 'undefined' ) && ( typeof slaveData[ 0 ] !== 'undefined' ) ) {
             var server            = item[ 'hostname' ] ;
+            var hostId            = item[ 'hostId' ] ;
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
+
+            // Add quick management links if hostId is available (same as overview)
+            if ( hostId ) {
+                serverLinkAddress += ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + server.replace(/'/g, "\\'") + '\'); return false;"'
+                    + ' title="Silence alerts for this host" class="silence-link">&#128263;</a>' ;
+                serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
+                    + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
+            }
+
             for ( itemNo=0; itemNo<slaveData.length; itemNo++ ) {
                 var sbmClass = ( 0 < slaveData[ itemNo ][ 'Seconds_Behind_Master' ] ) ? ' class="level4"' : '' ;
                 var sioClass = ( 'No' == slaveData[ itemNo ][ 'Slave_IO_Running'] ) ? ' class="errorNotice"' : '' ;
@@ -404,7 +464,17 @@ function myCallback( i, item ) {
            ) {
             // Assumption - if we can get any rows from the server, we should be able to get all of the rows.
             server            = item[ 'result' ][ 0 ][ 'server' ] ;
+            var hostIdProc    = item[ 'hostId' ] ;
             serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
+
+            // Add quick management links if hostId is available (same as overview)
+            if ( hostIdProc ) {
+                serverLinkAddress += ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostIdProc + ', \'' + server.replace(/'/g, "\\'") + '\'); return false;"'
+                    + ' title="Silence alerts for this host" class="silence-link">&#128263;</a>' ;
+                serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostIdProc + '"'
+                    + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
+            }
+
             if ( typeof host_count[ server ] === 'undefined' ) {
                 host_count[ server ] = 0 ;
             }
@@ -1061,6 +1131,277 @@ $(document).ready(function() {
         }
     }) ;
 }) ;
+
+///////////////////////////////////////////////////////////////////////////////
+// Maintenance Window Silencing
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Browser-local silencing (stored in localStorage)
+ * Allows users to silence hosts/groups in their browser without DBA access
+ */
+
+// Get all locally silenced items (hosts and groups)
+function getLocalSilenced() {
+    try {
+        var data = localStorage.getItem( 'aql_local_silenced' ) ;
+        if ( !data ) return { hosts: {}, groups: {} } ;
+        return JSON.parse( data ) ;
+    } catch ( e ) {
+        return { hosts: {}, groups: {} } ;
+    }
+}
+
+// Save locally silenced items
+function saveLocalSilenced( data ) {
+    localStorage.setItem( 'aql_local_silenced', JSON.stringify( data ) ) ;
+}
+
+// Silence a host locally (browser only)
+function silenceHostLocally( hostId, hostname, durationMinutes ) {
+    var data = getLocalSilenced() ;
+    var expiry = durationMinutes > 0 ? Date.now() + ( durationMinutes * 60 * 1000 ) : 0 ;
+    data.hosts[ hostId ] = { hostname: hostname, expiry: expiry } ;
+    saveLocalSilenced( data ) ;
+}
+
+// Silence a group locally (browser only)
+function silenceGroupLocally( groupId, groupTag, durationMinutes ) {
+    var data = getLocalSilenced() ;
+    var expiry = durationMinutes > 0 ? Date.now() + ( durationMinutes * 60 * 1000 ) : 0 ;
+    data.groups[ groupId ] = { tag: groupTag, expiry: expiry } ;
+    saveLocalSilenced( data ) ;
+}
+
+// Check if a host is locally silenced
+function isHostLocallySilenced( hostId ) {
+    var data = getLocalSilenced() ;
+    var entry = data.hosts[ hostId ] ;
+    if ( !entry ) return false ;
+    if ( entry.expiry === 0 ) return true ; // indefinite
+    return Date.now() < entry.expiry ;
+}
+
+// Check if a group is locally silenced
+function isGroupLocallySilenced( groupId ) {
+    var data = getLocalSilenced() ;
+    var entry = data.groups[ groupId ] ;
+    if ( !entry ) return false ;
+    if ( entry.expiry === 0 ) return true ; // indefinite
+    return Date.now() < entry.expiry ;
+}
+
+// Check if any of a host's groups are locally silenced
+function isHostGroupLocallySilenced( hostGroups ) {
+    if ( !hostGroups || !Array.isArray( hostGroups ) ) return false ;
+    for ( var i = 0 ; i < hostGroups.length ; i++ ) {
+        if ( isGroupLocallySilenced( hostGroups[ i ].id ) ) {
+            return true ;
+        }
+    }
+    return false ;
+}
+
+// Clean up expired local silences
+function cleanupLocalSilenced() {
+    var data = getLocalSilenced() ;
+    var now = Date.now() ;
+    var changed = false ;
+
+    for ( var hostId in data.hosts ) {
+        if ( data.hosts[ hostId ].expiry !== 0 && data.hosts[ hostId ].expiry < now ) {
+            delete data.hosts[ hostId ] ;
+            changed = true ;
+        }
+    }
+    for ( var groupId in data.groups ) {
+        if ( data.groups[ groupId ].expiry !== 0 && data.groups[ groupId ].expiry < now ) {
+            delete data.groups[ groupId ] ;
+            changed = true ;
+        }
+    }
+
+    if ( changed ) {
+        saveLocalSilenced( data ) ;
+    }
+}
+
+// Run cleanup periodically
+setInterval( cleanupLocalSilenced, 60000 ) ;
+
+// Expose for klaxon.js
+window.isHostLocallySilenced = isHostLocallySilenced ;
+window.isGroupLocallySilenced = isGroupLocallySilenced ;
+window.isHostGroupLocallySilenced = isHostGroupLocallySilenced ;
+
+///////////////////////////////////////////////////////////////////////////////
+// Silence Modal Functions
+///////////////////////////////////////////////////////////////////////////////
+
+// Track if refresh was active before modal opened
+var refreshWasActive = false ;
+
+// Pause auto-refresh (for modal dialogs)
+function pauseAutoRefresh() {
+    if ( timeoutId > 0 ) {
+        refreshWasActive = true ;
+        clearTimeout( timeoutId ) ;
+        timeoutId = null ;
+    } else {
+        refreshWasActive = false ;
+    }
+}
+
+// Resume auto-refresh if it was active before
+function resumeAutoRefresh() {
+    if ( refreshWasActive && timeoutId === null ) {
+        timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
+    }
+}
+
+// Hook modal events to pause/resume refresh
+$( document ).ready( function() {
+    $( '#silenceModal' ).on( 'show.bs.modal', function() {
+        pauseAutoRefresh() ;
+    }) ;
+    $( '#silenceModal' ).on( 'hidden.bs.modal', function() {
+        resumeAutoRefresh() ;
+    }) ;
+}) ;
+
+/**
+ * Open the silence modal for a host or group
+ * @param {string} targetType - 'host' or 'group'
+ * @param {int} targetId - Host ID or Group ID (optional for group mode)
+ * @param {string} targetName - Display name for the target (optional for group mode)
+ */
+// Store target name for local silencing
+var silenceTargetName = '' ;
+
+function openSilenceModal( targetType, targetId, targetName ) {
+    $( '#silenceTargetType' ).val( targetType ) ;
+    $( '#silenceDuration' ).val( 60 ) ; // default 1 hour
+    $( '#silenceDescription' ).val( '' ) ;
+    $( '#silenceScopeLocal' ).prop( 'checked', true ) ; // default to local
+
+    if ( targetType === 'group' && !targetId ) {
+        // Group selection mode - show dropdown, hide target display
+        $( '#silenceTargetRow' ).hide() ;
+        $( '#silenceGroupRow' ).show() ;
+        $( '#silenceGroupSelect' ).val( '' ) ;
+        $( '#silenceTargetId' ).val( '' ) ;
+        silenceTargetName = '' ;
+    } else {
+        // Direct target mode - show target display, hide dropdown
+        $( '#silenceTargetRow' ).show() ;
+        $( '#silenceGroupRow' ).hide() ;
+        $( '#silenceTargetId' ).val( targetId ) ;
+        $( '#silenceTargetDisplay' ).text( targetName + ' (' + targetType + ')' ) ;
+        silenceTargetName = targetName ;
+    }
+
+    $( '#silenceModal' ).modal( 'show' ) ;
+}
+
+/**
+ * Open the silence modal in group selection mode
+ */
+function openSilenceGroupModal() {
+    openSilenceModal( 'group', null, null ) ;
+}
+
+/**
+ * Set silence duration from preset buttons
+ * @param {int} minutes - Duration in minutes
+ */
+function setSilenceDuration( minutes ) {
+    $( '#silenceDuration' ).val( minutes ) ;
+}
+
+/**
+ * Submit the silence request
+ */
+function submitSilence() {
+    var targetType = $( '#silenceTargetType' ).val() ;
+    var targetId = $( '#silenceTargetId' ).val() ;
+    var targetName = silenceTargetName ;
+    var duration = parseInt( $( '#silenceDuration' ).val(), 10 ) ;
+    var description = $( '#silenceDescription' ).val() ;
+    var scope = $( 'input[name="silenceScope"]:checked' ).val() ;
+
+    // If group mode with dropdown, get the selected group
+    if ( targetType === 'group' && !targetId ) {
+        targetId = $( '#silenceGroupSelect' ).val() ;
+        targetName = $( '#silenceGroupSelect option:selected' ).text() ;
+        if ( !targetId ) {
+            alert( 'Please select a group.' ) ;
+            return ;
+        }
+    }
+
+    if ( !duration || duration <= 0 ) {
+        alert( 'Please enter a valid duration.' ) ;
+        return ;
+    }
+
+    if ( scope === 'local' ) {
+        // Browser-local silencing (no server call)
+        if ( targetType === 'host' ) {
+            silenceHostLocally( targetId, targetName, duration ) ;
+        } else {
+            silenceGroupLocally( targetId, targetName, duration ) ;
+        }
+        alert( 'Silenced ' + targetType + ' "' + targetName + '" for ' + duration + ' minutes (this browser only).' ) ;
+        $( '#silenceModal' ).modal( 'hide' ) ;
+        return ;
+    }
+
+    // Global silencing (database) - requires DBA access
+    $.post( 'AJAXsilenceHost.php', {
+        targetType: targetType,
+        targetId: targetId,
+        duration: duration,
+        description: description
+    }, function( response ) {
+        if ( response.success ) {
+            alert( response.message ) ;
+            $( '#silenceModal' ).modal( 'hide' ) ;
+            // Refresh the page to show the new maintenance indicator
+            location.reload() ;
+        } else {
+            alert( 'Failed to silence: ' + response.error ) ;
+        }
+    }).fail(function() {
+        alert( 'Network error while trying to silence host.' ) ;
+    }) ;
+}
+
+/**
+ * Quick silence a host without opening the modal
+ * @param {int} hostId - Host ID
+ * @param {int} durationMinutes - Duration in minutes
+ */
+function quickSilenceHost( hostId, durationMinutes ) {
+    if ( !confirm( 'Silence this host for ' + durationMinutes + ' minutes?' ) ) {
+        return ;
+    }
+
+    $.post( 'AJAXsilenceHost.php', {
+        targetType: 'host',
+        targetId: hostId,
+        duration: durationMinutes,
+        description: 'Quick silence from AQL'
+    }, function( response ) {
+        if ( response.success ) {
+            alert( response.message ) ;
+            location.reload() ;
+        } else {
+            alert( 'Failed to silence: ' + response.error ) ;
+        }
+    }).fail(function() {
+        alert( 'Network error while trying to silence host.' ) ;
+    }) ;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Fuzzy Search Autocomplete (fzf-style)

@@ -29,34 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 17 Implement maintenance windows for hosts (parent - see sub-tasks below)
-// @todo 17-30 Ad-hoc "do it live" silencing
-//             - Per-host or per-group silence button: "Silence for X minutes/hours"
-//             - Quick presets like global mute (30m, 1h, 2h, etc.)
-//             - DBA silences host/group when issue is "being worked on"
-//             - Store as ad-hoc window with silence_until timestamp
-// @todo 17-40 Backend: Check if host/group is in active maintenance window
-//             - Function to check scheduled windows (day-of-week + time range)
-//             - Function to check ad-hoc silencing (silence_until > now)
-//             - Handle overnight spans correctly
-//             - Return window info for display
-// @todo 17-50 index.php: Visual indicators for hosts in maintenance
-//             - Icon/badge showing host is in maintenance window
-//             - Tooltip with window details (scheduled vs ad-hoc, expiry)
-//             - Different indicators for scheduled vs ad-hoc
-// @todo 17-60 index.php: Quick link to manage host/group maintenance
-//             - Click host to open maintenance management (modal or link to manageData.php)
-//             - Pre-select the host/group in the management UI
-//             - Quick ad-hoc silence directly from index.php
-// @todo 17-70 Alert suppression integration
-//             - Modify klaxon.js to check maintenance status
-//             - Suppress alerts for hosts/groups in active window
-//             - Still display data, just don't sound alerts
-// @todo 17-80 DBA credential session persistence
-//             - Remember DBA credentials for a configurable period (e.g., 24 hours)
-//             - Store auth in session with expiry timestamp
-//             - Reduce friction for DBAs managing maintenance windows
-//             - Configurable timeout in aql_config.xml
 // @todo 25 Add light/dark mode toggle
 //          - Current UI is dark mode only
 //          - Use CSS variables for colors (--bg-color, --text-color, etc.)
@@ -106,5 +78,11 @@ namespace com\kbcmdba\aql ;
 //          - Threshold-based: only alert if blocking N+ queries (e.g., 5) for X+ seconds (e.g., 30)
 //          - Consider separate, gentler sound to distinguish from long-running alerts
 //          - Currently blockers get level 3, so they alert if they hit warning time threshold
+// @todo 65 Auto-unsilence after service recovery
+//          - When silencing a host/group, add option "Re-enable alerts when service recovers"
+//          - Track the error condition that triggered silencing (e.g., host unreachable, specific error)
+//          - When condition clears (host returns to level 0-2), automatically remove silence
+//          - Works for both local (browser) and global (database) silencing
+//          - May need grace period to avoid flapping (e.g., must be healthy for N minutes)
 // @todo 99 Implement Host/Group Limiter
 //          - There's a "Add Group Selection" button on the main index that *should* select all hosts/ports associated with the group (additive, not exclusive).

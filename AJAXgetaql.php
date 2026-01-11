@@ -28,6 +28,7 @@ require_once 'vendor/autoload.php';
 
 use com\kbcmdba\aql\Libs\Config ;
 use com\kbcmdba\aql\Libs\DBConnection ;
+use com\kbcmdba\aql\Libs\MaintenanceWindow ;
 use com\kbcmdba\aql\Libs\Tools ;
 
 header('Content-type: application/json') ;
@@ -1126,10 +1127,58 @@ catch (\Exception $e) {
     exit(1) ;
 }
 $overviewData[ 'longest_running' ] = $longestRunning ;
-$output = [ 'hostname'     => $hostname
-          , 'result'       => $outputList
-          , 'overviewData' => $overviewData
-          , 'slaveData'    => $slaveData
+
+// Look up host ID for this hostname (needed for maintenance and silencing)
+$hostId = getHostIdFromHostname( $hostname ) ;
+
+// Get the groups this host belongs to (for browser-local group silencing)
+$hostGroups = [] ;
+if ( $hostId !== null ) {
+    try {
+        $grpDbc = new DBConnection() ;
+        $grpDbh = $grpDbc->getConnection() ;
+        $grpSql = "SELECT hgm.host_group_id, hg.tag
+                   FROM aql_db.host_group_map hgm
+                   JOIN aql_db.host_group hg ON hg.host_group_id = hgm.host_group_id
+                   WHERE hgm.host_id = ?" ;
+        $grpStmt = $grpDbh->prepare( $grpSql ) ;
+        if ( $grpStmt ) {
+            $grpStmt->bind_param( 'i', $hostId ) ;
+            $grpStmt->execute() ;
+            $grpResult = $grpStmt->get_result() ;
+            while ( $row = $grpResult->fetch_assoc() ) {
+                $hostGroups[] = [ 'id' => (int) $row['host_group_id'], 'tag' => $row['tag'] ] ;
+            }
+            $grpStmt->close() ;
+        }
+    } catch ( \Exception $e ) {
+        // Silently ignore - don't break AQL if group lookup fails
+    }
+}
+
+// Check if this host is in a maintenance window (if feature enabled)
+$maintenanceInfo = null ;
+$config = new Config() ;
+if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {
+    try {
+        $aqlDbc = new DBConnection() ;
+        $aqlDbh = $aqlDbc->getConnection() ;
+        $maintenanceInfo = MaintenanceWindow::getActiveWindowForHost( $hostId, $aqlDbh ) ;
+        if ( $maintenanceInfo === null ) {
+            $maintenanceInfo = MaintenanceWindow::getActiveWindowForHostViaGroup( $hostId, $aqlDbh ) ;
+        }
+    } catch ( \Exception $e ) {
+        // Silently ignore - don't break AQL if maintenance check fails
+    }
+}
+
+$output = [ 'hostname'        => $hostname
+          , 'hostId'          => $hostId
+          , 'hostGroups'      => $hostGroups
+          , 'result'          => $outputList
+          , 'overviewData'    => $overviewData
+          , 'slaveData'       => $slaveData
+          , 'maintenanceInfo' => $maintenanceInfo
           ] ;
 // Always add lock debug info when debugLocks=1
 $output['debugLocks'] = $debugLocks ;
