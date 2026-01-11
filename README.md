@@ -73,6 +73,44 @@ This tool helps new users get AQL running by checking:
 The tool provides actionable fix instructions with copy-paste SQL commands and shell
 commands for both Apache and nginx deployments.
 
+### Installing Prerequisites
+
+AQL requires a local MySQL or MariaDB database to store its configuration (hosts to
+monitor, groups, maintenance windows, etc.). Install the database server and PHP
+extensions if not already present:
+
+**Ubuntu/Debian:**
+```bash
+# Database server (choose one)
+sudo apt install mariadb-server    # MariaDB (recommended)
+sudo apt install mysql-server      # Or MySQL
+
+# PHP extensions
+sudo apt install php-mysqli php-simplexml php-curl php-json php-ldap php-redis
+
+# Restart web server
+sudo systemctl restart apache2      # For Apache
+sudo systemctl restart php-fpm nginx  # For nginx
+```
+
+**Fedora/RHEL/CentOS:**
+```bash
+# Database server (choose one)
+sudo dnf install mariadb-server    # MariaDB (recommended)
+sudo dnf install mysql-server      # Or MySQL
+sudo systemctl enable --now mariadb
+
+# PHP extensions
+sudo dnf install php-mysqli php-xml php-curl php-json php-ldap php-phpiredis
+
+# Restart web server
+sudo systemctl restart httpd        # For Apache
+sudo systemctl restart php-fpm nginx  # For nginx
+```
+
+After installing the database server, run `mysql_secure_installation` to set a root
+password and secure your installation.
+
 **Note:** This tool works even with incomplete configuration, so you can use it to
 diagnose setup issues before AQL is fully functional.
 
