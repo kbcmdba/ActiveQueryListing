@@ -106,34 +106,38 @@
 }
 
 /* ========== Base Styles ========== */
+html {
+    /* font-size: 50%; */
+}
+
 body {
     background-color: var(--bg-body) !important ;
     color: var(--text-primary) !important ;
     padding-top: 12.5rem ;
-    font-size: 2.5rem ;
+    font-size: 1.5rem !important ;
 }
 
 p, li, span, div, label {
-    font-size: 2.5rem ;
+    font-size: 1.5rem ;
 }
 
-h1 { font-size: 5rem ; }
-h2 { font-size: 4rem ; }
-h3 { font-size: 3.5rem ; }
-h4 { font-size: 3rem ; }
-h5 { font-size: 2.75rem ; }
-h6 { font-size: 2.5rem ; }
+h1 { font-size: 2.5rem ; }
+h2 { font-size: 2rem ; }
+h3 { font-size: 1.75rem ; }
+h4 { font-size: 1.5rem ; }
+h5 { font-size: 1.375rem ; }
+h6 { font-size: 1.25rem ; }
 
 pre, code {
-    font-size: 2.25rem ;
+    font-size: 1.5rem ;
 }
 
 .errorNotice {
-	background-color: red !important ;
-	color: white !important ;
-	font-size: 3rem !important ;
-	font-weight: bold !important ;
-	text-align: center ;
+    background-color: red !important ;
+    color: white !important ;
+    font-size: 2.5rem !important ;
+    font-weight: bold !important ;
+    text-align: center ;
     /* 1-frame noop animation purely to raise an event */
     animation: klaxon-ping 0.001s linear 1;
 }
@@ -144,7 +148,7 @@ pre, code {
 .error td {
   background-color: red !important ;
   color: white !important ;
-  font-size: 3rem !important ;
+  font-size: 2.5rem !important ;
   font-weight: bold !important ;
 }
 
@@ -159,7 +163,7 @@ pre, code {
 .legendLevel4 {
   background-color: orange !important ;
   color: black !important ;
-  font-size: 5.5rem ;
+  font-size: 2.75rem ;
 }
 
 .level3,
@@ -264,12 +268,12 @@ th {
   color: var(--text-primary) ;
   text-align: center !important ;
   padding: 0.5rem !important ;
-  font-size: 2.5rem ;
+  font-size: 1.25rem ;
 }
 
 td {
   padding: 0.5rem !important ;
-  font-size: 2.5rem ;
+  font-size: 1.25rem ;
 }
 
 .aql-listing tbody tr:nth-child(odd) {
@@ -285,49 +289,49 @@ td {
 select {
   background-color: var(--input-bg) !important ;
   color: var(--input-text) !important ;
-  font-size: 2.5rem ;
+  font-size: 1.25rem ;
 }
 
 input {
   background-color: var(--input-bg) !important ;
   color: var(--input-text) !important ;
-  font-size: 2.5rem ;
+  font-size: 1.25rem ;
 }
 
 textarea {
   background-color: var(--input-bg) !important ;
   color: var(--input-text) !important ;
-  font-size: 2.5rem ;
+  font-size: 1.25rem ;
 }
 
 button {
   background-color: var(--input-bg) !important ;
   color: var(--input-text) !important ;
-  font-size: 2.5rem ;
+  font-size: 1.25rem ;
 }
 
 .comment {
-	margin: 0.5rem ;
+    margin: 0.5rem ;
     color: #444 ;
-	background-color: #f0f0f0 ;
+    background-color: #f0f0f0 ;
 }
 
 a.morelink {
     /* text-decoration: none ;
-	outline: none ; */
+       outline: none ; */
 }
 
 .morecontent span {
-	display: none ;
+    display: none ;
 }
 
 a {
-	color: var(--link-color) ;
-	font-size: inherit ;
+    color: var(--link-color) ;
+    font-size: inherit ;
 }
 
 a:visited {
-	color: var(--link-color) ;
+    color: var(--link-color) ;
 }
 
 .headerTableTd {
@@ -341,48 +345,48 @@ a:visited {
 }
 
 #updatedAt {
-	background-color: var(--bg-body) ;
-	color: var(--text-muted) ;
-	font-size: 2.668rem ;
-	vertical-align: middle ;
-	text-align: center ;
+    background-color: var(--bg-body) ;
+    color: var(--text-muted) ;
+    font-size: 1.334rem ;
+    vertical-align: middle ;
+    text-align: center ;
 }
 
 .Blank,
 .Blank td {
-	color: var(--text-primary) !important ;
-	background-color: var(--bg-body) !important ;
+    color: var(--text-primary) !important ;
+    background-color: var(--bg-body) !important ;
 }
 
 .Unique,
 .Unique td {
-	color: black !important ;
-	background-color: silver !important ;
+    color: black !important ;
+    background-color: silver !important ;
 }
 
 .Similar,
 .Similar td {
-	color: black !important ;
-	background-color: yellow !important ;
+    color: black !important ;
+    background-color: yellow !important ;
 }
 
 .Duplicate,
 .Duplicate td {
-	color: black !important ;
-	background-color: pink !important ;
+    color: black !important ;
+    background-color: pink !important ;
 }
 
 /* Lock status indicators - row borders for process list */
 tr.blocked {
-    border-left: 8px solid hotpink !important;
+    border-left: 0.5rem solid hotpink !important;
 }
 
 tr.blocking {
-    border-left: 8px solid red !important;
+    border-left: 0.5rem solid red !important;
 }
 
 tr.blocked.blocking {
-    border-left: 8px solid purple !important;
+    border-left: 0.5rem solid purple !important;
 }
 
 /* Lock status indicators - cell backgrounds for overview tables */
@@ -401,7 +405,7 @@ td.blocking {
     color: black;
     padding: 0.5rem 1.5rem;
     border-radius: 0.75rem;
-    font-size: 2.5rem;
+    font-size: 1.25rem !important ;
     font-weight: bold;
     cursor: help;
     display: inline-block;
@@ -413,7 +417,7 @@ td.blocking {
     color: white;
     padding: 0.5rem 1.5rem;
     border-radius: 0.75rem;
-    font-size: 2.5rem;
+    font-size: 1.25rem;
     font-weight: bold;
     cursor: help;
     display: inline-block;
@@ -426,7 +430,7 @@ td.blocking {
     padding: 2.5rem;
     margin: 2.5rem 0;
     border-radius: 1.25rem;
-    border: 1px solid var(--border-light);
+    border: 0.0625rem solid var(--border-light);
     position: relative;
 }
 
@@ -440,7 +444,7 @@ td.blocking {
     padding: 2.5rem;
     overflow-x: auto;
     color: #0f0;
-    border: 1px solid var(--border-medium);
+    border: 0.0625rem solid var(--border-medium);
     margin-top: 1.25rem;
 }
 
@@ -450,11 +454,11 @@ td.blocking {
     right: 2.5rem;
     background: var(--bg-header);
     color: var(--text-primary);
-    border: 1px solid var(--border-light);
+    border: 0.0625rem solid var(--border-light);
     border-radius: 0.75rem;
     padding: 1rem 2rem;
     cursor: pointer;
-    font-size: 3rem;
+    font-size: 1.5rem;
 }
 
 .copy-btn:hover {
@@ -475,7 +479,7 @@ td.blocking {
     top: 50%;
     transform: translateY(-50%);
     opacity: 0.4;
-    font-size: 2rem;
+    font-size: 1rem;
 }
 
 .tablesorter th.tablesorter-headerAsc::after {
@@ -500,7 +504,7 @@ td.blocking {
 
 .aql-navbar .navbar-brand {
     color: var(--navbar-brand) !important;
-    font-size: 3rem;
+    font-size: 1.5rem;
     padding: 2.5rem 3.75rem;
 }
 
@@ -524,12 +528,12 @@ td.blocking {
 
 .aql-navbar .dropdown-menu {
     background-color: var(--bg-body);
-    border: 1px solid var(--border-dark);
+    border: 0.0625rem solid var(--border-dark);
 }
 
 .aql-navbar .dropdown-menu > li > a {
     color: var(--text-secondary);
-    font-size: 2.5rem;
+    font-size: 1.25rem;
 }
 
 .aql-navbar .dropdown-menu > li > a:hover,
@@ -548,14 +552,14 @@ td.blocking {
 }
 
 #themeIcon {
-    font-size: 4rem;
+    font-size: 2rem;
 }
 
 /* Maintenance Window Indicators - keep these sizes stable */
 .maintenanceIndicator {
     margin-left: 1.25rem;
     cursor: help;
-    font-size: 2.5rem;
+    font-size: 1.25rem;
 }
 
 .maintenanceIndicator.adhoc {
@@ -571,7 +575,7 @@ td.blocking {
 }
 
 .in-maintenance td:first-child {
-    border-left: 6px solid #ffcc00;
+    border-left: 0.375rem solid #ffcc00;
 }
 
 /* Quick management links (silence/gear icons) - keep these sizes stable */
@@ -579,7 +583,7 @@ td.blocking {
 .maintenance-link {
     text-decoration: none;
     margin-left: 0.75rem;
-    font-size: 2.5rem;
+    font-size: 1.25rem;
     opacity: 0.6;
 }
 
@@ -592,12 +596,12 @@ td.blocking {
 #silenceModal .modal-content {
     background-color: var(--bg-body);
     color: var(--text-secondary);
-    border: 1px solid var(--border-dark);
+    border: 0.0625rem solid var(--border-dark);
 }
 
 #silenceModal .modal-header {
     background-color: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-dark);
+    border-bottom: 0.0625rem solid var(--border-dark);
 }
 
 #silenceModal .modal-header h4 {
@@ -624,14 +628,14 @@ td.blocking {
 
 #silenceModal .modal-footer {
     background-color: var(--bg-secondary);
-    border-top: 1px solid var(--border-dark);
+    border-top: 0.0625rem solid var(--border-dark);
 }
 
 #silenceModal input[type="text"],
 #silenceModal input[type="number"] {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
-    border: 1px solid var(--border-medium);
+    border: 0.0625rem solid var(--border-medium);
     padding: 1.25rem 2rem;
 }
 
@@ -657,10 +661,10 @@ td.blocking {
     margin-top: 2.5rem;
     padding: 2rem;
     background: var(--bg-tertiary);
-    border: 1px solid var(--border-light);
+    border: 0.0625rem solid var(--border-light);
     border-radius: 1rem;
     text-align: left;
-    font-size: 2.75rem;
+    font-size: 1.375rem;
     max-width: 70rem;
 }
 
@@ -672,7 +676,7 @@ td.blocking {
 
 .local-silences-clear-all {
     float: right;
-    font-size: 2.5rem;
+    font-size: 1.25rem;
     color: var(--text-secondary);
 }
 
@@ -709,7 +713,7 @@ td.blocking {
 
 .local-silence-expiry {
     color: var(--text-dimmed);
-    font-size: 2.5rem;
+    font-size: 1.25rem;
     margin-left: 1.25rem;
 }
 
@@ -735,11 +739,11 @@ td.blocking {
     background: #354535;
     border-radius: 0.75rem;
     color: #8f8;
-    font-size: 2.5rem;
+    font-size: 1.25rem;
 }
 
 .local-silence-auto-badge {
-    font-size: 2.25rem;
+    font-size: 1.125rem;
     color: #8cf;
     margin-left: 1rem;
 }
@@ -767,12 +771,12 @@ td.blocking {
 .alert-debug-box {
     background: var(--bg-secondary);
     color: var(--text-secondary);
-    border: 2px solid #0f0;
+    border: 0.125rem solid #0f0;
     border-radius: 1.25rem;
     padding: 3rem;
     margin: 2.5rem 0;
     font-family: monospace;
-    font-size: 3rem;
+    font-size: 1.5rem;
 }
 
 .alert-debug-header {
@@ -790,7 +794,7 @@ td.blocking {
 .alert-debug-btn {
     background: var(--bg-header);
     color: var(--text-primary);
-    border: 1px solid var(--border-light);
+    border: 0.0625rem solid var(--border-light);
     border-radius: 0.75rem;
     padding: 0.5rem 2rem;
     cursor: pointer;
@@ -806,7 +810,7 @@ td.blocking {
     margin-bottom: 3.75rem;
     padding: 2.5rem;
     background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-light);
+    border: 0.0625rem solid var(--border-light);
     border-radius: 1.25rem;
 }
 
@@ -814,7 +818,7 @@ td.blocking {
     margin-top: 0;
     color: var(--text-primary);
     text-align: center;
-    font-size: 2.5rem;
+    font-size: 1.25rem;
 }
 
 .maintenance-windows-table {
@@ -825,7 +829,7 @@ td.blocking {
 
 .maintenance-windows-table th,
 .maintenance-windows-table td {
-    border: 1px solid var(--border-light);
+    border: 0.0625rem solid var(--border-light);
     padding: 1rem 2rem;
     text-align: left;
     vertical-align: top;
@@ -844,7 +848,7 @@ td.blocking {
 .maintenance-windows-table .mw-type {
     width: 25rem;
     white-space: nowrap;
-    font-size: 2.5rem;
+    font-size: 1.25rem;
 }
 
 .maintenance-windows-table .mw-desc {
@@ -862,25 +866,25 @@ td.blocking {
 /* ========== Test Harness Styles ========== */
 .test-success {
     color: lime;
-    font-size: 2.25rem;
+    font-size: 1.125rem;
 }
 
 .test-warning {
     color: yellow;
-    font-size: 2.25rem;
+    font-size: 1.125rem;
 }
 
 .test-error {
     color: red;
-    font-size: 2rem;
+    font-size: 1rem;
 }
 
 .test-status {
-    font-size: 2rem;
+    font-size: 1rem;
 }
 
 .test-pre {
-    font-size: 1.5rem;
+    font-size: 1rem;
 }
 
 /* ========== Index Page Styles ========== */
@@ -890,10 +894,137 @@ td.blocking {
 }
 
 .compact-controls {
-    font-size: 1.5rem;
+    font-size: 0.75rem;
 }
 
 .hint-text {
     color: var(--text-dimmed);
+    font-size: 1.25rem;
+}
+
+/* ========== Utility Classes ========== */
+/* Text alignment */
+.text-right {
+    text-align: right;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Status/message colors */
+.msg-error {
+    color: red;
+}
+
+.msg-warning {
+    color: yellow;
+}
+
+.msg-success {
+    color: lime;
+}
+
+.msg-muted {
+    color: var(--text-dimmed);
+}
+
+/* Cursor styles */
+.help-cursor {
+    cursor: help;
+}
+
+/* Query text in pre tags (blocking history) */
+.query-pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ========== Test Harness Specific Styles ========== */
+.test-not-configured {
+    background: #600;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.test-table {
+    margin: 10px 0;
+}
+
+.test-result-large {
+    font-size: 2rem;
+}
+
+.test-complete-msg {
+    font-size: 1.125rem;
+}
+
+.test-pre-output {
     font-size: 1.5rem;
+}
+
+.test-visual-output {
+    margin-top: 5px;
+}
+
+.test-role-blocker {
+    color: red;
+    font-weight: bold;
+}
+
+.test-role-waiter {
+    color: hotpink;
+    font-weight: bold;
+}
+
+.test-final-status {
+    font-size: 2rem;
+}
+
+.test-blocking-indicator {
+    font-size: 2rem;
+}
+
+/* ========== Form/Input Styles ========== */
+.label-normal {
+    font-weight: normal;
+}
+
+.label-spaced {
+    font-weight: normal;
+    margin-right: 15px;
+}
+
+.input-narrow {
+    width: 40px;
+}
+
+.input-medium {
+    width: 100px;
+}
+
+.input-wide {
+    width: 150px;
+}
+
+.select-min-width {
+    min-width: 200px;
+}
+
+.form-hint {
+    color: var(--text-dimmed);
+    font-size: 0.75rem;
+}
+
+.compact-form-row {
+    font-size: 1.5rem;
+}
+
+.mute-status-container {
+    margin-bottom: 5px;
+}
+
+.mute-status-label {
+    font-weight: bold;
 }

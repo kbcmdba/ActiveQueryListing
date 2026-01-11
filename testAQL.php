@@ -36,7 +36,7 @@ $localPort = $config->getDbPort() ;
 $testConfigured = !empty( $testDbUser ) && !empty( $testDbPass ) && !empty( $testDbName ) ;
 
 if ( !$testConfigured ) {
-    $body .= "<div style='background:#600;padding:15px;border-radius:5px;'>\n" ;
+    $body .= "<div class='test-not-configured'>\n" ;
     $body .= "<h3>Test Harness Not Configured</h3>\n" ;
     $body .= "<p>To use the test harness, configure the following in aql_config.xml:</p>\n" ;
     $body .= "<pre>\n" ;
@@ -82,9 +82,9 @@ if ( $test === 'config_validate' ) {
     $body .= "<h3>Configuration Validation</h3>\n" ;
 
     $configFile = __DIR__ . '/aql_config.xml' ;
-    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
-    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
-    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+    $passIcon = "<span class='test-success'>&#10004;</span>" ;
+    $failIcon = "<span class='test-error'>&#10008;</span>" ;
+    $warnIcon = "<span class='test-warning'>&#9888;</span>" ;
 
     // Step 1: Check if config file exists and is readable
     $body .= "<h4>1. Config File Check</h4>\n" ;
@@ -102,7 +102,7 @@ if ( $test === 'config_validate' ) {
 
     // Step 2: Required parameters
     $body .= "<h4>2. Required Parameters</h4>\n" ;
-    $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+    $body .= "<table border='1' cellpadding='6' class='test-table'>\n" ;
     $body .= "<tr><th>Parameter</th><th>Value</th><th>Status</th></tr>\n" ;
 
     $requiredParams = [
@@ -148,7 +148,7 @@ if ( $test === 'config_validate' ) {
 
     // Step 3: Optional parameters
     $body .= "<h4>3. Optional Parameters</h4>\n" ;
-    $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+    $body .= "<table border='1' cellpadding='6' class='test-table'>\n" ;
     $body .= "<tr><th>Parameter</th><th>Value</th><th>Status</th></tr>\n" ;
 
     $optionalParams = [
@@ -165,7 +165,7 @@ if ( $test === 'config_validate' ) {
     ] ;
 
     foreach ( $optionalParams as $name => $value ) {
-        $status = !empty( $value ) && $value !== '(not set)' ? $passIcon : "<span style='color:gray;'>○</span>" ;
+        $status = !empty( $value ) && $value !== '(not set)' ? $passIcon : "<span class='test-status'>○</span>" ;
         $body .= "<tr><td>$name</td><td><code>" . htmlspecialchars( $value ) . "</code></td><td>$status</td></tr>\n" ;
     }
     $body .= "</table>\n" ;
@@ -240,20 +240,20 @@ if ( $test === 'config_validate' ) {
     }
 
     $body .= "<hr/>\n" ;
-    $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; Configuration validation complete</p>\n" ;
+    $body .= "<p class='test-success test-complete-msg'>&#10004; Configuration validation complete</p>\n" ;
 }
 
 if ( $test === 'smoke_test' ) {
     $body .= "<h3>Application Smoke Test</h3>\n" ;
     $body .= "<p>Testing that main AQL pages load without errors...</p>\n" ;
 
-    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
-    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
-    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+    $passIcon = "<span class='test-success'>&#10004;</span>" ;
+    $failIcon = "<span class='test-error'>&#10008;</span>" ;
+    $warnIcon = "<span class='test-warning'>&#9888;</span>" ;
 
     $baseUrl = "https://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI'] ) ;
 
-    $body .= "<table border='1' cellpadding='8' style='margin:10px 0;'>\n" ;
+    $body .= "<table border='1' cellpadding='8' class='test-table'>\n" ;
     $body .= "<tr><th>Page</th><th>HTTP Status</th><th>Result</th><th>Details</th></tr>\n" ;
 
     // Test pages
@@ -321,15 +321,15 @@ if ( $test === 'smoke_test' ) {
     $body .= "<p>Once hosts are configured, use <a href='?test=blocking_setup'>Blocking Test</a> to verify lock detection works.</p>\n" ;
 
     $body .= "<hr/>\n" ;
-    $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; Smoke test complete</p>\n" ;
+    $body .= "<p class='test-success test-complete-msg'>&#10004; Smoke test complete</p>\n" ;
 }
 
 if ( $test === 'db_user_verify' ) {
     $body .= "<h3>Database User Verification</h3>\n" ;
 
-    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
-    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
-    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+    $passIcon = "<span class='test-success'>&#10004;</span>" ;
+    $failIcon = "<span class='test-error'>&#10008;</span>" ;
+    $warnIcon = "<span class='test-warning'>&#9888;</span>" ;
 
     $dbUser = $config->getDbUser() ;
     $dbPass = $config->getDbPass() ;
@@ -420,7 +420,7 @@ if ( $test === 'db_user_verify' ) {
     // Test config server (local)
     $body .= "<h4>1. Config Server ($localHost:$localPort)</h4>\n" ;
     $body .= "<p><strong>Application user ($dbUser):</strong></p>\n" ;
-    $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+    $body .= "<table border='1' cellpadding='6' class='test-table'>\n" ;
     $body .= "<tr><th>Check</th><th>Status</th><th>Details</th></tr>\n" ;
 
     $localResults = $testHostPrivileges( $localHost, $localPort, $dbUser, $dbPass, $showSlaveStatement ) ;
@@ -466,7 +466,7 @@ if ( $test === 'db_user_verify' ) {
         $result = $mainDbh->query( $hostQuery ) ;
 
         if ( $result && $result->num_rows > 0 ) {
-            $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+            $body .= "<table border='1' cellpadding='6' class='test-table'>\n" ;
             if ( $testUserConfigured ) {
                 $body .= "<tr><th>Host</th><th>Type</th><th>$dbUser</th><th>PROCESS</th><th>REPL</th><th>perf_schema</th><th>$testUser</th></tr>\n" ;
             } else {
@@ -621,9 +621,9 @@ function copyToClipboard(preId, btnId) {
 
     $body .= "<hr/>\n" ;
     if ( empty( $issues ) ) {
-        $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; Database user verification complete - no issues found</p>\n" ;
+        $body .= "<p class='test-success test-complete-msg'>&#10004; Database user verification complete - no issues found</p>\n" ;
     } else {
-        $body .= "<p style='color:yellow;font-size:1.125rem;'>&#9888; Database user verification complete - " . count( $issues ) . " issue(s) found</p>\n" ;
+        $body .= "<p class='test-warning test-complete-msg'>&#9888; Database user verification complete - " . count( $issues ) . " issue(s) found</p>\n" ;
     }
 }
 
@@ -631,9 +631,9 @@ if ( $test === 'schema_verify' ) {
     $body .= "<h3>Schema Verification</h3>\n" ;
     $body .= "<p><em>Read-only check of aql_db database structure</em></p>\n" ;
 
-    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
-    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
-    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+    $passIcon = "<span class='test-success'>&#10004;</span>" ;
+    $failIcon = "<span class='test-error'>&#10008;</span>" ;
+    $warnIcon = "<span class='test-warning'>&#9888;</span>" ;
 
     $dbName = $config->getDbName() ;
     $dbUser = $config->getDbUser() ;
@@ -667,7 +667,7 @@ if ( $test === 'schema_verify' ) {
 
         // Step 2: Check tables exist
         $body .= "<h4>2. Required Tables</h4>\n" ;
-        $body .= "<table border='1' cellpadding='6' style='margin:10px 0;'>\n" ;
+        $body .= "<table border='1' cellpadding='6' class='test-table'>\n" ;
         $body .= "<tr><th>Table</th><th>Status</th><th>Row Count</th></tr>\n" ;
 
         $allTablesExist = true ;
@@ -723,9 +723,9 @@ if ( $test === 'schema_verify' ) {
 
         $body .= "<hr/>\n" ;
         if ( $allTablesExist ) {
-            $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; Schema verification complete - all tables present</p>\n" ;
+            $body .= "<p class='test-success test-complete-msg'>&#10004; Schema verification complete - all tables present</p>\n" ;
         } else {
-            $body .= "<p style='color:yellow;font-size:1.125rem;'>&#9888; Schema verification complete - some tables missing (run <a href='deployDDL.php'>deployDDL.php</a>)</p>\n" ;
+            $body .= "<p class='test-warning test-complete-msg'>&#9888; Schema verification complete - some tables missing (run <a href='deployDDL.php'>deployDDL.php</a>)</p>\n" ;
         }
 
     } catch ( \Exception $e ) {
@@ -737,9 +737,9 @@ if ( $test === 'deploy_ddl_verify' ) {
     $body .= "<h3>Deploy DDL Verification</h3>\n" ;
     $body .= "<p><em>Verifies that deployDDL.php runs without errors and reports schema status</em></p>\n" ;
 
-    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
-    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
-    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+    $passIcon = "<span class='test-success'>&#10004;</span>" ;
+    $failIcon = "<span class='test-error'>&#10008;</span>" ;
+    $warnIcon = "<span class='test-warning'>&#9888;</span>" ;
 
     try {
         // Get the config database connection
@@ -778,9 +778,9 @@ if ( $test === 'deploy_ddl_verify' ) {
             $sql = "SHOW TABLES LIKE '$tableName'" ;
             $result = $dbh->query( $sql ) ;
             if ( $result && $result->num_rows > 0 ) {
-                $body .= "<tr><td>$tableName</td><td style='color:lime;'>EXISTS</td><td>No action needed</td></tr>\n" ;
+                $body .= "<tr><td>$tableName</td><td class='test-success'>EXISTS</td><td>No action needed</td></tr>\n" ;
             } else {
-                $body .= "<tr><td>$tableName</td><td style='color:yellow;'>MISSING</td><td>Would be created</td></tr>\n" ;
+                $body .= "<tr><td>$tableName</td><td class='test-warning'>MISSING</td><td>Would be created</td></tr>\n" ;
                 $allTablesExist = false ;
             }
         }
@@ -809,14 +809,14 @@ if ( $test === 'deploy_ddl_verify' ) {
             try {
                 $result = $dbh->query( $sql ) ;
                 if ( $result && $result->num_rows > 0 ) {
-                    $body .= "<tr><td>$columnName</td><td>$tableName</td><td style='color:lime;'>Present</td></tr>\n" ;
+                    $body .= "<tr><td>$columnName</td><td>$tableName</td><td class='test-success'>Present</td></tr>\n" ;
                 } else {
-                    $body .= "<tr><td>$columnName</td><td>$tableName</td><td style='color:yellow;'>Would be added</td></tr>\n" ;
+                    $body .= "<tr><td>$columnName</td><td>$tableName</td><td class='test-warning'>Would be added</td></tr>\n" ;
                     $pendingMigrations++ ;
                 }
             } catch ( \Exception $e ) {
                 // Table might not exist
-                $body .= "<tr><td>$columnName</td><td>$tableName</td><td style='color:gray;'>Table missing</td></tr>\n" ;
+                $body .= "<tr><td>$columnName</td><td>$tableName</td><td class='test-status'>Table missing</td></tr>\n" ;
             }
         }
 
@@ -826,10 +826,10 @@ if ( $test === 'deploy_ddl_verify' ) {
 
         $body .= "<hr/>\n" ;
         if ( $allTablesExist && $pendingMigrations === 0 ) {
-            $body .= "<p style='color:lime;font-size:1.125rem;'>$passIcon deployDDL.php verification passed - schema is up to date</p>\n" ;
+            $body .= "<p class='test-success test-complete-msg'>$passIcon deployDDL.php verification passed - schema is up to date</p>\n" ;
             $body .= "<p>Running <a href='deployDDL.php'>deployDDL.php</a> will report \"Schema is up to date. No changes needed.\"</p>\n" ;
         } else {
-            $body .= "<p style='color:yellow;font-size:1.125rem;'>$warnIcon Schema changes pending</p>\n" ;
+            $body .= "<p class='test-warning test-complete-msg'>$warnIcon Schema changes pending</p>\n" ;
             if ( !$allTablesExist ) {
                 $body .= "<p>Missing tables will be created when you run <a href='deployDDL.php'>deployDDL.php</a></p>\n" ;
             }
@@ -850,7 +850,7 @@ if ( $test === 'blocking_setup' ) {
         // Create test table first
         $dbh = getTestDbConnection( $localHost, $localPort, $testDbUser, $testDbPass, $testDbName ) ;
         $dbh->query( "CREATE TABLE IF NOT EXISTS blocking_test (id INT AUTO_INCREMENT PRIMARY KEY, data VARCHAR(100)) ENGINE=MyISAM" ) ;
-        $body .= "<p style='color:lime;'>$passIcon Test table <code>$testDbName.blocking_test</code> created/verified</p>\n" ;
+        $body .= "<p class='test-success'>$passIcon Test table <code>$testDbName.blocking_test</code> created/verified</p>\n" ;
         $dbh->close() ;
 
         $body .= "<h4>Running Blocking Scenario...</h4>\n" ;
@@ -867,7 +867,7 @@ if ( $test === 'blocking_setup' ) {
         if ( ! $session1->query( "LOCK TABLES blocking_test WRITE" ) ) {
             throw new \Exception( "Session 1 failed to acquire lock: " . $session1->error ) ;
         }
-        $body .= "<p style='color:lime;'>$passIcon Session 1 acquired WRITE lock on blocking_test</p>\n" ;
+        $body .= "<p class='test-success'>$passIcon Session 1 acquired WRITE lock on blocking_test</p>\n" ;
 
         // Start the sleep query (non-blocking from PHP's perspective using query with MYSQLI_ASYNC)
         // We'll use a short sleep so we can check blocking, then it will release
@@ -899,7 +899,7 @@ if ( $test === 'blocking_setup' ) {
         }
 
         $body .= "<h4>Checking Process List...</h4>\n" ;
-        $body .= "<table border='1' cellpadding='8' style='margin:10px 0;'>\n" ;
+        $body .= "<table border='1' cellpadding='8' class='test-table'>\n" ;
         $body .= "<tr><th>Thread ID</th><th>User</th><th>Command</th><th>State</th><th>Info</th><th>Role</th></tr>\n" ;
 
         $result = $checkDbh->query( "SELECT id, user, command, state, info FROM INFORMATION_SCHEMA.PROCESSLIST WHERE id IN ($session1Id, $session2Id)" ) ;
@@ -909,14 +909,14 @@ if ( $test === 'blocking_setup' ) {
 
         while ( $row = $result->fetch_assoc() ) {
             $role = '' ;
-            $roleStyle = '' ;
+            $roleClass = '' ;
             if ( intval( $row['id'] ) === $session1Id ) {
                 $role = 'BLOCKER' ;
-                $roleStyle = 'color:red;font-weight:bold;' ;
+                $roleClass = 'test-role-blocker' ;
                 $foundBlocker = true ;
             } elseif ( intval( $row['id'] ) === $session2Id ) {
                 $role = 'WAITER' ;
-                $roleStyle = 'color:hotpink;font-weight:bold;' ;
+                $roleClass = 'test-role-waiter' ;
                 $foundWaiter = true ;
                 $waiterState = $row['state'] ?? '' ;
             }
@@ -926,7 +926,7 @@ if ( $test === 'blocking_setup' ) {
             $body .= "<td>" . htmlspecialchars( $row['command'] ) . "</td>" ;
             $body .= "<td>" . htmlspecialchars( $row['state'] ) . "</td>" ;
             $body .= "<td>" . htmlspecialchars( substr( $row['info'] ?? '', 0, 50 ) ) . "</td>" ;
-            $body .= "<td style='$roleStyle'>$role</td>" ;
+            $body .= "<td class='$roleClass'>$role</td>" ;
             $body .= "</tr>\n" ;
         }
         $body .= "</table>\n" ;
@@ -936,15 +936,15 @@ if ( $test === 'blocking_setup' ) {
 
         $body .= "<h4>Test Results</h4>\n" ;
         if ( $foundBlocker && $foundWaiter && $lockWaitDetected ) {
-            $body .= "<p style='color:lime;font-size:2rem;'>$passIcon Blocking detection test PASSED!</p>\n" ;
+            $body .= "<p class='test-success test-result-large'>$passIcon Blocking detection test PASSED!</p>\n" ;
             $body .= "<ul>\n" ;
             $body .= "<li>Session 1 (Thread $session1Id) is holding the lock</li>\n" ;
             $body .= "<li>Session 2 (Thread $session2Id) is waiting (state: <code>$waiterState</code>)</li>\n" ;
             $body .= "</ul>\n" ;
         } elseif ( $foundBlocker && $foundWaiter ) {
-            $body .= "<p style='color:yellow;font-size:2rem;'>$warnIcon Sessions found but waiter state unclear: <code>$waiterState</code></p>\n" ;
+            $body .= "<p class='test-warning test-result-large'>$warnIcon Sessions found but waiter state unclear: <code>$waiterState</code></p>\n" ;
         } else {
-            $body .= "<p style='color:red;font-size:2rem;'>$failIcon Could not verify blocking state</p>\n" ;
+            $body .= "<p class='test-error test-result-large'>$failIcon Could not verify blocking state</p>\n" ;
             $body .= "<p>Blocker found: " . ( $foundBlocker ? 'Yes' : 'No' ) . ", Waiter found: " . ( $foundWaiter ? 'Yes' : 'No' ) . "</p>\n" ;
         }
 
@@ -952,11 +952,11 @@ if ( $test === 'blocking_setup' ) {
         $checkDbh->close() ;
         $session1->close() ;
         $session2->close() ;
-        $body .= "<p style='color:gray;'>Test sessions closed, locks released.</p>\n" ;
+        $body .= "<p class='test-status'>Test sessions closed, locks released.</p>\n" ;
 
 
     } catch ( \Exception $e ) {
-        $body .= "<p style='color:red;'>$failIcon Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+        $body .= "<p class='test-error'>$failIcon Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
     }
 }
 
@@ -1022,7 +1022,7 @@ if (typeof copyToClipboard !== 'function') {
     $body .= "<div class='code-box'>\n" ;
     $body .= "<p class='code-box-title'><strong>Original actions HTML:</strong></p>\n" ;
     $body .= "<button id='copy_btn_orig' class='copy-btn' onclick=\"copyToClipboard('pre_orig', 'copy_btn_orig')\">📋 Copy</button>\n" ;
-    $body .= "<pre id='pre_orig' style='font-size:1.5rem;'>" . htmlspecialchars( $sampleActions ) . "</pre>\n" ;
+    $body .= "<pre id='pre_orig' class='test-pre'>" . htmlspecialchars( $sampleActions ) . "</pre>\n" ;
     $body .= "</div>\n" ;
 
     // Simulate the JavaScript regex replacement
@@ -1032,17 +1032,17 @@ if (typeof copyToClipboard !== 'function') {
         'fileIssue( $1, ' . $blockingCount . ' )',
         $sampleActions
     ) ;
-    $modified .= ' <span class="blockingIndicator" style="font-size:2rem;">(blocking ' . $blockingCount . ')</span>' ;
+    $modified .= ' <span class="blockingIndicator test-blocking-indicator">(blocking ' . $blockingCount . ')</span>' ;
 
     $body .= "<div class='code-box'>\n" ;
     $body .= "<p class='code-box-title'><strong>After modifyActionsForBlocking() with blockingCount=5:</strong></p>\n" ;
     $body .= "<button id='copy_btn_mod' class='copy-btn' onclick=\"copyToClipboard('pre_mod', 'copy_btn_mod')\">📋 Copy</button>\n" ;
-    $body .= "<pre id='pre_mod' style='font-size:1.5rem;'>" . htmlspecialchars( $modified ) . "</pre>\n" ;
+    $body .= "<pre id='pre_mod' class='test-pre'>" . htmlspecialchars( $modified ) . "</pre>\n" ;
     $body .= "</div>\n" ;
 
     $body .= "<div class='code-box'>\n" ;
     $body .= "<p class='code-box-title'><strong>Visual rendering:</strong></p>\n" ;
-    $body .= "<div style='margin-top:5px;'>" . $modified . "</div>\n" ;
+    $body .= "<div class='test-visual-output'>" . $modified . "</div>\n" ;
     $body .= "</div>\n" ;
 
     $body .= "<h4>Expected Jira Issue Fields</h4>\n" ;
@@ -1052,7 +1052,7 @@ if (typeof copyToClipboard !== 'function') {
     $body .= "<tr><td>Description includes</td><td>*Blocking Count at time issue was filed:* 5</td></tr>\n" ;
     $body .= "</table>\n" ;
 
-    $body .= "<p style='color:lime;font-size:1.125rem;'>&#10004; JavaScript regex replacement verified</p>\n" ;
+    $body .= "<p class='test-success test-complete-msg'>&#10004; JavaScript regex replacement verified</p>\n" ;
 }
 
 if ( $test === 'jira_test' ) {
@@ -1060,7 +1060,7 @@ if ( $test === 'jira_test' ) {
 
     // Check current Jira configuration
     $body .= "<h4>Current Configuration Status</h4>\n" ;
-    $body .= "<table border='1' cellpadding='8' style='margin:10px 0;'>\n" ;
+    $body .= "<table border='1' cellpadding='8' class='test-table'>\n" ;
     $body .= "<tr><th>Setting</th><th>Value</th><th>Status</th></tr>\n" ;
 
     $jiraEnabled = $config->getJiraEnabled() ;
@@ -1070,24 +1070,24 @@ if ( $test === 'jira_test' ) {
     $issueTrackerBaseUrl = $config->getIssueTrackerBaseUrl() ;
 
     $body .= "<tr><td>jiraEnabled</td><td>" . ( $jiraEnabled ? 'true' : 'false' ) . "</td>" ;
-    $body .= "<td>" . ( $jiraEnabled ? "<span style='color:lime;'>$passIcon Enabled</span>" : "<span style='color:yellow;'>$warnIcon Disabled</span>" ) . "</td></tr>\n" ;
+    $body .= "<td>" . ( $jiraEnabled ? "<span class='test-success'>$passIcon Enabled</span>" : "<span class='test-warning'>$warnIcon Disabled</span>" ) . "</td></tr>\n" ;
 
     $body .= "<tr><td>issueTrackerBaseUrl</td><td>" . htmlspecialchars( $issueTrackerBaseUrl ) . "</td>" ;
-    $body .= "<td>" . ( !empty( $issueTrackerBaseUrl ) ? "<span style='color:lime;'>$passIcon Set</span>" : "<span style='color:red;'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
+    $body .= "<td>" . ( !empty( $issueTrackerBaseUrl ) ? "<span class='test-success'>$passIcon Set</span>" : "<span class='test-error'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
 
     $body .= "<tr><td>jiraProjectId</td><td>" . htmlspecialchars( $jiraProjectId ) . "</td>" ;
-    $body .= "<td>" . ( !empty( $jiraProjectId ) ? "<span style='color:lime;'>$passIcon Set</span>" : "<span style='color:red;'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
+    $body .= "<td>" . ( !empty( $jiraProjectId ) ? "<span class='test-success'>$passIcon Set</span>" : "<span class='test-error'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
 
     $body .= "<tr><td>jiraIssueTypeId</td><td>" . htmlspecialchars( $jiraIssueTypeId ) . "</td>" ;
-    $body .= "<td>" . ( !empty( $jiraIssueTypeId ) ? "<span style='color:lime;'>$passIcon Set</span>" : "<span style='color:red;'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
+    $body .= "<td>" . ( !empty( $jiraIssueTypeId ) ? "<span class='test-success'>$passIcon Set</span>" : "<span class='test-error'>$failIcon Missing</span>" ) . "</td></tr>\n" ;
 
     $body .= "<tr><td>jiraQueryHashFieldId</td><td>" . htmlspecialchars( $jiraQueryHashFieldId ) . "</td>" ;
-    $body .= "<td>" . ( !empty( $jiraQueryHashFieldId ) ? "<span style='color:lime;'>$passIcon Set</span>" : "<span style='color:gray;'>Optional (not set)</span>" ) . "</td></tr>\n" ;
+    $body .= "<td>" . ( !empty( $jiraQueryHashFieldId ) ? "<span class='test-success'>$passIcon Set</span>" : "<span class='test-status'>Optional (not set)</span>" ) . "</td></tr>\n" ;
 
     $body .= "</table>\n" ;
 
     if ( !$jiraEnabled ) {
-        $body .= "<p style='color:yellow;'>$warnIcon Jira integration is disabled. Set <code>jiraEnabled</code> to <code>true</code> in aql_config.xml to enable.</p>\n" ;
+        $body .= "<p class='test-warning'>$warnIcon Jira integration is disabled. Set <code>jiraEnabled</code> to <code>true</code> in aql_config.xml to enable.</p>\n" ;
     }
 
     // Simple manual test instructions
@@ -1108,9 +1108,9 @@ if ( $test === 'jira_test' ) {
 if ( $test === 'maintenance_windows' ) {
     $body .= "<h3>Maintenance Windows Test</h3>\n" ;
 
-    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
-    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
-    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+    $passIcon = "<span class='test-success'>&#10004;</span>" ;
+    $failIcon = "<span class='test-error'>&#10008;</span>" ;
+    $warnIcon = "<span class='test-warning'>&#9888;</span>" ;
 
     // Check if maintenance windows are enabled
     $enabled = $config->getEnableMaintenanceWindows() ;
@@ -1119,7 +1119,7 @@ if ( $test === 'maintenance_windows' ) {
     $body .= "</p>\n" ;
 
     if ( !$enabled ) {
-        $body .= "<p style='color:yellow;'>Enable maintenance windows in config to test further.</p>\n" ;
+        $body .= "<p class='test-warning'>Enable maintenance windows in config to test further.</p>\n" ;
     } else {
         // Show current time info
         $tz = new \DateTimeZone( $config->getTimeZone() ) ;
@@ -1149,7 +1149,7 @@ if ( $test === 'maintenance_windows' ) {
 
             $body .= "<h4>Configured Maintenance Windows</h4>\n" ;
             if ( $result && $result->num_rows > 0 ) {
-                $body .= "<table border='1' cellpadding='5' style='margin:10px 0;'>\n" ;
+                $body .= "<table border='1' cellpadding='5' class='test-table'>\n" ;
                 $body .= "<tr><th>ID</th><th>Type</th><th>Target</th><th>Schedule</th><th>Time</th><th>TZ</th><th>Description</th></tr>\n" ;
                 while ( $row = $result->fetch_assoc() ) {
                     $schedule = $row['window_type'] === 'adhoc'
@@ -1216,13 +1216,13 @@ if ( $test === 'maintenance_windows' ) {
 
                 // Final status
                 $inMaintenance = ( $directResult !== null || $groupResult !== null ) ;
-                $body .= "<p style='font-size:2rem;'><strong>Final Status:</strong> " ;
-                $body .= $inMaintenance ? "<span style='color:lime;'>IN MAINTENANCE</span>" : "<span style='color:yellow;'>NOT IN MAINTENANCE</span>" ;
+                $body .= "<p class='test-final-status'><strong>Final Status:</strong> " ;
+                $body .= $inMaintenance ? "<span class='test-success'>IN MAINTENANCE</span>" : "<span class='test-warning'>NOT IN MAINTENANCE</span>" ;
                 $body .= "</p>\n" ;
             }
 
         } catch ( \Exception $e ) {
-            $body .= "<p style='color:red;'>Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+            $body .= "<p class='test-error'>Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
         }
     }
 }
@@ -1234,14 +1234,14 @@ if ( $test === 'cleanup' ) {
         try {
             $dbh = getTestDbConnection( $localHost, $localPort, $testDbUser, $testDbPass, $testDbName ) ;
             $dbh->query( "DROP TABLE IF EXISTS blocking_test" ) ;
-            $body .= "<p style='color:lime;'>&#10004; Test table <code>blocking_test</code> dropped</p>\n" ;
+            $body .= "<p class='test-success'>&#10004; Test table <code>blocking_test</code> dropped</p>\n" ;
             $dbh->close() ;
         } catch ( \Exception $e ) {
-            $body .= "<p style='color:red;'>Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+            $body .= "<p class='test-error'>Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
         }
     } else {
         $body .= "<p>This will drop the test table <code>$testDbName.blocking_test</code>.</p>\n" ;
-        $body .= "<p><a href=\"?test=cleanup&action=confirm\" style='color:red;'>Confirm Cleanup</a></p>\n" ;
+        $body .= "<p><a href=\"?test=cleanup&action=confirm\" class='test-error'>Confirm Cleanup</a></p>\n" ;
     }
 }
 

@@ -296,9 +296,9 @@ switch ( Tools::param( 'data' ) ) {
                 if ( ! $permCheck['success'] ) {
                     $config = new Config() ;
                     $dbUser = $config->getDbUser() ;
-                    $body .= "<span style='color:red;'>Failed - Permission verification failed:</span><br />\n" ;
+                    $body .= "<span class='msg-error'>Failed - Permission verification failed:</span><br />\n" ;
                     foreach ( $permCheck['errors'] as $err ) {
-                        $body .= "<span style='color:red;'>&bull; " . htmlspecialchars( $err ) . "</span><br />\n" ;
+                        $body .= "<span class='msg-error'>&bull; " . htmlspecialchars( $err ) . "</span><br />\n" ;
                     }
                     $body .= "<p>Run these commands on <strong>" . htmlspecialchars( $hostName ) . ":" . htmlspecialchars( $portNumber ) . "</strong> to fix:</p>\n" ;
                     $body .= "<div class='code-box'>\n" ;
@@ -316,9 +316,9 @@ switch ( Tools::param( 'data' ) ) {
                 }
                 // Show warnings but proceed with add
                 if ( ! empty( $permCheck['warnings'] ) ) {
-                    $body .= "<span style='color:yellow;'>Warnings:</span><br />\n" ;
+                    $body .= "<span class='msg-warning'>Warnings:</span><br />\n" ;
                     foreach ( $permCheck['warnings'] as $warn ) {
-                        $body .= "<span style='color:yellow;'>&bull; " . htmlspecialchars( $warn ) . "</span><br />\n" ;
+                        $body .= "<span class='msg-warning'>&bull; " . htmlspecialchars( $warn ) . "</span><br />\n" ;
                     }
                 }
                 $sql = 'INSERT INTO host SET hostname = ?, port_number = ?'
@@ -334,7 +334,7 @@ switch ( Tools::param( 'data' ) ) {
                                  , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
                                  , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs, $dbType
                                  ) ;
-                $body .= ( $stmt->execute() ) ? "<span style='color:lime;'>Success.</span><br />\n" : "Failed.<br />\n" ;
+                $body .= ( $stmt->execute() ) ? "<span class='msg-success'>Success.</span><br />\n" : "Failed.<br />\n" ;
             break ;
             case 'Update':
                 $body .= 'Update - ' ;
@@ -462,7 +462,7 @@ HTML;
                 $jsDescription = htmlspecialchars( json_encode( $row[3] ), ENT_QUOTES, 'UTF-8' ) ;
                 $jsDbType = htmlspecialchars( json_encode( $row[13] ), ENT_QUOTES, 'UTF-8' ) ;
                 $body .= "      <tr>"
-                      .  "<td style=\"text-align: center\">"
+                      .  "<td class=\"text-center\">"
                       .  "<button type=\"button\" onclick=\"fillHostForm("
                       .  intval( $row[0] ) . ", "
                       .  $jsHostname . ", "
@@ -936,13 +936,13 @@ HTML;
   <table id="MaintenanceWindowTable" border=1 cellspacing=0 cellpadding=2>
     <caption>Maintenance Window Form</caption>
     <tr><th>Window ID</th><td><input type="number" id="windowId" name="windowId" readonly="readonly" value="" size=5 /></td></tr>
-    <tr><th>Window Type <a onclick="alert('Scheduled: Recurring window that repeats on a schedule.\\n\\nAd-hoc: One-time silencing until a specific date/time (e.g., while working an issue).'); return false;" style="cursor: help;">?</a></th><td>
+    <tr><th>Window Type <a onclick="alert('Scheduled: Recurring window that repeats on a schedule.\\n\\nAd-hoc: One-time silencing until a specific date/time (e.g., while working an issue).'); return false;" class="help-cursor">?</a></th><td>
       <select id="windowType" name="windowType" onchange="toggleWindowTypeFields()">
         <option value="scheduled">Scheduled (Recurring)</option>
         <option value="adhoc">Ad-hoc (One-time)</option>
       </select>
     </td></tr>
-    <tr id="scheduleTypeRow"><th>Schedule Type <a onclick="alert('Weekly: Repeats on selected days each week.\\n\\nMonthly: Repeats on a specific day each month (e.g., 1st, 15th, or last day).\\n\\nQuarterly: Repeats on a specific day of a specific month each quarter.\\n\\nAnnually: Repeats on a specific date each year.\\n\\nPeriodic: Repeats every N days from a start date.'); return false;" style="cursor: help;">?</a></th><td>
+    <tr id="scheduleTypeRow"><th>Schedule Type <a onclick="alert('Weekly: Repeats on selected days each week.\\n\\nMonthly: Repeats on a specific day each month (e.g., 1st, 15th, or last day).\\n\\nQuarterly: Repeats on a specific day of a specific month each quarter.\\n\\nAnnually: Repeats on a specific date each year.\\n\\nPeriodic: Repeats every N days from a start date.'); return false;" class="help-cursor">?</a></th><td>
       <select id="scheduleType" name="scheduleType" onchange="toggleScheduleTypeFields()">
         <option value="weekly">Weekly</option>
         <option value="monthly">Monthly</option>
@@ -972,11 +972,11 @@ HTML;
       <label><input type="checkbox" name="daysOfWeek[]" value="Fri"> Fri</label>
       <label><input type="checkbox" name="daysOfWeek[]" value="Sat"> Sat</label>
     </td></tr>
-    <tr id="dayOfMonthRow" style="display:none;"><th>Day of Month <a onclick="alert('Day of the month (1-31).\\n\\nUse 32 for \\'last day of month\\' (handles Feb, 30-day months, etc.).'); return false;" style="cursor: help;">?</a></th><td>
+    <tr id="dayOfMonthRow" style="display:none;"><th>Day of Month <a onclick="alert('Day of the month (1-31).\\n\\nUse 32 for \\'last day of month\\' (handles Feb, 30-day months, etc.).'); return false;" class="help-cursor">?</a></th><td>
       <input type="number" id="dayOfMonth" name="dayOfMonth" min="1" max="32" size="4" />
-      <span style="color: #888;">(1-31, or 32 for last day)</span>
+      <span class="msg-muted">(1-31, or 32 for last day)</span>
     </td></tr>
-    <tr id="monthOfYearRow" style="display:none;"><th>Month <a onclick="alert('For quarterly: which month of each quarter (1=first month, 2=second, 3=third).\\n\\nFor annually: which month of the year (1=Jan, 12=Dec).'); return false;" style="cursor: help;">?</a></th><td>
+    <tr id="monthOfYearRow" style="display:none;"><th>Month <a onclick="alert('For quarterly: which month of each quarter (1=first month, 2=second, 3=third).\\n\\nFor annually: which month of the year (1=Jan, 12=Dec).'); return false;" class="help-cursor">?</a></th><td>
       <select id="monthOfYear" name="monthOfYear">
         <option value="">-- Select --</option>
         <option value="1">January (or Q1/Q2/Q3/Q4 month 1)</option>
@@ -993,17 +993,17 @@ HTML;
         <option value="12">December</option>
       </select>
     </td></tr>
-    <tr id="periodDaysRow" style="display:none;"><th>Every N Days <a onclick="alert('Number of days between occurrences.\\n\\nExample: 7 = weekly, 14 = bi-weekly, 30 = roughly monthly.'); return false;" style="cursor: help;">?</a></th><td>
+    <tr id="periodDaysRow" style="display:none;"><th>Every N Days <a onclick="alert('Number of days between occurrences.\\n\\nExample: 7 = weekly, 14 = bi-weekly, 30 = roughly monthly.'); return false;" class="help-cursor">?</a></th><td>
       <input type="number" id="periodDays" name="periodDays" min="1" max="365" size="4" />
-      <span style="color: #888;">(e.g., 7, 14, 30)</span>
+      <span class="msg-muted">(e.g., 7, 14, 30)</span>
     </td></tr>
-    <tr id="periodStartDateRow" style="display:none;"><th>Period Start Date <a onclick="alert('Anchor date for periodic schedule calculation.\\n\\nThe window will occur on this date and every N days thereafter.'); return false;" style="cursor: help;">?</a></th><td>
+    <tr id="periodStartDateRow" style="display:none;"><th>Period Start Date <a onclick="alert('Anchor date for periodic schedule calculation.\\n\\nThe window will occur on this date and every N days thereafter.'); return false;" class="help-cursor">?</a></th><td>
       <input type="date" id="periodStartDate" name="periodStartDate" />
     </td></tr>
-    <tr id="startTimeRow"><th>Start Time <a onclick="alert('Start and End times define the daily window.\\n\\nOvernight spans are supported: e.g., Start 22:00, End 08:00 means 10PM to 8AM the next day.'); return false;" style="cursor: help;">?</a></th><td><input type="time" id="startTime" name="startTime" /></td></tr>
+    <tr id="startTimeRow"><th>Start Time <a onclick="alert('Start and End times define the daily window.\\n\\nOvernight spans are supported: e.g., Start 22:00, End 08:00 means 10PM to 8AM the next day.'); return false;" class="help-cursor">?</a></th><td><input type="time" id="startTime" name="startTime" /></td></tr>
     <tr id="endTimeRow"><th>End Time</th><td><input type="time" id="endTime" name="endTime" /></td></tr>
-    <tr id="timezoneRow"><th>Timezone <a onclick="alert('PHP timezone identifier for scheduled windows.\\n\\nExamples:\\n• America/Chicago (Central)\\n• America/Denver (Mountain)\\n• America/New_York (Eastern)\\n• America/Los_Angeles (Pacific)\\n• UTC'); return false;" style="cursor: help;">?</a></th><td><input type="text" id="timezone" name="timezone" value="America/Chicago" size="30" /></td></tr>
-    <tr id="silenceUntilRow" style="display:none;"><th>Silence Until <a onclick="alert('For ad-hoc windows only.\\n\\nSpecify when silencing should end. Alerts will be suppressed until this date/time.'); return false;" style="cursor: help;">?</a></th><td><input type="datetime-local" id="silenceUntil" name="silenceUntil" step="60" /></td></tr>
+    <tr id="timezoneRow"><th>Timezone <a onclick="alert('PHP timezone identifier for scheduled windows.\\n\\nExamples:\\n• America/Chicago (Central)\\n• America/Denver (Mountain)\\n• America/New_York (Eastern)\\n• America/Los_Angeles (Pacific)\\n• UTC'); return false;" class="help-cursor">?</a></th><td><input type="text" id="timezone" name="timezone" value="America/Chicago" size="30" /></td></tr>
+    <tr id="silenceUntilRow" style="display:none;"><th>Silence Until <a onclick="alert('For ad-hoc windows only.\\n\\nSpecify when silencing should end. Alerts will be suppressed until this date/time.'); return false;" class="help-cursor">?</a></th><td><input type="datetime-local" id="silenceUntil" name="silenceUntil" step="60" /></td></tr>
     <tr><th>Description</th><td><input type="text" id="mwDescription" name="description" size="60" /></td></tr>
   </table>
   <input type="submit" name="action" value="Add"> &nbsp;
@@ -1210,7 +1210,7 @@ SQL;
                 }
 
                 $body .= "<tr>"
-                      .  "<td style=\"text-align: center\">"
+                      .  "<td class=\"text-center\">"
                       .  "<button type=\"button\" onclick=\"fillMaintenanceWindowForm("
                       .  intval( $row['window_id'] ) . ", "
                       .  "'" . $row['window_type'] . "', "

@@ -651,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <a id="graphs"></a>
 <table id="top" width="100%" border="1">
   <tr>
-    <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1><div style="font-size: 1.5rem; color: #888;">$aqlVersion</div></td>
+    <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1><div class="version-display">$aqlVersion</div></td>
     <td id="updatedAt">Page last updated at $now</td>
     <td class="headerTableTd">
       <center>
@@ -665,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </form>
         <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
         <br /><br />
-        <div style="margin-bottom: 5px;"><span id="muteStatus" style="font-weight: bold;">Alerts: ON</span> <a onclick="alert('Sound Controls Help\\n\\n• Quick mute: Click 30m, 1h, 2h, etc. to mute for that duration.\\n• ∞ button: Mute indefinitely until you click Unmute.\\n• Custom duration: Enter days/hours/minutes and click Set.\\n• Until date/time: Pick a specific date/time to unmute.\\n• Maximum mute: 90 days.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow.'); return false;" style="cursor: help;">?</a></div>
+        <div class="mute-status-container"><span id="muteStatus" class="mute-status-label">Alerts: ON</span> <a onclick="alert('Sound Controls Help\\n\\n• Quick mute: Click 30m, 1h, 2h, etc. to mute for that duration.\\n• ∞ button: Mute indefinitely until you click Unmute.\\n• Custom duration: Enter days/hours/minutes and click Set.\\n• Until date/time: Pick a specific date/time to unmute.\\n• Maximum mute: 90 days.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow.'); return false;" class="help-cursor">?</a></div>
         <div id="muteControls">
           <nobr>
             <button onclick="applyQuickMute('30m'); return false;" title="Mute for 30 minutes">30m</button>
@@ -677,15 +677,15 @@ document.addEventListener('DOMContentLoaded', function() {
             <button onclick="applyQuickMute('indef'); return false;" title="Mute indefinitely">∞</button>
           </nobr>
           <br />
-          <nobr style="font-size: 1.5rem;">
-            <input type="number" id="muteDays" value="0" min="0" max="90" style="width: 40px;" title="Days"/>d
-            <input type="number" id="muteHours" value="0" min="0" max="23" style="width: 40px;" title="Hours"/>h
-            <input type="number" id="muteMinutes" value="0" min="0" max="59" style="width: 40px;" title="Minutes"/>m
+          <nobr class="compact-form-row">
+            <input type="number" id="muteDays" value="0" min="0" max="90" class="input-narrow" title="Days"/>d
+            <input type="number" id="muteHours" value="0" min="0" max="23" class="input-narrow" title="Hours"/>h
+            <input type="number" id="muteMinutes" value="0" min="0" max="59" class="input-narrow" title="Minutes"/>m
             <button onclick="applyCustomMute(); return false;">Set</button>
           </nobr>
           <br />
-          <nobr style="font-size: 1.5rem;">
-            Until: <input type="datetime-local" id="muteUntilDateTime" step="60" style="width: 150px;"/>
+          <nobr class="compact-form-row">
+            Until: <input type="datetime-local" id="muteUntilDateTime" step="60" class="input-wide"/>
             <button onclick="applyDateTimeMute(); return false;">Set</button>
           </nobr>
         </div>
@@ -730,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <!-- Modal Content -->
       <div class="modal-content">
         <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 style="color: red;"<span class="glyphicon glyphicon-lock"></span>Login</h4>
+        <h4 class="msg-error"><span class="glyphicon glyphicon-lock"></span>Login</h4>
       </div>
       <div class="modal-body">
         <h2>Active Query Listing: Kill Thread Login</h2>
@@ -781,19 +781,19 @@ document.addEventListener('DOMContentLoaded', function() {
           <p id="silenceTargetRow"><strong>Target:</strong> <span id="silenceTargetDisplay"></span></p>
           <p id="silenceGroupRow" style="display:none;">
             <label>Select Group:</label><br/>
-            <select id="silenceGroupSelect" style="min-width:200px;">
+            <select id="silenceGroupSelect" class="select-min-width">
               <option value="">-- Select a Group --</option>
 {$groupOptionsHtml}            </select>
           </p>
           <p>
             <label>Scope:</label><br/>
-            <label style="font-weight:normal; margin-right:15px;">
+            <label class="label-spaced">
               <input type="radio" name="silenceScope" id="silenceScopeLocal" value="local" checked />
               This browser only
             </label>
-            <label style="font-weight:normal;">
+            <label class="label-normal">
               <input type="radio" name="silenceScope" id="silenceScopeGlobal" value="global" />
-              Everyone <span style="color:#888;">(requires authorization)</span>
+              Everyone <span class="msg-muted">(requires authorization)</span>
             </label>
           </p>
           <p>
@@ -806,8 +806,8 @@ document.addEventListener('DOMContentLoaded', function() {
           </p>
           <p>
             <label>Duration (minutes):</label><br/>
-            <input type="number" id="silenceDuration" name="duration" min="1" max="10080" value="60" style="width:100px" />
-            <span style="color:#888; font-size:0.75rem;">(max 7 days)</span>
+            <input type="number" id="silenceDuration" name="duration" min="1" max="10080" value="60" class="input-medium" />
+            <span class="form-hint">(max 7 days)</span>
           </p>
           <p>
             <label>Description (optional):</label><br/>
@@ -815,7 +815,7 @@ document.addEventListener('DOMContentLoaded', function() {
                    placeholder="e.g., Working on issue JIRA-1234" />
           </p>
           <p id="silenceAutoRecoverRow">
-            <label style="font-weight:normal;">
+            <label class="label-normal">
               <input type="checkbox" id="silenceAutoRecover" onchange="toggleAutoRecoverOptions()" />
               Auto-unmute when service recovers
             </label>
