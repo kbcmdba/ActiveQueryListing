@@ -48,6 +48,24 @@ namespace com\kbcmdba\aql ;
 //          - Configurable poll interval per host/group
 //          - Clients fetch cached results via AJAX (fast, lightweight)
 //          - Optional: real-time push via WebSockets/SSE
+//
+// @rfe 011 Database handler abstraction
+//          - Each database family requires different query mechanisms:
+//            * MySQL/MariaDB: SHOW PROCESSLIST, INFORMATION_SCHEMA
+//            * PostgreSQL: pg_stat_activity, pg_locks
+//            * MongoDB: currentOp(), db.serverStatus()
+//            * Redis: CLIENT LIST, SLOWLOG GET
+//            * Oracle: V$SESSION, V$SQL
+//            * SQL Server: sys.dm_exec_requests, sys.dm_exec_sessions
+//          - Option A: Separate scripts (AJAXgetpg.php, AJAXgetmongo.php, etc.)
+//            * Simple, isolated, easy to maintain independently
+//            * Frontend must know which endpoint per host type
+//          - Option B: Unified router with handler classes
+//            * Single AJAXget.php dispatches to DbHandler subclasses
+//            * Cleaner API, more abstraction overhead
+//          - Either approach requires dbType field in host configuration
+//          - With @rfe 010 (server polling), dispatch logic moves server-side
+//            and clients receive normalized results regardless of DB type
 
 // ----------------------------------------------------------------------------
 // HISTORICAL DATA & TRENDING
