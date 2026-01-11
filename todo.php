@@ -30,8 +30,11 @@ namespace com\kbcmdba\aql ;
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
 // @todo 10 Add system load monitoring per host
-//          - Read /proc/loadavg via SSH/agent or MySQL LOAD_FILE() if permitted
-//          - Display load averages in Host Status Overview
+//          - Use SHOW GLOBAL STATUS (no extra privileges needed)
+//          - Key metrics: Threads_running, Threads_connected, Questions, Slow_queries
+//          - Calculate QPS: (Questions delta) / (time delta)
+//          - Calculate thread utilization: Threads_running / max_connections
+//          - Display in Host Status Overview or Noteworthy Data section
 // @todo 20 Add Redis support for long-running query monitoring
 //          - Use CLIENT LIST to get connected clients and current commands
 //          - Use SLOWLOG GET to retrieve slow queries
