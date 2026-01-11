@@ -46,6 +46,36 @@ read-only mode. For most installations, you can leave this alone. If you run an
 older version of MySQL, you may need to adjust this to suit your installation's
 needs.
 
+## Verifying Your Configuration (verifyAQLConfiguration.php)
+
+After creating your `aql_config.xml`, run the configuration verification tool to
+check that everything is set up correctly:
+
+```
+https://your-server/ActiveQueryListing/verifyAQLConfiguration.php
+```
+
+This tool helps new users get AQL running by checking:
+
+- **PHP Requirements** - Verifies required extensions (mysqli, simplexml, curl, json)
+  and optional extensions (ldap, openssl) are installed
+- **Configuration File** - Checks that `aql_config.xml` exists, is readable, and has
+  valid XML syntax
+- **Required Parameters** - Validates all required config values (database credentials,
+  URLs, timezone, etc.)
+- **Optional Parameters** - Shows which optional features are configured
+- **Database Connectivity** - Tests connection and verifies privileges using `SHOW GRANTS`
+  (checks for PROCESS, REPLICATION CLIENT, performance_schema access)
+- **Schema Status** - Checks if AQL tables exist and if hosts are configured
+- **LDAP Connectivity** - Tests LDAP server reachability (when enabled)
+- **Jira Connectivity** - Tests Jira API endpoint (when enabled)
+
+The tool provides actionable fix instructions with copy-paste SQL commands and shell
+commands for both Apache and nginx deployments.
+
+**Note:** This tool works even with incomplete configuration, so you can use it to
+diagnose setup issues before AQL is fully functional.
+
 ## Setting up the MySQL database on the "configuration" server
 
 In order to use AQL, you'll need to set up the database that tells AQL where

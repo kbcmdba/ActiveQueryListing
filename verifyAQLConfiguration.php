@@ -939,7 +939,7 @@ if ( !empty( $dbHost ) && !empty( $dbUser ) && !empty( $dbPass ) && !empty( $dbN
         $dbConnected = true ;
 
         // Get actual grants using SHOW GRANTS
-        $result = @$mysqli->query( "SHOW GRANTS FOR CURRENT_USER()" ) ;
+        $result = @$mysqli->query( "SHOW GRANTS" ) ;
         if ( $result ) {
             while ( $row = $result->fetch_row() ) {
                 $grant = $row[0] ;
