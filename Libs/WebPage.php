@@ -387,6 +387,7 @@ HTML
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tests <span class="caret"></span></a>
         <ul class="dropdown-menu">
           <li><a href="testAQL.php">Test Harness</a></li>
+          <li><a href="verifyAQLConfiguration.php">Verify Configuration</a></li>
         </ul>
       </li>
       <li class="dropdown">
