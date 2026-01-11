@@ -66,6 +66,18 @@ namespace com\kbcmdba\aql ;
 //          - Either approach requires dbType field in host configuration
 //          - With @rfe 010 (server polling), dispatch logic moves server-side
 //            and clients receive normalized results regardless of DB type
+//
+// @rfe 012 Multi-server polling for redundancy
+//          - Multiple AQL polling servers share the workload
+//          - Fault tolerance: if one poller fails, others continue
+//          - Maintenance friendly: take a poller offline without blind spots
+//          - Load distribution: split monitored hosts across pollers
+//          - Leader election or shared state (Redis/etcd) for coordination
+//          - Pollers claim hosts to avoid duplicate polling
+//          - Health checks between pollers to detect failures
+//          - Automatic failover: surviving pollers pick up orphaned hosts
+//          - Scales horizontally as monitored host count grows
+//          - Relates to @rfe 602 (High availability)
 
 // ----------------------------------------------------------------------------
 // HISTORICAL DATA & TRENDING
