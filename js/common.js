@@ -370,7 +370,7 @@ function updateVersionSummary() {
         var hostList = data.hosts.join(', ') ;
         var row = '<tr>'
                 + '<td>' + version + '</td>'
-                + '<td title="' + hostList + '" style="cursor: help;">' + data.count + '</td>'
+                + '<td title="' + hostList + '" class="help-cursor">' + data.count + '</td>'
                 + '</tr>' ;
         tbody.append(row) ;
     }
@@ -816,7 +816,7 @@ function modifyActionsForBlocking( actionsHtml, blockInfo ) {
         'fileIssue( $1, ' + blockingCount + ' )'
     ) ;
     // Add visual indicator after the buttons
-    modified += ' <span class="blockingIndicator" style="font-size:2rem;">(blocking ' + blockingCount + ')</span>' ;
+    modified += ' <span class="blockingIndicator blocking-indicator">(blocking ' + blockingCount + ')</span>' ;
     return modified ;
 }
 

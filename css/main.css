@@ -61,6 +61,13 @@
     --level1-text: white;
     --level1-alt-bg: #222;
     --level1-alt-text: #ccc;
+
+    /* Status colors */
+    --status-error: red;
+    --status-warning: yellow;
+    --status-success: lime;
+    --status-info: hotpink;
+    --status-banner-bg: #600;
 }
 
 /* ========== Light Theme Overrides ========== */
@@ -103,6 +110,13 @@
     --level1-text: #222;
     --level1-alt-bg: #e8e8e8;
     --level1-alt-text: #444;
+
+    /* Status colors - adjusted for light backgrounds */
+    --status-error: #c00;
+    --status-warning: #b8860b;
+    --status-success: #228b22;
+    --status-info: #c71585;
+    --status-banner-bg: #fdd;
 }
 
 /* ========== Base Styles ========== */
@@ -440,7 +454,7 @@ td.blocking {
 }
 
 .code-box pre {
-    background: var(--bg-secondary);
+    background: black;
     padding: 2.5rem;
     overflow-x: auto;
     color: #0f0;
@@ -865,17 +879,17 @@ td.blocking {
 
 /* ========== Test Harness Styles ========== */
 .test-success {
-    color: lime;
+    color: var(--status-success);
     font-size: 1.125rem;
 }
 
 .test-warning {
-    color: yellow;
+    color: var(--status-warning);
     font-size: 1.125rem;
 }
 
 .test-error {
-    color: red;
+    color: var(--status-error);
     font-size: 1rem;
 }
 
@@ -914,15 +928,15 @@ td.blocking {
 
 /* Status/message colors */
 .msg-error {
-    color: red;
+    color: var(--status-error);
 }
 
 .msg-warning {
-    color: yellow;
+    color: var(--status-warning);
 }
 
 .msg-success {
-    color: lime;
+    color: var(--status-success);
 }
 
 .msg-muted {
@@ -943,7 +957,7 @@ td.blocking {
 
 /* ========== Test Harness Specific Styles ========== */
 .test-not-configured {
-    background: #600;
+    background: var(--status-banner-bg);
     padding: 15px;
     border-radius: 5px;
 }
@@ -969,12 +983,12 @@ td.blocking {
 }
 
 .test-role-blocker {
-    color: red;
+    color: var(--status-error);
     font-weight: bold;
 }
 
 .test-role-waiter {
-    color: hotpink;
+    color: var(--status-info);
     font-weight: bold;
 }
 
@@ -982,7 +996,8 @@ td.blocking {
     font-size: 2rem;
 }
 
-.test-blocking-indicator {
+.test-blocking-indicator,
+.blocking-indicator {
     font-size: 2rem;
 }
 
