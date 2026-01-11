@@ -330,12 +330,42 @@ function getHostIdFromHostname( $hostnamePort ) {
     }
 }
 
+// Get hostname early so we can look up hostId before connection attempt
+$hostname = Tools::param('hostname') ;
+
+// Look up host ID early (needed for error responses with silence capability)
+$hostId = getHostIdFromHostname( $hostname ) ;
+
+// Get the groups this host belongs to (for browser-local group silencing)
+$hostGroups = [] ;
+if ( $hostId !== null ) {
+    try {
+        $grpDbc = new DBConnection() ;
+        $grpDbh = $grpDbc->getConnection() ;
+        $grpSql = "SELECT hgm.host_group_id, hg.tag
+                   FROM aql_db.host_group_map hgm
+                   JOIN aql_db.host_group hg ON hg.host_group_id = hgm.host_group_id
+                   WHERE hgm.host_id = ?" ;
+        $grpStmt = $grpDbh->prepare( $grpSql ) ;
+        if ( $grpStmt ) {
+            $grpStmt->bind_param( 'i', $hostId ) ;
+            $grpStmt->execute() ;
+            $grpResult = $grpStmt->get_result() ;
+            while ( $row = $grpResult->fetch_assoc() ) {
+                $hostGroups[] = [ 'id' => (int) $row['host_group_id'], 'tag' => $row['tag'] ] ;
+            }
+            $grpStmt->close() ;
+        }
+    } catch ( \Exception $e ) {
+        // Silently ignore - don't break AQL if group lookup fails
+    }
+}
+
 try {
     $config        = new Config() ;
     $roQueryPart   = $config->getRoQueryPart() ;
     $debug         = Tools::param('debug') === "1" ;
     $debugLocks    = Tools::param('debugLocks') === "1" ;
-    $hostname      = Tools::param('hostname') ;
     $alertCritSecs = Tools::param('alertCritSecs') ;
     $alertWarnSecs = Tools::param('alertWarnSecs') ;
     $alertInfoSecs = Tools::param('alertInfoSecs') ;
@@ -1123,40 +1153,18 @@ SQL;
     $slaveResult->close() ;
 }
 catch (\Exception $e) {
-    echo json_encode([ 'hostname' => $hostname, 'error_output' => $e->getMessage() ]) ;
+    echo json_encode([
+        'hostname' => $hostname,
+        'hostId' => $hostId,
+        'hostGroups' => $hostGroups,
+        'error_output' => $e->getMessage()
+    ]) ;
     exit(1) ;
 }
 $overviewData[ 'longest_running' ] = $longestRunning ;
 
-// Look up host ID for this hostname (needed for maintenance and silencing)
-$hostId = getHostIdFromHostname( $hostname ) ;
-
-// Get the groups this host belongs to (for browser-local group silencing)
-$hostGroups = [] ;
-if ( $hostId !== null ) {
-    try {
-        $grpDbc = new DBConnection() ;
-        $grpDbh = $grpDbc->getConnection() ;
-        $grpSql = "SELECT hgm.host_group_id, hg.tag
-                   FROM aql_db.host_group_map hgm
-                   JOIN aql_db.host_group hg ON hg.host_group_id = hgm.host_group_id
-                   WHERE hgm.host_id = ?" ;
-        $grpStmt = $grpDbh->prepare( $grpSql ) ;
-        if ( $grpStmt ) {
-            $grpStmt->bind_param( 'i', $hostId ) ;
-            $grpStmt->execute() ;
-            $grpResult = $grpStmt->get_result() ;
-            while ( $row = $grpResult->fetch_assoc() ) {
-                $hostGroups[] = [ 'id' => (int) $row['host_group_id'], 'tag' => $row['tag'] ] ;
-            }
-            $grpStmt->close() ;
-        }
-    } catch ( \Exception $e ) {
-        // Silently ignore - don't break AQL if group lookup fails
-    }
-}
-
 // Check if this host is in a maintenance window (if feature enabled)
+// Note: hostId and hostGroups are looked up at the top of the file (before try block)
 $maintenanceInfo = null ;
 $config = new Config() ;
 if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {

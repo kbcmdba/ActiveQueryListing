@@ -298,7 +298,26 @@ function myCallback( i, item ) {
     // We get other types of responses here as well. Ignore the noise.
     // If we have an error, assume it's critical and show it at the top of the process listing.
     if ( typeof item[ 'error_output' ] !== 'undefined' ) {
-        var myRow = "<tr><td class=\"errorNotice\">" + item[ 'hostname' ]
+        var errorServer = item[ 'hostname' ] ;
+        var errorHostId = item[ 'hostId' ] ;
+        var errorHostGroups = item[ 'hostGroups' ] || [] ;
+
+        // Track for klaxon silencing even on errors
+        if ( typeof window.hostIdMap === 'undefined' ) { window.hostIdMap = {} ; }
+        if ( typeof window.hostGroupMap === 'undefined' ) { window.hostGroupMap = {} ; }
+        if ( typeof window.hostsInMaintenance === 'undefined' ) { window.hostsInMaintenance = {} ; }
+        window.hostIdMap[ errorServer ] = errorHostId ;
+        window.hostGroupMap[ errorServer ] = errorHostGroups ;
+        window.hostsInMaintenance[ errorServer ] = false ; // errors aren't in maintenance by default
+
+        // Build silence icons for error row
+        var errorSilenceIcons = '' ;
+        if ( errorHostId ) {
+            errorSilenceIcons = ' <a href="#" onclick="openSilenceModal(\'host\', ' + errorHostId + ', \'' + errorServer.replace(/'/g, "\\'") + '\'); return false;" title="Silence this host" class="silence-link">🔇</a>'
+                              + ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + errorHostId + '" title="Manage maintenance windows" class="maintenance-link">⚙</a>' ;
+        }
+
+        var myRow = "<tr><td class=\"errorNotice\">" + errorServer + errorSilenceIcons
                   + "</td><td class=\"errorNotice\">9</td><td colspan=\"13\" class=\"errorNotice\">" + item[ 'error_output' ]
                   + "</td></tr>" ;
         $(myRow).prependTo( "#nwprocesstbodyid" ) ;
@@ -1228,6 +1247,89 @@ function cleanupLocalSilenced() {
 
 // Run cleanup periodically
 setInterval( cleanupLocalSilenced, 60000 ) ;
+
+// Remove a specific local silence
+function removeLocalSilence( type, id ) {
+    var data = getLocalSilenced() ;
+    if ( type === 'host' ) {
+        delete data.hosts[ id ] ;
+    } else if ( type === 'group' ) {
+        delete data.groups[ id ] ;
+    }
+    saveLocalSilenced( data ) ;
+    updateLocalSilencesUI() ;
+}
+
+// Clear all local silences
+function clearAllLocalSilences() {
+    saveLocalSilenced( { hosts: {}, groups: {} } ) ;
+    updateLocalSilencesUI() ;
+}
+
+// Format time remaining for display
+function formatSilenceTimeRemaining( ms ) {
+    if ( ms <= 0 ) return 'expired' ;
+    var mins = Math.floor( ms / 60000 ) ;
+    if ( mins < 60 ) return mins + 'm' ;
+    var hours = Math.floor( mins / 60 ) ;
+    mins = mins % 60 ;
+    if ( hours < 24 ) return hours + 'h ' + mins + 'm' ;
+    var days = Math.floor( hours / 24 ) ;
+    hours = hours % 24 ;
+    return days + 'd ' + hours + 'h' ;
+}
+
+// Update the local silences UI panel
+function updateLocalSilencesUI() {
+    var data = getLocalSilenced() ;
+    var container = document.getElementById( 'localSilencesContainer' ) ;
+    var list = document.getElementById( 'localSilencesList' ) ;
+
+    if ( !container || !list ) return ;
+
+    var html = '' ;
+    var count = 0 ;
+    var now = Date.now() ;
+
+    // List silenced hosts
+    for ( var hostId in data.hosts ) {
+        var entry = data.hosts[ hostId ] ;
+        if ( entry.expiry !== 0 && entry.expiry < now ) continue ; // skip expired
+        var remaining = entry.expiry === 0 ? '∞' : formatSilenceTimeRemaining( entry.expiry - now ) ;
+        var displayName = entry.hostname || ( 'Host #' + hostId ) ;
+        html += '<div class="local-silence-item">'
+              + '<span><span class="local-silence-name">' + displayName + '</span>'
+              + '<span class="local-silence-expiry">(' + remaining + ')</span></span>'
+              + '<a href="#" onclick="removeLocalSilence(\'host\', \'' + hostId + '\'); return false;" '
+              + 'class="local-silence-remove" title="Unmute">✕</a>'
+              + '</div>' ;
+        count++ ;
+    }
+
+    // List silenced groups
+    for ( var groupId in data.groups ) {
+        var entry = data.groups[ groupId ] ;
+        if ( entry.expiry !== 0 && entry.expiry < now ) continue ; // skip expired
+        var remaining = entry.expiry === 0 ? '∞' : formatSilenceTimeRemaining( entry.expiry - now ) ;
+        var displayName = entry.tag || ( 'Group #' + groupId ) ;
+        html += '<div class="local-silence-item group">'
+              + '<span><span class="local-silence-name">' + displayName + '</span>'
+              + '<span class="local-silence-expiry">(' + remaining + ')</span></span>'
+              + '<a href="#" onclick="removeLocalSilence(\'group\', \'' + groupId + '\'); return false;" '
+              + 'class="local-silence-remove" title="Unmute">✕</a>'
+              + '</div>' ;
+        count++ ;
+    }
+
+    list.innerHTML = html || '<div class="local-silences-empty">None active</div>' ;
+    container.style.display = count > 0 ? 'block' : 'none' ;
+}
+
+// Update UI on load and periodically
+$( document ).ready( function() {
+    updateLocalSilencesUI() ;
+    setInterval( updateLocalSilencesUI, 30000 ) ; // refresh countdown every 30 seconds
+}) ;
 
 // Expose for klaxon.js
 window.isHostLocallySilenced = isHostLocallySilenced ;

@@ -649,6 +649,13 @@ document.addEventListener('DOMContentLoaded', function() {
         <div id="unmuteBtnContainer" style="display: none;">
           <button onclick="clearMute(); return false;">Unmute Alerts</button>
         </div>
+        <div id="localSilencesContainer" class="local-silences-container">
+          <div class="local-silences-header">
+            🔇 Local Silences
+            <a href="#" onclick="clearAllLocalSilences(); return false;" class="local-silences-clear-all" title="Remove all local silences">Clear All</a>
+          </div>
+          <div id="localSilencesList" class="local-silences-list"></div>
+        </div>
       </center>
     </td>
     <td class="headerTableTd">

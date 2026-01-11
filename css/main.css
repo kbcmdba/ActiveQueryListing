@@ -523,3 +523,81 @@ td.blocking {
     background-color: #337ab7;
     border-color: #2e6da4;
 }
+
+/* Local Silences Panel */
+.local-silences-container {
+    display: none;
+    margin-top: 10px;
+    padding: 8px;
+    background: #444;
+    border: 1px solid #666;
+    border-radius: 4px;
+    text-align: left;
+    font-size: 11px;
+    max-width: 280px;
+}
+
+.local-silences-header {
+    margin-bottom: 5px;
+    color: #ffcc00;
+    font-weight: bold;
+}
+
+.local-silences-clear-all {
+    float: right;
+    font-size: 10px;
+    color: #ccc;
+}
+
+.local-silences-clear-all:hover {
+    color: #fff;
+}
+
+.local-silences-list {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.local-silence-item {
+    margin: 3px 0;
+    padding: 2px 6px;
+    background: #555;
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.local-silence-item.group {
+    background: #454560;
+}
+
+.local-silence-name {
+    color: #fff;
+}
+
+.local-silence-item.group .local-silence-name {
+    color: #aaf;
+}
+
+.local-silence-expiry {
+    color: #888;
+    font-size: 10px;
+    margin-left: 5px;
+}
+
+.local-silence-remove {
+    color: #f88;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 0 4px;
+}
+
+.local-silence-remove:hover {
+    color: #f44;
+}
+
+.local-silences-empty {
+    color: #888;
+    font-style: italic;
+}
