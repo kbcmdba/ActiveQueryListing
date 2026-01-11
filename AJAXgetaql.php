@@ -51,10 +51,13 @@ $overviewData = [
   , 'level4'          => 0
   , 'level9'          => 0
   , 'longest_running' => -1
+  , 'maxConnections'  => 0
   , 'ro'              => 0
   , 'rw'              => 0
   , 'similar'         => 0
   , 'threads'         => 0
+  , 'threadsConnected' => 0
+  , 'threadsRunning'  => 0
   , 'time'            => 0
   , 'unique'          => 0
   , 'uptime'          => 0
@@ -412,9 +415,12 @@ try {
     $debugComment  = ( $debug ) ? '-- ' : '' ;
     $globalStatusDb = $config->getGlobalStatusDb() ;
     $aQuery        = <<<SQL
-SELECT Q / U AS aQPS, VERSION(), U
+SELECT Q / U AS aQPS, VERSION(), U, TR, TC, MC
   FROM ( SELECT variable_value AS Q FROM $globalStatusDb.global_status WHERE variable_name = 'Questions' ) AS A,
-       ( SELECT variable_value AS U FROM $globalStatusDb.global_status WHERE variable_name = 'Uptime' ) AS B
+       ( SELECT variable_value AS U FROM $globalStatusDb.global_status WHERE variable_name = 'Uptime' ) AS B,
+       ( SELECT variable_value AS TR FROM $globalStatusDb.global_status WHERE variable_name = 'Threads_running' ) AS C,
+       ( SELECT variable_value AS TC FROM $globalStatusDb.global_status WHERE variable_name = 'Threads_connected' ) AS D,
+       ( SELECT variable_value AS MC FROM $globalStatusDb.global_variables WHERE variable_name = 'max_connections' ) AS E
 SQL;
     $aResult    = $dbh->query( $aQuery ) ;
     if ( $aResult === false ) {
@@ -424,6 +430,9 @@ SQL;
     $overviewData[ 'aQPS' ] = $row[ 0 ] ;
     $overviewData[ 'version' ] = $row[ 1 ] ;
     $overviewData[ 'uptime' ] = $row[ 2 ] ;
+    $overviewData[ 'threadsRunning' ] = (int) $row[ 3 ] ;
+    $overviewData[ 'threadsConnected' ] = (int) $row[ 4 ] ;
+    $overviewData[ 'maxConnections' ] = (int) $row[ 5 ] ;
     $aResult->close() ;
     $showSlaveStatement = $config->getShowSlaveStatement() ;
     $version = $overviewData[ 'version' ] ;

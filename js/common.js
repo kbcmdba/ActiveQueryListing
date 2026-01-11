@@ -538,10 +538,15 @@ function myCallback( i, item ) {
             var un                = ( overviewData[ 'unique' ] > 0 ) ? ' class="Unique"' : '' ;
             var si                = ( overviewData[ 'similar' ] > 0 ) ? ' class="Similar"' : '' ;
             var du                = ( overviewData[ 'dupe' ] > 0 ) ? ' class="Duplicate"' : '' ;
+            var connPct = ( overviewData[ 'maxConnections' ] > 0 )
+                        ? Math.round( overviewData[ 'threadsConnected' ] / overviewData[ 'maxConnections' ] * 100 )
+                        : 0 ;
             var myRow             = "<tr><td>" + serverLinkAddress
                                   + "</td><td>" + overviewData[ 'version' ]
                                   + "</td><td>" + overviewData[ 'longest_running' ]
                                   + "</td><td>" + overviewData[ 'aQPS' ]
+                                  + "</td><td>" + overviewData[ 'threadsRunning' ]
+                                  + "</td><td>" + connPct + "%"
                                   + "</td><td>" + overviewData[ 'uptime' ]
                                   + "</td><td" + l0 + ">" + overviewData[ 'level0' ]
                                   + "</td><td" + l1 + ">" + overviewData[ 'level1' ]

@@ -126,13 +126,15 @@ $NWSlaveHeaderFooter = <<<HTML
     $slaveHeaderFooterCols
 HTML;
 
-$overviewCols = 20 ;
+$overviewCols = 22 ;
 $overviewHeaderFooterCols = <<<HTML
 <tr class="mytr">
       <th>Server</th>
       <th>Version</th>
       <th>Longest<br />Running</th>
       <th>aQPS</th>
+      <th>Running <a onclick="alert('Threads actively executing (includes internal threads, replication, event scheduler)'); return false;">?</a></th>
+      <th>Conn% <a onclick="alert('Client connections as percentage of max_connections'); return false;">?</a></th>
       <th>Uptime</th>
       <th>L0</th>
       <th>L1</th>

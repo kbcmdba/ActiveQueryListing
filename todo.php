@@ -29,12 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 10 Add system load monitoring per host
-//          - Use SHOW GLOBAL STATUS (no extra privileges needed)
-//          - Key metrics: Threads_running, Threads_connected, Questions, Slow_queries
-//          - Calculate QPS: (Questions delta) / (time delta)
-//          - Calculate thread utilization: Threads_running / max_connections
-//          - Display in Host Status Overview or Noteworthy Data section
 // @todo 20 Add Redis support for long-running query monitoring
 //          - Use CLIENT LIST to get connected clients and current commands
 //          - Use SLOWLOG GET to retrieve slow queries
