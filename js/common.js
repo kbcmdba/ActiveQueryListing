@@ -310,6 +310,11 @@ function myCallback( i, item ) {
         window.hostGroupMap[ errorServer ] = errorHostGroups ;
         window.hostsInMaintenance[ errorServer ] = false ; // errors aren't in maintenance by default
 
+        // Check recovery - error state resets healthy count
+        if ( errorHostId ) {
+            checkHostRecovery( errorHostId, 9, true ) ; // isError = true resets count
+        }
+
         // Build silence icons for error row
         var errorSilenceIcons = '' ;
         if ( errorHostId ) {
@@ -317,7 +322,7 @@ function myCallback( i, item ) {
                               + ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + errorHostId + '" title="Manage maintenance windows" class="maintenance-link">⚙</a>' ;
         }
 
-        var myRow = "<tr><td class=\"errorNotice\">" + errorServer + errorSilenceIcons
+        var myRow = "<tr data-hostname=\"" + errorServer + "\"><td class=\"errorNotice\">" + errorServer + errorSilenceIcons
                   + "</td><td class=\"errorNotice\">9</td><td colspan=\"13\" class=\"errorNotice\">" + item[ 'error_output' ]
                   + "</td></tr>" ;
         $(myRow).prependTo( "#nwprocesstbodyid" ) ;
@@ -346,6 +351,19 @@ function myCallback( i, item ) {
             window.hostsInMaintenance[ server ] = ( maintenanceInfo && maintenanceInfo.active ) ? true : false ;
             window.hostIdMap[ server ] = hostId ;
             window.hostGroupMap[ server ] = hostGroups ;
+
+            // Check for auto-recovery (if host is locally silenced with autoRecover)
+            if ( hostId ) {
+                // Determine current level (worst/highest level with queries)
+                var currentLevel = 0 ;
+                if ( overviewData[ 'level9' ] > 0 ) currentLevel = 9 ;
+                else if ( overviewData[ 'level4' ] > 0 ) currentLevel = 4 ;
+                else if ( overviewData[ 'level3' ] > 0 ) currentLevel = 3 ;
+                else if ( overviewData[ 'level2' ] > 0 ) currentLevel = 2 ;
+                else if ( overviewData[ 'level1' ] > 0 ) currentLevel = 1 ;
+                // level0 or no queries = 0
+                checkHostRecovery( hostId, currentLevel, false ) ;
+            }
 
             if ( maintenanceInfo && maintenanceInfo.active ) {
                 var mwType = ( maintenanceInfo.windowType === 'adhoc' ) ? 'Ad-hoc' : 'Scheduled' ;
@@ -1177,18 +1195,32 @@ function saveLocalSilenced( data ) {
 }
 
 // Silence a host locally (browser only)
-function silenceHostLocally( hostId, hostname, durationMinutes ) {
+function silenceHostLocally( hostId, hostname, durationMinutes, autoRecover, recoverLevel, recoverCount ) {
     var data = getLocalSilenced() ;
     var expiry = durationMinutes > 0 ? Date.now() + ( durationMinutes * 60 * 1000 ) : 0 ;
-    data.hosts[ hostId ] = { hostname: hostname, expiry: expiry } ;
+    data.hosts[ hostId ] = {
+        hostname: hostname,
+        expiry: expiry,
+        autoRecover: autoRecover || false,
+        recoverLevel: recoverLevel || 'not-error',
+        recoverCount: parseInt( recoverCount, 10 ) || 2,
+        healthyCount: 0
+    } ;
     saveLocalSilenced( data ) ;
 }
 
 // Silence a group locally (browser only)
-function silenceGroupLocally( groupId, groupTag, durationMinutes ) {
+function silenceGroupLocally( groupId, groupTag, durationMinutes, autoRecover, recoverLevel, recoverCount ) {
     var data = getLocalSilenced() ;
     var expiry = durationMinutes > 0 ? Date.now() + ( durationMinutes * 60 * 1000 ) : 0 ;
-    data.groups[ groupId ] = { tag: groupTag, expiry: expiry } ;
+    data.groups[ groupId ] = {
+        tag: groupTag,
+        expiry: expiry,
+        autoRecover: autoRecover || false,
+        recoverLevel: recoverLevel || 'not-error',
+        recoverCount: parseInt( recoverCount, 10 ) || 2,
+        healthyCount: 0
+    } ;
     saveLocalSilenced( data ) ;
 }
 
@@ -1218,6 +1250,52 @@ function isHostGroupLocallySilenced( hostGroups ) {
             return true ;
         }
     }
+    return false ;
+}
+
+// Check host health and update recovery tracking
+// Returns true if host was auto-unsilenced
+function checkHostRecovery( hostId, currentLevel, isError ) {
+    var data = getLocalSilenced() ;
+    var entry = data.hosts[ hostId ] ;
+    if ( !entry || !entry.autoRecover ) return false ;
+
+    // Determine if host meets recovery criteria
+    var recovered = false ;
+    if ( isError ) {
+        // Still in error state - reset healthy count
+        entry.healthyCount = 0 ;
+    } else if ( entry.recoverLevel === 'not-error' ) {
+        // Any non-error response counts as healthy
+        recovered = true ;
+    } else {
+        var targetLevel = parseInt( entry.recoverLevel, 10 ) ;
+        if ( currentLevel <= targetLevel ) {
+            recovered = true ;
+        } else {
+            // Not at target level - reset healthy count
+            entry.healthyCount = 0 ;
+        }
+    }
+
+    if ( recovered ) {
+        entry.healthyCount = ( entry.healthyCount || 0 ) + 1 ;
+        if ( entry.healthyCount >= entry.recoverCount ) {
+            // Host has recovered! Remove the silence
+            var hostname = entry.hostname || hostId ;
+            delete data.hosts[ hostId ] ;
+            saveLocalSilenced( data ) ;
+            // Track recovered hosts for UI notification
+            if ( typeof window.recoveredHosts === 'undefined' ) {
+                window.recoveredHosts = [] ;
+            }
+            window.recoveredHosts.push( hostname ) ;
+            return true ;
+        }
+    }
+
+    // Save updated healthy count
+    saveLocalSilenced( data ) ;
     return false ;
 }
 
@@ -1291,14 +1369,32 @@ function updateLocalSilencesUI() {
     var count = 0 ;
     var now = Date.now() ;
 
+    // Show recovered hosts notification (if any)
+    if ( typeof window.recoveredHosts !== 'undefined' && window.recoveredHosts.length > 0 ) {
+        for ( var i = 0 ; i < window.recoveredHosts.length ; i++ ) {
+            html += '<div class="local-silence-recovered">✓ ' + window.recoveredHosts[ i ] + ' recovered - alerts restored</div>' ;
+        }
+        // Clear after displaying (will disappear on next refresh)
+        window.recoveredHosts = [] ;
+    }
+
     // List silenced hosts
     for ( var hostId in data.hosts ) {
         var entry = data.hosts[ hostId ] ;
         if ( entry.expiry !== 0 && entry.expiry < now ) continue ; // skip expired
         var remaining = entry.expiry === 0 ? '∞' : formatSilenceTimeRemaining( entry.expiry - now ) ;
         var displayName = entry.hostname || ( 'Host #' + hostId ) ;
+
+        // Build auto-recover badge if applicable
+        var autoBadge = '' ;
+        if ( entry.autoRecover ) {
+            var progress = ( entry.healthyCount || 0 ) + '/' + entry.recoverCount ;
+            autoBadge = '<span class="local-silence-auto-badge" title="Auto-unmute when recovered">⟳' + progress + '</span>' ;
+        }
+
         html += '<div class="local-silence-item">'
               + '<span><span class="local-silence-name">' + displayName + '</span>'
+              + autoBadge
               + '<span class="local-silence-expiry">(' + remaining + ')</span></span>'
               + '<a href="#" onclick="removeLocalSilence(\'host\', \'' + hostId + '\'); return false;" '
               + 'class="local-silence-remove" title="Unmute">✕</a>'
@@ -1312,8 +1408,17 @@ function updateLocalSilencesUI() {
         if ( entry.expiry !== 0 && entry.expiry < now ) continue ; // skip expired
         var remaining = entry.expiry === 0 ? '∞' : formatSilenceTimeRemaining( entry.expiry - now ) ;
         var displayName = entry.tag || ( 'Group #' + groupId ) ;
+
+        // Build auto-recover badge if applicable
+        var autoBadge = '' ;
+        if ( entry.autoRecover ) {
+            var progress = ( entry.healthyCount || 0 ) + '/' + entry.recoverCount ;
+            autoBadge = '<span class="local-silence-auto-badge" title="Auto-unmute when recovered">⟳' + progress + '</span>' ;
+        }
+
         html += '<div class="local-silence-item group">'
               + '<span><span class="local-silence-name">' + displayName + '</span>'
+              + autoBadge
               + '<span class="local-silence-expiry">(' + remaining + ')</span></span>'
               + '<a href="#" onclick="removeLocalSilence(\'group\', \'' + groupId + '\'); return false;" '
               + 'class="local-silence-remove" title="Unmute">✕</a>'
@@ -1322,7 +1427,7 @@ function updateLocalSilencesUI() {
     }
 
     list.innerHTML = html || '<div class="local-silences-empty">None active</div>' ;
-    container.style.display = count > 0 ? 'block' : 'none' ;
+    container.style.display = ( count > 0 || html !== '' ) ? 'block' : 'none' ;
 }
 
 // Update UI on load and periodically
@@ -1371,6 +1476,12 @@ $( document ).ready( function() {
     }) ;
 }) ;
 
+// Toggle auto-recover options visibility
+function toggleAutoRecoverOptions() {
+    var checked = $( '#silenceAutoRecover' ).prop( 'checked' ) ;
+    $( '#silenceAutoRecoverOptions' ).css( 'display', checked ? 'block' : 'none' ) ;
+}
+
 /**
  * Open the silence modal for a host or group
  * @param {string} targetType - 'host' or 'group'
@@ -1385,6 +1496,10 @@ function openSilenceModal( targetType, targetId, targetName ) {
     $( '#silenceDuration' ).val( 60 ) ; // default 1 hour
     $( '#silenceDescription' ).val( '' ) ;
     $( '#silenceScopeLocal' ).prop( 'checked', true ) ; // default to local
+    $( '#silenceAutoRecover' ).prop( 'checked', false ) ;
+    $( '#silenceAutoRecoverOptions' ).hide() ;
+    $( '#silenceRecoverLevel' ).val( '2' ) ;
+    $( '#silenceRecoverCount' ).val( '2' ) ;
 
     if ( targetType === 'group' && !targetId ) {
         // Group selection mode - show dropdown, hide target display
@@ -1448,13 +1563,29 @@ function submitSilence() {
 
     if ( scope === 'local' ) {
         // Browser-local silencing (no server call)
-        if ( targetType === 'host' ) {
-            silenceHostLocally( targetId, targetName, duration ) ;
-        } else {
-            silenceGroupLocally( targetId, targetName, duration ) ;
+        var autoRecover = $( '#silenceAutoRecover' ).prop( 'checked' ) ;
+        var recoverLevel = $( '#silenceRecoverLevel' ).val() ;
+        var recoverCount = $( '#silenceRecoverCount' ).val() ;
+
+        // Cap auto-recover silences at 72 hours (4320 minutes) as safety net
+        var maxAutoRecoverMins = 4320 ;
+        if ( autoRecover && ( duration > maxAutoRecoverMins || duration <= 0 ) ) {
+            duration = maxAutoRecoverMins ;
         }
-        alert( 'Silenced ' + targetType + ' "' + targetName + '" for ' + duration + ' minutes (this browser only).' ) ;
+
+        if ( targetType === 'host' ) {
+            silenceHostLocally( targetId, targetName, duration, autoRecover, recoverLevel, recoverCount ) ;
+        } else {
+            silenceGroupLocally( targetId, targetName, duration, autoRecover, recoverLevel, recoverCount ) ;
+        }
+
+        var msg = 'Silenced ' + targetType + ' "' + targetName + '" for ' + duration + ' minutes (this browser only).' ;
+        if ( autoRecover ) {
+            msg += '\n\nWill auto-unmute when service recovers (max 72 hours).' ;
+        }
+        alert( msg ) ;
         $( '#silenceModal' ).modal( 'hide' ) ;
+        updateLocalSilencesUI() ;
         return ;
     }
 
@@ -1699,6 +1830,27 @@ function initFuzzyAutocomplete(inputId, options, maxResults) {
             dropdown.style.display = 'none';
         }
     });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Copy text to clipboard - shared utility function
+ * @param {string} elementId - ID of element containing text to copy (uses innerText)
+ * @param {string} buttonId - ID of button to show feedback on
+ */
+function copyToClipboard( elementId, buttonId ) {
+    var element = document.getElementById( elementId ) ;
+    var text = element.innerText || element.textContent ;
+    navigator.clipboard.writeText( text ).then( function() {
+        var btn = document.getElementById( buttonId ) ;
+        var originalText = btn.innerText ;
+        btn.innerText = 'Copied!' ;
+        setTimeout( function() { btn.innerText = originalText ; }, 1500 ) ;
+    }).catch( function( err ) {
+        console.error( 'Failed to copy:', err ) ;
+        alert( 'Failed to copy to clipboard' ) ;
+    }) ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

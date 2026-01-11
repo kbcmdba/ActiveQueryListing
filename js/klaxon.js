@@ -5,6 +5,10 @@
     const DEBUG = new URLSearchParams(window.location.search).get('klaxon_debug') === '1';
     const log = (...args) => { if (DEBUG) console.log('[klaxon]', ...args); };
 
+    // User-friendly debug mode (use ?debugAlerts=1 in URL) - shows alert() popup
+    const DEBUG_ALERTS = new URLSearchParams(window.location.search).get('debugAlerts') === '1';
+    let debugShown = false;
+
     log('klaxon.js loaded');
 
     const warningAudio = new Audio('Images/warning-ding.mp3');  // level4 (critical)
@@ -103,6 +107,10 @@
         // Navigate up to find the row
         const row = element.closest('tr');
         if (!row) return null;
+        // Check for data-hostname attribute first (used on error rows)
+        if (row.dataset.hostname) {
+            return row.dataset.hostname;
+        }
         // Get first cell which contains the server link
         const serverCell = row.querySelector('td:first-child a');
         if (serverCell) {
@@ -142,6 +150,14 @@
         return isHostInMaintenance(hostname) || isHostLocallySilenced(hostname);
     };
 
+    // -- get silencing reason for debug display
+    const getSilenceReason = (hostname) => {
+        const reasons = [];
+        if (isHostInMaintenance(hostname)) reasons.push('maintenance window');
+        if (isHostLocallySilenced(hostname)) reasons.push('local silence');
+        return reasons.length > 0 ? reasons.join(' + ') : null;
+    };
+
     // -- check if ALL displayed hosts are silenced (maintenance or local)
     const areAllHostsSilenced = () => {
         if (typeof window.hostsInMaintenance === 'undefined' && typeof window.hostIdMap === 'undefined') return false;
@@ -152,6 +168,95 @@
 
     // Legacy function for compatibility
     const areAllHostsInMaintenance = () => areAllHostsSilenced();
+
+    // -- show debug box (only once per page load, inserted below graphs)
+    const showDebugBox = () => {
+        if (!DEBUG_ALERTS || debugShown) return;
+        debugShown = true;
+
+        // Wait a moment for data to load
+        setTimeout(() => {
+            // Build content
+            let html = '<strong>Global mute:</strong> ' + (checkMuted() ? 'ON' : 'OFF') + '<br><br>';
+
+            // Collect silenced hosts (deduplicated)
+            const silencedSet = {};
+            const alertingSet = {};
+
+            // Check error elements
+            const errorElements = document.querySelectorAll('.errorNotice');
+            errorElements.forEach(el => {
+                const hostname = getHostnameFromElement(el);
+                if (hostname && !silencedSet[hostname] && !alertingSet[hostname]) {
+                    const reason = getSilenceReason(hostname);
+                    if (reason) {
+                        silencedSet[hostname] = '[ERROR] (' + reason + ')';
+                    } else {
+                        alertingSet[hostname] = '[ERROR]';
+                    }
+                }
+            });
+
+            // Check level4 elements
+            const level4Elements = document.querySelectorAll('.level4');
+            level4Elements.forEach(el => {
+                const hostname = getHostnameFromElement(el);
+                if (hostname && !silencedSet[hostname] && !alertingSet[hostname]) {
+                    const reason = getSilenceReason(hostname);
+                    if (reason) {
+                        silencedSet[hostname] = '[LEVEL4] (' + reason + ')';
+                    } else {
+                        alertingSet[hostname] = '[LEVEL4]';
+                    }
+                }
+            });
+
+            // Show maintenance window status for debugging
+            html += '<strong>hostsInMaintenance:</strong><br>';
+            if (typeof window.hostsInMaintenance !== 'undefined') {
+                const entries = Object.entries(window.hostsInMaintenance).sort((a, b) => a[0].localeCompare(b[0]));
+                html += entries.length > 0 ? entries.map(([h, v]) => '  ' + h + ': ' + v).join('<br>') : '  (empty)';
+            } else {
+                html += '  (undefined)';
+            }
+            html += '<br><br>';
+
+            html += '<strong>SILENCED (no alert):</strong><br>';
+            const silencedList = Object.entries(silencedSet).map(([h, v]) => h + ' ' + v).sort();
+            html += silencedList.length > 0 ? silencedList.join('<br>') : '  (none)';
+            html += '<br><br>';
+
+            html += '<strong>ALERTING:</strong><br>';
+            const alertingList = Object.entries(alertingSet).map(([h, v]) => h + ' ' + v).sort();
+            html += alertingList.length > 0 ? alertingList.join('<br>') : '  (none)';
+
+            // Create the debug box
+            const box = document.createElement('div');
+            box.id = 'alertDebugBox';
+            box.className = 'alert-debug-box';
+            box.innerHTML = '<div class="alert-debug-header">'
+                + '<span class="alert-debug-title">Alert Debug</span>'
+                + '<div>'
+                + '<button id="debugCopyBtn" class="alert-debug-btn" onclick="copyToClipboard(\'debugContent\', \'debugCopyBtn\')">Copy</button>'
+                + '<button class="alert-debug-btn" onclick="this.closest(\'.alert-debug-box\').remove()">Close</button>'
+                + '</div></div>'
+                + '<div id="debugContent">' + html + '</div>';
+
+            // Find insertion point - look for noteworthy section or header table
+            const noteworthy = document.getElementById('noteworthy');
+            if (noteworthy) {
+                noteworthy.parentNode.insertBefore(box, noteworthy);
+            } else {
+                // Fallback - insert after header table
+                const headerTable = document.querySelector('.headerTableTd')?.closest('table');
+                if (headerTable) {
+                    headerTable.parentNode.insertBefore(box, headerTable.nextSibling);
+                } else {
+                    document.body.insertBefore(box, document.body.firstChild);
+                }
+            }
+        }, 3000);  // Wait 3 seconds for AJAX data to load
+    };
 
     // -- detect alerts: errorNotice gets klaxon, level4 gets warning
     // Suppresses alerts for hosts in maintenance windows or locally silenced
@@ -199,5 +304,10 @@
         klaxonAudio = document.getElementById('klaxon');
         runTest();
         new MutationObserver(runTest).observe(document.body, { childList: true, subtree: true });
+
+        // Show debug box if enabled
+        if (DEBUG_ALERTS) {
+            showDebugBox();
+        }
     });
 })();

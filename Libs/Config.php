@@ -237,6 +237,8 @@ class Config
         $this->testDbUser = $cfgValues[ 'testDbUser' ] ?? '' ;
         $this->testDbPass = $cfgValues[ 'testDbPass' ] ?? '' ;
         $this->testDbName = $cfgValues[ 'testDbName' ] ?? '' ;
+        $this->enableMaintenanceWindows = $cfgValues[ 'enableMaintenanceWindows' ] ?? 'false' ;
+        $this->dbaSessionTimeout = $cfgValues[ 'dbaSessionTimeout' ] ?? '86400' ;
     }
 
     /**

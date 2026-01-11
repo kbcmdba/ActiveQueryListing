@@ -13,6 +13,8 @@ require( 'vendor/autoload.php' ) ;
 require( 'utility.php' ) ;
 
 use com\kbcmdba\aql\Libs\Config ;
+use com\kbcmdba\aql\Libs\DBConnection ;
+use com\kbcmdba\aql\Libs\MaintenanceWindow ;
 use com\kbcmdba\aql\Libs\WebPage ;
 
 $page = new WebPage( 'AQL Test Harness' ) ;
@@ -62,6 +64,7 @@ $body .= "<li><a href=\"?test=deploy_ddl_verify\">Deploy DDL Verification</a> - 
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
 $body .= "<li><a href=\"?test=jira_test\">Jira Integration Test</a> - Manual test instructions for Jira issue filing</li>\n" ;
+$body .= "<li><a href=\"?test=maintenance_windows\">Maintenance Windows Test</a> - Test maintenance window detection for hosts</li>\n" ;
 $body .= "<li><a href=\"?test=cleanup\">Cleanup Test Data</a> - Remove test tables from test database</li>\n" ;
 $body .= "</ul>\n" ;
 $body .= "<hr/>\n" ;
@@ -1100,6 +1103,128 @@ if ( $test === 'jira_test' ) {
     $body .= "<li>$passIcon <strong>Success:</strong> Jira opens with a pre-filled issue ready for your details</li>\n" ;
     $body .= "<li>$failIcon <strong>Failure:</strong> You'll see an error message indicating what needs to be fixed</li>\n" ;
     $body .= "</ul>\n" ;
+}
+
+if ( $test === 'maintenance_windows' ) {
+    $body .= "<h3>Maintenance Windows Test</h3>\n" ;
+
+    $passIcon = "<span style='color:lime;'>&#10004;</span>" ;
+    $failIcon = "<span style='color:red;'>&#10008;</span>" ;
+    $warnIcon = "<span style='color:yellow;'>&#9888;</span>" ;
+
+    // Check if maintenance windows are enabled
+    $enabled = $config->getEnableMaintenanceWindows() ;
+    $body .= "<p><strong>Maintenance Windows Enabled:</strong> " ;
+    $body .= $enabled ? "$passIcon Yes" : "$failIcon No (set <code>enableMaintenanceWindows</code> to <code>true</code> in aql_config.xml)" ;
+    $body .= "</p>\n" ;
+
+    if ( !$enabled ) {
+        $body .= "<p style='color:yellow;'>Enable maintenance windows in config to test further.</p>\n" ;
+    } else {
+        // Show current time info
+        $tz = new \DateTimeZone( $config->getTimeZone() ) ;
+        $now = new \DateTime( 'now', $tz ) ;
+        $body .= "<p><strong>Current Time:</strong> " . $now->format( 'l Y-m-d H:i:s T' ) . "</p>\n" ;
+
+        try {
+            $dbc = new DBConnection() ;
+            $dbh = $dbc->getConnection() ;
+
+            // Get all maintenance windows
+            $sql = "SELECT mw.window_id, mw.window_type, mw.schedule_type, mw.days_of_week,
+                           mw.start_time, mw.end_time, mw.timezone, mw.silence_until, mw.description,
+                           h.hostname, h.host_id, 'host' as target_type
+                    FROM maintenance_window mw
+                    JOIN maintenance_window_host_map mwhm ON mw.window_id = mwhm.window_id
+                    JOIN host h ON mwhm.host_id = h.host_id
+                    UNION ALL
+                    SELECT mw.window_id, mw.window_type, mw.schedule_type, mw.days_of_week,
+                           mw.start_time, mw.end_time, mw.timezone, mw.silence_until, mw.description,
+                           hg.tag as hostname, hg.host_group_id as host_id, 'group' as target_type
+                    FROM maintenance_window mw
+                    JOIN maintenance_window_host_group_map mwgm ON mw.window_id = mwgm.window_id
+                    JOIN host_group hg ON mwgm.host_group_id = hg.host_group_id
+                    ORDER BY window_id" ;
+            $result = $dbh->query( $sql ) ;
+
+            $body .= "<h4>Configured Maintenance Windows</h4>\n" ;
+            if ( $result && $result->num_rows > 0 ) {
+                $body .= "<table border='1' cellpadding='5' style='margin:10px 0;'>\n" ;
+                $body .= "<tr><th>ID</th><th>Type</th><th>Target</th><th>Schedule</th><th>Time</th><th>TZ</th><th>Description</th></tr>\n" ;
+                while ( $row = $result->fetch_assoc() ) {
+                    $schedule = $row['window_type'] === 'adhoc'
+                        ? 'Until: ' . $row['silence_until']
+                        : $row['schedule_type'] . ': ' . $row['days_of_week'] ;
+                    $timeWindow = $row['start_time'] && $row['end_time']
+                        ? substr( $row['start_time'], 0, 5 ) . '-' . substr( $row['end_time'], 0, 5 )
+                        : 'All day' ;
+                    $body .= "<tr>" ;
+                    $body .= "<td>" . $row['window_id'] . "</td>" ;
+                    $body .= "<td>" . $row['window_type'] . "</td>" ;
+                    $body .= "<td>" . $row['target_type'] . ': ' . htmlspecialchars( $row['hostname'] ) . "</td>" ;
+                    $body .= "<td>" . $schedule . "</td>" ;
+                    $body .= "<td>" . $timeWindow . "</td>" ;
+                    $body .= "<td>" . $row['timezone'] . "</td>" ;
+                    $body .= "<td>" . htmlspecialchars( $row['description'] ) . "</td>" ;
+                    $body .= "</tr>\n" ;
+                }
+                $body .= "</table>\n" ;
+            } else {
+                $body .= "<p>$warnIcon No maintenance windows configured. <a href='manageData.php?data=MaintenanceWindows'>Create one</a></p>\n" ;
+            }
+
+            // Test specific hosts
+            $body .= "<h4>Test Host Maintenance Status</h4>\n" ;
+            $hostId = isset( $_GET['hostId'] ) ? intval( $_GET['hostId'] ) : 0 ;
+
+            // Get list of hosts for dropdown
+            $hostResult = $dbh->query( "SELECT host_id, hostname FROM host WHERE decommissioned = 0 ORDER BY hostname LIMIT 50" ) ;
+            $body .= "<form method='get'>\n" ;
+            $body .= "<input type='hidden' name='test' value='maintenance_windows' />\n" ;
+            $body .= "<label>Select Host: <select name='hostId'>\n" ;
+            $body .= "<option value=''>-- Select a host --</option>\n" ;
+            while ( $h = $hostResult->fetch_assoc() ) {
+                $selected = ( $h['host_id'] == $hostId ) ? ' selected' : '' ;
+                $body .= "<option value='" . $h['host_id'] . "'$selected>" . htmlspecialchars( $h['hostname'] ) . "</option>\n" ;
+            }
+            $body .= "</select></label>\n" ;
+            $body .= " <button type='submit'>Test</button>\n" ;
+            $body .= "</form>\n" ;
+
+            if ( $hostId > 0 ) {
+                $body .= "<h5>Results for Host ID $hostId:</h5>\n" ;
+
+                // Direct mapping
+                $directResult = MaintenanceWindow::getActiveWindowForHost( $hostId, $dbh ) ;
+                $body .= "<p><strong>Direct host mapping:</strong> " ;
+                if ( $directResult ) {
+                    $body .= "$passIcon ACTIVE - " . json_encode( $directResult ) ;
+                } else {
+                    $body .= "$warnIcon Not in maintenance (direct)" ;
+                }
+                $body .= "</p>\n" ;
+
+                // Via group
+                $groupResult = MaintenanceWindow::getActiveWindowForHostViaGroup( $hostId, $dbh ) ;
+                $body .= "<p><strong>Via group mapping:</strong> " ;
+                if ( $groupResult ) {
+                    $body .= "$passIcon ACTIVE - " . json_encode( $groupResult ) ;
+                } else {
+                    $body .= "$warnIcon Not in maintenance (via group)" ;
+                }
+                $body .= "</p>\n" ;
+
+                // Final status
+                $inMaintenance = ( $directResult !== null || $groupResult !== null ) ;
+                $body .= "<p style='font-size:16px;'><strong>Final Status:</strong> " ;
+                $body .= $inMaintenance ? "<span style='color:lime;'>IN MAINTENANCE</span>" : "<span style='color:yellow;'>NOT IN MAINTENANCE</span>" ;
+                $body .= "</p>\n" ;
+            }
+
+        } catch ( \Exception $e ) {
+            $body .= "<p style='color:red;'>Error: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
+        }
+    }
 }
 
 if ( $test === 'cleanup' ) {

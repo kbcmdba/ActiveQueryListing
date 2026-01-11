@@ -601,3 +601,75 @@ td.blocking {
     color: #888;
     font-style: italic;
 }
+
+.local-silence-recovered {
+    margin: 3px 0;
+    padding: 4px 6px;
+    background: #354535;
+    border-radius: 3px;
+    color: #8f8;
+    font-size: 10px;
+}
+
+.local-silence-auto-badge {
+    font-size: 9px;
+    color: #8cf;
+    margin-left: 4px;
+}
+
+/* Auto-recover options in silence modal */
+.silence-auto-recover-options {
+    margin-top: 8px;
+    padding: 8px;
+    background: #3a3a3a;
+    border-radius: 4px;
+    display: none;
+}
+
+.silence-auto-recover-options label {
+    display: block;
+    margin: 4px 0;
+    font-weight: normal;
+}
+
+.silence-auto-recover-options select {
+    margin-left: 10px;
+}
+
+/* Alert Debug Box */
+.alert-debug-box {
+    background: #222;
+    color: #ccc;
+    border: 2px solid #0f0;
+    border-radius: 5px;
+    padding: 12px;
+    margin: 10px 0;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.alert-debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.alert-debug-title {
+    color: #0f0;
+    font-weight: bold;
+}
+
+.alert-debug-btn {
+    background: #555;
+    color: #fff;
+    border: 1px solid #777;
+    border-radius: 3px;
+    padding: 2px 8px;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.alert-debug-btn:hover {
+    background: #666;
+}

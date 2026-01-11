@@ -234,20 +234,89 @@ class MaintenanceWindow
         }
 
         $now = new \DateTime( 'now', $tz ) ;
-        $scheduleType = $window['schedule_type'] ;
+        $currentTime = $now->format( 'H:i:s' ) ;
 
-        // Check if we're on the right day/date for this schedule
+        // Check time window constraints
+        if ( empty( $window['start_time'] ) || empty( $window['end_time'] ) ) {
+            // No time constraints - active all day on matching days
+            return self::isScheduleMatchingToday( $window, $now ) ;
+        }
+
+        // Check if this is an overnight window (start > end, e.g., 22:00-09:00)
+        $isOvernight = self::isOvernightWindow( $window['start_time'], $window['end_time'] ) ;
+
+        if ( $isOvernight ) {
+            // For overnight windows, we need to check two cases:
+            // 1. Today matches schedule AND current time >= start time (evening portion)
+            // 2. YESTERDAY matched schedule AND current time <= end time (morning portion)
+
+            $inEveningPortion = self::isTimeAfterOrEqual( $currentTime, $window['start_time'] ) ;
+            $inMorningPortion = self::isTimeBeforeOrEqual( $currentTime, $window['end_time'] ) ;
+
+            if ( $inEveningPortion && self::isScheduleMatchingToday( $window, $now ) ) {
+                return true ;
+            }
+
+            if ( $inMorningPortion ) {
+                // Check if yesterday matched the schedule
+                $yesterday = clone $now ;
+                $yesterday->modify( '-1 day' ) ;
+                if ( self::isScheduleMatchingToday( $window, $yesterday ) ) {
+                    return true ;
+                }
+            }
+
+            return false ;
+        }
+
+        // Normal daytime window - today must match and time must be in range
         if ( ! self::isScheduleMatchingToday( $window, $now ) ) {
             return false ;
         }
 
-        // Check time window
-        if ( empty( $window['start_time'] ) || empty( $window['end_time'] ) ) {
-            // No time constraints - active all day on matching days
-            return true ;
-        }
+        return self::isTimeInWindow( $window['start_time'], $window['end_time'], $currentTime ) ;
+    }
 
-        return self::isTimeInWindow( $window['start_time'], $window['end_time'], $now->format( 'H:i:s' ) ) ;
+    /**
+     * Check if a time window spans overnight (start > end)
+     *
+     * @param string $startTime Start time (H:i:s or H:i)
+     * @param string $endTime End time (H:i:s or H:i)
+     * @return bool True if overnight window
+     */
+    private static function isOvernightWindow( $startTime, $endTime )
+    {
+        $start = strtotime( "1970-01-01 $startTime" ) ;
+        $end = strtotime( "1970-01-01 $endTime" ) ;
+        return ( $start > $end ) ;
+    }
+
+    /**
+     * Check if current time is at or after a given time
+     *
+     * @param string $currentTime Current time (H:i:s)
+     * @param string $targetTime Target time (H:i:s or H:i)
+     * @return bool True if current >= target
+     */
+    private static function isTimeAfterOrEqual( $currentTime, $targetTime )
+    {
+        $current = strtotime( "1970-01-01 $currentTime" ) ;
+        $target = strtotime( "1970-01-01 $targetTime" ) ;
+        return ( $current >= $target ) ;
+    }
+
+    /**
+     * Check if current time is at or before a given time
+     *
+     * @param string $currentTime Current time (H:i:s)
+     * @param string $targetTime Target time (H:i:s or H:i)
+     * @return bool True if current <= target
+     */
+    private static function isTimeBeforeOrEqual( $currentTime, $targetTime )
+    {
+        $current = strtotime( "1970-01-01 $currentTime" ) ;
+        $target = strtotime( "1970-01-01 $targetTime" ) ;
+        return ( $current <= $target ) ;
     }
 
     /**

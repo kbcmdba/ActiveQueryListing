@@ -884,7 +884,7 @@ HTML;
                 $silenceUntilVal = empty( $silenceUntil ) ? null : $silenceUntil ;
                 $sql = 'UPDATE maintenance_window SET window_type = ?, schedule_type = ?, days_of_week = ?, day_of_month = ?, month_of_year = ?, period_days = ?, period_start_date = ?, start_time = ?, end_time = ?, timezone = ?, silence_until = ?, description = ? WHERE window_id = ?' ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sssiiiissssssi', $windowType, $scheduleTypeVal, $daysSetVal, $dayOfMonthVal, $monthOfYearVal, $periodDaysVal, $periodStartDateVal, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $windowId ) ;
+                $stmt->bind_param( 'sssiiissssssi', $windowType, $scheduleTypeVal, $daysSetVal, $dayOfMonthVal, $monthOfYearVal, $periodDaysVal, $periodStartDateVal, $startTimeVal, $endTimeVal, $timezone, $silenceUntilVal, $description, $windowId ) ;
                 if ( $stmt->execute() ) {
                     // Update mapping - remove old, add new
                     $dbh->query( "DELETE FROM maintenance_window_host_map WHERE window_id = $windowId" ) ;

@@ -771,6 +771,32 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="text" id="silenceDescription" name="description" size="40"
                    placeholder="e.g., Working on issue JIRA-1234" />
           </p>
+          <p id="silenceAutoRecoverRow">
+            <label style="font-weight:normal;">
+              <input type="checkbox" id="silenceAutoRecover" onchange="toggleAutoRecoverOptions()" />
+              Auto-unmute when service recovers
+            </label>
+            <div id="silenceAutoRecoverOptions" class="silence-auto-recover-options">
+              <label>
+                Consider recovered when host reaches:
+                <select id="silenceRecoverLevel">
+                  <option value="not-error">Not in error state</option>
+                  <option value="2" selected>Level 2 or better</option>
+                  <option value="1">Level 1 or better</option>
+                  <option value="0">Level 0 only</option>
+                </select>
+              </label>
+              <label>
+                For at least:
+                <select id="silenceRecoverCount">
+                  <option value="1">1 refresh cycle</option>
+                  <option value="2" selected>2 consecutive cycles</option>
+                  <option value="3">3 consecutive cycles</option>
+                  <option value="5">5 consecutive cycles</option>
+                </select>
+              </label>
+            </div>
+          </p>
         </form>
       </div>
       <div class="modal-footer">
