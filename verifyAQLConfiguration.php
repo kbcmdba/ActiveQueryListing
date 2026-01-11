@@ -500,6 +500,36 @@ function isFeatureEnabled( $param, $configValues ) {
             padding-top: 20px;
             border-top: 1px solid var(--border-color);
         }
+
+        .code-block {
+            position: relative;
+        }
+        .code-block pre {
+            margin: 0;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--header-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+            background: var(--border-color);
+        }
+        .copy-btn.copied {
+            background: var(--pass-color);
+            color: white;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -549,25 +579,34 @@ if ( !empty( $missingRequired ) || !empty( $missingOptional ) ) :
     <div class="fix-section">
         <h3>Install Missing Extensions</h3>
         <p>On Debian/Ubuntu:</p>
-        <pre>apt-get install <?php
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <pre>apt-get install <?php
 foreach ( $missingRequired as $ext ) {
     echo "php-$ext " ;
 }
 ?></pre>
-        <p>On RHEL/CentOS:</p>
-        <pre>dnf install <?php
+        </div>
+        <p>On RHEL/CentOS/Fedora:</p>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <pre>dnf install <?php
 foreach ( $missingRequired as $ext ) {
     echo "php-$ext " ;
 }
 ?></pre>
+        </div>
         <p>Then restart your web server:</p>
-        <pre># Apache
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <pre># Apache
 systemctl restart apache2    # Debian/Ubuntu
-systemctl restart httpd      # RHEL/CentOS
+systemctl restart httpd      # RHEL/CentOS/Fedora
 
 # nginx + php-fpm
 systemctl restart php-fpm
 systemctl restart nginx</pre>
+        </div>
     </div>
 <?php endif ; ?>
 
@@ -604,8 +643,11 @@ systemctl restart nginx</pre>
     <div class="fix-section">
         <h3>How to Fix</h3>
         <p>Copy the sample configuration file and edit it:</p>
-        <pre>cp <?php echo htmlspecialchars( basename( $sampleFile ) ) ; ?> <?php echo htmlspecialchars( basename( $configFile ) ) ; ?>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <pre>cp <?php echo htmlspecialchars( basename( $sampleFile ) ) ; ?> <?php echo htmlspecialchars( basename( $configFile ) ) ; ?>
 # Then edit <?php echo htmlspecialchars( basename( $configFile ) ) ; ?> with your settings</pre>
+        </div>
     </div>
 
 <?php elseif ( !is_readable( $configFile ) ) : ?>
@@ -618,8 +660,11 @@ systemctl restart nginx</pre>
     <div class="fix-section">
         <h3>How to Fix</h3>
         <p>Check file permissions:</p>
-        <pre>chmod 640 <?php echo htmlspecialchars( basename( $configFile ) ) ; ?>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <pre>chmod 640 <?php echo htmlspecialchars( basename( $configFile ) ) ; ?>
 chown www-data:www-data <?php echo htmlspecialchars( basename( $configFile ) ) ; ?></pre>
+        </div>
     </div>
 
 <?php elseif ( !$configLoaded ) : ?>
@@ -637,7 +682,10 @@ chown www-data:www-data <?php echo htmlspecialchars( basename( $configFile ) ) ;
             <li>Invalid characters</li>
         </ul>
         <p>Validate your XML:</p>
-        <pre>xmllint --noout <?php echo htmlspecialchars( basename( $configFile ) ) ; ?></pre>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <pre>xmllint --noout <?php echo htmlspecialchars( basename( $configFile ) ) ; ?></pre>
+        </div>
     </div>
 
 <?php else : ?>
@@ -930,6 +978,7 @@ if ( !empty( $dbHost ) && !empty( $dbUser ) && !empty( $dbPass ) && !empty( $dbN
         'perf_schema_select' => false
     ] ;
     $grantStatements = [] ;
+    $actualUserHost = '' ;  // Will store 'user'@'host' from GRANT output
 
     try {
         $mysqli = @new \mysqli( $dbHost, $dbUser, $dbPass, $dbName, $dbPort ) ;
@@ -937,6 +986,13 @@ if ( !empty( $dbHost ) && !empty( $dbUser ) && !empty( $dbPass ) && !empty( $dbN
             throw new \Exception( $mysqli->connect_error ) ;
         }
         $dbConnected = true ;
+
+        // Get the actual user@host we connected as
+        $result = @$mysqli->query( "SELECT CURRENT_USER()" ) ;
+        if ( $result && $row = $result->fetch_row() ) {
+            $actualUserHost = $row[0] ;  // Returns 'user@host' format
+            $result->free() ;
+        }
 
         // Get actual grants using SHOW GRANTS
         $result = @$mysqli->query( "SHOW GRANTS" ) ;
@@ -981,14 +1037,53 @@ if ( !empty( $dbHost ) && !empty( $dbUser ) && !empty( $dbPass ) && !empty( $dbN
         $dbError = $e->getMessage() ;
     }
 
+    // Fallback if we couldn't get user@host
+    if ( empty( $actualUserHost ) ) {
+        $actualUserHost = $dbUser . '@localhost' ;
+    }
+
+    // Parse user and host for warnings
+    $userParts = explode( '@', $actualUserHost ) ;
+    $actualUser = $userParts[0] ?? $dbUser ;
+    $actualHostMask = $userParts[1] ?? 'localhost' ;
+    $isRootUser = ( strtolower( $actualUser ) === 'root' ) ;
+
     if ( $dbConnected ) :
         // Determine status for each privilege
         $processOk = $privileges['PROCESS'] || $privileges['ALL PRIVILEGES'] ;
         $replOk = $privileges['REPLICATION CLIENT'] || $privileges['ALL PRIVILEGES'] ;
         $perfSchemaOk = $privileges['perf_schema_select'] || $privileges['ALL PRIVILEGES'] ;
+        $hasSuper = $privileges['SUPER'] || $privileges['ALL PRIVILEGES'] ;
 ?>
         <p><?php echo $passIcon ; ?> Connected to <code><?php echo htmlspecialchars( "$dbHost:$dbPort" ) ; ?></code></p>
         <p><?php echo $passIcon ; ?> Database <code><?php echo htmlspecialchars( $dbName ) ; ?></code> accessible</p>
+        <p><?php echo $passIcon ; ?> Connected as <code><?php echo htmlspecialchars( $actualUserHost ) ; ?></code></p>
+
+<?php if ( $isRootUser ) : ?>
+        <div class="summary-box error">
+            <p><?php echo $failIcon ; ?> <strong>Security Warning: Using 'root' user</strong></p>
+            <p>Do not use the MySQL root account for applications. Create a dedicated user with only the privileges AQL needs.</p>
+        </div>
+<?php endif ; ?>
+
+<?php if ( $hasSuper && !$isRootUser ) : ?>
+        <div class="summary-box warning">
+            <p><?php echo $warnIcon ; ?> <strong>Security Note: SUPER privilege detected</strong></p>
+            <p>The user <code><?php echo htmlspecialchars( $actualUser ) ; ?></code> has SUPER privilege, which is more than AQL needs. Consider creating a dedicated user with minimal privileges.</p>
+        </div>
+<?php endif ; ?>
+
+<?php if ( $actualHostMask === '%' ) : ?>
+        <div class="summary-box warning">
+            <p><?php echo $warnIcon ; ?> <strong>Security Warning: User allows connections from any host</strong></p>
+            <p>The user <code><?php echo htmlspecialchars( $actualUserHost ) ; ?></code> can connect from anywhere (<code>%</code>). Consider restricting to specific hosts:</p>
+            <ul>
+                <li><code>'<?php echo htmlspecialchars( $actualUser ) ; ?>'@'localhost'</code> - local connections only</li>
+                <li><code>'<?php echo htmlspecialchars( $actualUser ) ; ?>'@'192.168.1.%'</code> - specific subnet</li>
+                <li><code>'<?php echo htmlspecialchars( $actualUser ) ; ?>'@'aql-server.example.com'</code> - specific host</li>
+            </ul>
+        </div>
+<?php endif ; ?>
 
         <h4>Required Privileges</h4>
         <table>
@@ -1014,28 +1109,42 @@ if ( !empty( $dbHost ) && !empty( $dbUser ) && !empty( $dbPass ) && !empty( $dbN
             </tbody>
         </table>
 
+<?php
+    // Format user@host for SQL statements: 'user'@'host'
+    $sqlUserHost = "'" . htmlspecialchars( $actualUser ) . "'@'" . htmlspecialchars( $actualHostMask ) . "'" ;
+?>
 <?php if ( !$processOk ) : ?>
 <?php $criticalErrors++ ; ?>
         <div class="fix-section">
             <h3>Missing PROCESS Privilege</h3>
             <p>Without PROCESS privilege, AQL can only see its own queries - not queries from other users. This is critical for monitoring.</p>
-            <pre>GRANT PROCESS ON *.* TO '<?php echo htmlspecialchars( $dbUser ) ; ?>'@'%' ;
+            <p><em>Run on each monitored database server:</em></p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <pre>-- Create user if needed (use your password)
+CREATE USER IF NOT EXISTS <?php echo $sqlUserHost ; ?> IDENTIFIED BY 'your_password_here' ;
+
+-- Grant required privilege
+GRANT PROCESS ON *.* TO <?php echo $sqlUserHost ; ?> ;
 FLUSH PRIVILEGES ;</pre>
+            </div>
         </div>
 <?php endif ; ?>
 
 <?php if ( !$replOk || !$perfSchemaOk ) : ?>
         <div class="fix-section">
             <h3>Recommended Additional Privileges</h3>
-<?php if ( !$replOk ) : ?>
-            <p><strong>REPLICATION CLIENT</strong> - needed to check replica lag:</p>
-            <pre>GRANT REPLICATION CLIENT ON *.* TO '<?php echo htmlspecialchars( $dbUser ) ; ?>'@'%' ;</pre>
+            <p><em>Run on each monitored database server:</em></p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <pre><?php if ( !$replOk ) : ?>-- For replica status monitoring
+GRANT REPLICATION CLIENT ON *.* TO <?php echo $sqlUserHost ; ?> ;
 <?php endif ; ?>
-<?php if ( !$perfSchemaOk ) : ?>
-            <p><strong>performance_schema SELECT</strong> - needed for lock/blocking detection:</p>
-            <pre>GRANT SELECT ON performance_schema.* TO '<?php echo htmlspecialchars( $dbUser ) ; ?>'@'%' ;</pre>
+<?php if ( !$perfSchemaOk ) : ?>-- For lock/blocking detection
+GRANT SELECT ON performance_schema.* TO <?php echo $sqlUserHost ; ?> ;
 <?php endif ; ?>
-            <pre>FLUSH PRIVILEGES ;</pre>
+FLUSH PRIVILEGES ;</pre>
+            </div>
         </div>
 <?php endif ; ?>
 
@@ -1056,7 +1165,10 @@ FLUSH PRIVILEGES ;</pre>
                 <li>Ensure database <code><?php echo htmlspecialchars( $dbName ) ; ?></code> exists</li>
             </ul>
             <p>Test from command line:</p>
-            <pre>mysql -h <?php echo htmlspecialchars( $dbHost ) ; ?> -P <?php echo htmlspecialchars( $dbPort ) ; ?> -u <?php echo htmlspecialchars( $dbUser ) ; ?> -p <?php echo htmlspecialchars( $dbName ) ; ?></pre>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <pre>mysql -h <?php echo htmlspecialchars( $dbHost ) ; ?> -P <?php echo htmlspecialchars( $dbPort ) ; ?> -u <?php echo htmlspecialchars( $dbUser ) ; ?> -p <?php echo htmlspecialchars( $dbName ) ; ?></pre>
+            </div>
         </div>
 <?php endif ; ?>
     </div>
@@ -1144,11 +1256,14 @@ if ( $dbConnected ) :
         <div class="fix-section">
             <h3>Create Missing Tables</h3>
             <p>Run the deployment script:</p>
-            <pre># Via browser
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <pre># Via browser
 Open: <?php echo htmlspecialchars( dirname( $configValues['baseUrl'] ?? 'https://yourserver/aql' ) ) ; ?>/deployDDL.php
 
 # Or via command line
 php <?php echo htmlspecialchars( __DIR__ ) ; ?>/deployDDL.php</pre>
+            </div>
         </div>
 <?php endif ; ?>
     </div>
@@ -1331,5 +1446,35 @@ if ( $jiraEnabled ) :
     </div>
 
 </div>
+
+<script>
+function copyToClipboard(btn) {
+    const codeBlock = btn.parentElement.querySelector('pre');
+    const text = codeBlock.textContent;
+
+    navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+        }, 2000);
+    }).catch(function(err) {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+}
+</script>
 </body>
 </html>
