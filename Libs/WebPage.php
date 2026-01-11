@@ -345,6 +345,43 @@ HTML
     private function getNavBar()
     {
         $version = Config::VERSION ;
+        // Build scoreboard items based on enabled DBTypes
+        $scoreboardItems = [] ;
+
+        // MySQL/MariaDB is always available
+        $scoreboardItems[] = [
+            'id' => 'MySQL',
+            'label' => 'MySQL',
+            'section' => 'nwStatusOverview'
+        ] ;
+
+        // Check if Redis monitoring is enabled
+        try {
+            $config = new Config() ;
+            if ( $config->getRedisEnabled() ) {
+                $scoreboardItems[] = [
+                    'id' => 'Redis',
+                    'label' => 'Redis',
+                    'section' => 'nwRedisOverview'
+                ] ;
+            }
+            // Future: Add other DBTypes here (MongoDB, MS-SQL, etc.)
+        } catch ( \Exception $e ) {
+            // Config not available, just show MySQL
+        }
+
+        // Generate scoreboard HTML
+        $scoreboardHtml = '' ;
+        foreach ( $scoreboardItems as $item ) {
+            $scoreboardHtml .= <<<HTML
+      <li id="scoreboard{$item['id']}" class="scoreboard-item level0" onclick="scrollToSection('{$item['section']}')" title="{$item['label']}: Loading...">
+        <span class="scoreboard-label">{$item['label']}</span>
+        <span class="scoreboard-count" id="scoreboardCount{$item['id']}">-</span>
+      </li>
+
+HTML;
+        }
+
         return <<<HTML
 <nav class="navbar navbar-inverse navbar-fixed-top aql-navbar">
   <div class="container-fluid">
@@ -397,6 +434,9 @@ HTML
         </ul>
       </li>
     </ul>
+    <!-- Scoreboard: Always-visible status indicators -->
+    <ul class="nav navbar-nav navbar-right" id="scoreboard">
+$scoreboardHtml    </ul>
   </div>
 </nav>
 

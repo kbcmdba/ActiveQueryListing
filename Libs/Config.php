@@ -89,6 +89,12 @@ class Config
     private $testDbName = null;
     private $enableMaintenanceWindows = null;
     private $dbaSessionTimeout = null;
+    private $redisEnabled = null;
+    private $redisUser = null;
+    private $redisPassword = null;
+    private $redisConnectTimeout = null;
+    private $redisDatabase = null;
+    private $enableSpeechAlerts = null;
 
     /**
      * #@-
@@ -146,7 +152,13 @@ class Config
             'testDbPass' => '',
             'testDbName' => '',
             'enableMaintenanceWindows' => 'false',
-            'dbaSessionTimeout' => '86400'
+            'dbaSessionTimeout' => '86400',
+            'redisEnabled' => 'false',
+            'redisUser' => '',
+            'redisPassword' => '',
+            'redisConnectTimeout' => 2,
+            'redisDatabase' => 0,
+            'enableSpeechAlerts' => 'true'
         ] ;
         $paramList = [
             'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],
@@ -179,7 +191,13 @@ class Config
             'testDbPass'               => [ 'isRequired' => 0, 'value' => 0 ],
             'testDbName'               => [ 'isRequired' => 0, 'value' => 0 ],
             'enableMaintenanceWindows' => [ 'isRequired' => 0, 'value' => 0 ],
-            'dbaSessionTimeout'        => [ 'isRequired' => 0, 'value' => 0 ]
+            'dbaSessionTimeout'        => [ 'isRequired' => 0, 'value' => 0 ],
+            'redisEnabled'             => [ 'isRequired' => 0, 'value' => 0 ],
+            'redisUser'                => [ 'isRequired' => 0, 'value' => 0 ],
+            'redisPassword'            => [ 'isRequired' => 0, 'value' => 0 ],
+            'redisConnectTimeout'      => [ 'isRequired' => 0, 'value' => 0 ],
+            'redisDatabase'            => [ 'isRequired' => 0, 'value' => 0 ],
+            'enableSpeechAlerts'       => [ 'isRequired' => 0, 'value' => 0 ]
         ] ;
 
         // verify that all the parameters are present and just once.
@@ -192,6 +210,8 @@ class Config
                 switch ( $key ) {
                     case 'minRefresh' :
                     case 'defaultRefresh' :
+                    case 'redisConnectTimeout' :
+                    case 'redisDatabase' :
                         $cfgValues[$key] = (int) $v ;
                         break ;
                     default :
@@ -239,6 +259,12 @@ class Config
         $this->testDbName = $cfgValues[ 'testDbName' ] ?? '' ;
         $this->enableMaintenanceWindows = $cfgValues[ 'enableMaintenanceWindows' ] ?? 'false' ;
         $this->dbaSessionTimeout = $cfgValues[ 'dbaSessionTimeout' ] ?? '86400' ;
+        $this->redisEnabled = $cfgValues[ 'redisEnabled' ] ?? 'false' ;
+        $this->redisUser = $cfgValues[ 'redisUser' ] ?? '' ;
+        $this->redisPassword = $cfgValues[ 'redisPassword' ] ?? '' ;
+        $this->redisConnectTimeout = $cfgValues[ 'redisConnectTimeout' ] ?? 2 ;
+        $this->redisDatabase = $cfgValues[ 'redisDatabase' ] ?? 0 ;
+        $this->enableSpeechAlerts = $cfgValues[ 'enableSpeechAlerts' ] ?? 'true' ;
     }
 
     /**
@@ -537,6 +563,60 @@ class Config
      */
     public function getDbaSessionTimeout() {
         return (int) ( $this->dbaSessionTimeout ?? 86400 ) ;
+    }
+
+    /**
+     * Check if Redis monitoring is enabled
+     *
+     * @return bool
+     */
+    public function getRedisEnabled() {
+        return ( 'true' === $this->redisEnabled ) ;
+    }
+
+    /**
+     * Get Redis username (for Redis 6+ ACL authentication)
+     *
+     * @return string
+     */
+    public function getRedisUser() {
+        return ( null !== $this->redisUser ) ? $this->redisUser : '' ;
+    }
+
+    /**
+     * Get Redis password
+     *
+     * @return string
+     */
+    public function getRedisPassword() {
+        return ( null !== $this->redisPassword ) ? $this->redisPassword : '' ;
+    }
+
+    /**
+     * Get Redis connection timeout in seconds
+     *
+     * @return int
+     */
+    public function getRedisConnectTimeout() {
+        return (int) ( $this->redisConnectTimeout ?? 2 ) ;
+    }
+
+    /**
+     * Get Redis database number (0-15)
+     *
+     * @return int
+     */
+    public function getRedisDatabase() {
+        return (int) ( $this->redisDatabase ?? 0 ) ;
+    }
+
+    /**
+     * Check if speech alerts are enabled
+     *
+     * @return bool
+     */
+    public function getEnableSpeechAlerts() {
+        return ( 'true' === $this->enableSpeechAlerts ) ;
     }
 
 }
