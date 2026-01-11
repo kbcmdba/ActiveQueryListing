@@ -271,6 +271,72 @@ namespace com\kbcmdba\aql ;
 //          - Continuous aggregate refresh status
 //          - Compression job monitoring
 //          - Retention policy visibility
+//
+// @rfe 326 Apache Hadoop/HBase support
+//          - The original "commodity hardware mega cluster"
+//          - HBase: scan of hbase:meta for region status
+//          - HBase shell or REST API for active operations
+//          - HDFS: NameNode and DataNode status
+//          - YARN: ResourceManager job tracking
+//          - MapReduce/Spark job visibility
+//
+// @rfe 327 ScyllaDB support
+//          - Cassandra-compatible, C++ implementation
+//          - nodetool or REST API for cluster status
+//          - Per-shard metrics visibility
+//          - Latency histogram tracking
+//          - Compaction and repair status
+//
+// @rfe 328 Greenplum support
+//          - MPP PostgreSQL-based analytics
+//          - pg_stat_activity across segments
+//          - gp_segment_configuration for cluster topology
+//          - Query dispatcher and executor visibility
+//          - Resource queue monitoring
+//
+// @rfe 329 Apache Druid support
+//          - Real-time analytics database
+//          - /druid/v2 API for running queries
+//          - Coordinator and Broker status
+//          - Segment loading and availability
+//          - Ingestion task monitoring
+//
+// @rfe 330 Apache Pinot support
+//          - Real-time OLAP datastore
+//          - Controller API for cluster status
+//          - Broker query tracking
+//          - Segment and table status
+//          - Minion task visibility
+//
+// @rfe 331 FoundationDB support
+//          - Apple's distributed key-value store
+//          - fdbcli status for cluster health
+//          - Transaction latency probes
+//          - Storage server utilization
+//          - Coordination state visibility
+//
+// @rfe 332 Riak support
+//          - Distributed key-value database
+//          - riak-admin status for node health
+//          - Active Anti-Entropy status
+//          - Handoff monitoring
+//          - Ring membership visibility
+//
+// @rfe 333 SQLite support
+//          - Embedded database, but widely used
+//          - sqlite3_status() for memory and cache stats
+//          - PRAGMA database_list for attached databases
+//          - PRAGMA table_info for schema inspection
+//          - WAL checkpoint status
+//          - Useful for monitoring app-embedded databases
+//
+// @rfe 334 Berkeley DB (BDB) support
+//          - Oracle's embedded key-value store
+//          - db_stat utility for database statistics
+//          - Lock and transaction statistics
+//          - Buffer pool and cache metrics
+//          - Replication status (if configured)
+//          - Note: Legacy but still in use in many systems
 
 // ----------------------------------------------------------------------------
 // APM & OBSERVABILITY INTEGRATION
