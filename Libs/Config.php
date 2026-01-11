@@ -34,7 +34,7 @@ class Config
     /**
      * AQL Version - update this when releasing new versions
      */
-    const VERSION = 'v2.5' ;
+    const VERSION = 'v2.6' ;
 
     /**
      * Configuration Class

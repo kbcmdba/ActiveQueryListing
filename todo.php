@@ -29,12 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 25 Add light/dark mode toggle
-//          - Current UI is dark mode only
-//          - Use CSS variables for colors (--bg-color, --text-color, etc.)
-//          - Add .theme-light class that overrides the variables
-//          - JavaScript toggles class on body based on cookie/URL param
-//          - URL parameter (e.g., ?theme=light) for easy sharing, syncs to cookie
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
