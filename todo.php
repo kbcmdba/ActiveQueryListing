@@ -29,6 +29,15 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
+// @todo 10 Add system load monitoring per host
+//          - Read /proc/loadavg via SSH/agent or MySQL LOAD_FILE() if permitted
+//          - Display load averages in Host Status Overview
+// @todo 20 Add Redis support for long-running query monitoring
+//          - Use CLIENT LIST to get connected clients and current commands
+//          - Use SLOWLOG GET to retrieve slow queries
+//          - Use INFO commandstats for command statistics
+//          - Implement phpredis or Predis connection in DBConnection.php
+//          - Add Redis-specific display in AJAXgetaql.php
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
@@ -41,15 +50,6 @@ namespace com\kbcmdba\aql ;
 //          - Certificate on ce-cook-adc1101.cashtn.com expired Jan 9, 2025
 //          - Currently using ldapVerifyCert=false as workaround (security risk)
 //          - Once renewed, remove ldapVerifyCert=false from aql_config.xml
-// @todo 40 Add Redis support for long-running query monitoring
-//          - Use CLIENT LIST to get connected clients and current commands
-//          - Use SLOWLOG GET to retrieve slow queries
-//          - Use INFO commandstats for command statistics
-//          - Implement phpredis or Predis connection in DBConnection.php
-//          - Add Redis-specific display in AJAXgetaql.php
-// @todo 45 Add system load monitoring per host
-//          - Read /proc/loadavg via SSH/agent or MySQL LOAD_FILE() if permitted
-//          - Display load averages in Host Status Overview
 // @todo 50 Add user statistics drilldown
 //          - Display like Noteworthy Status Overview but per-user across all watched systems
 //          - Columns: User, Longest Running, Idle Time (aggregate), Level counts (0-4, Error)
