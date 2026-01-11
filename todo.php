@@ -41,14 +41,6 @@ namespace com\kbcmdba\aql ;
 //          - Certificate on ce-cook-adc1101.cashtn.com expired Jan 9, 2025
 //          - Currently using ldapVerifyCert=false as workaround (security risk)
 //          - Once renewed, remove ldapVerifyCert=false from aql_config.xml
-// @todo 37 Create verifyAQLConfiguration.php for new user setup guidance
-//          - Show all config parameters (required and optional) with current status
-//          - Green checkmark for configured, red X for missing required, yellow for optional not set
-//          - Test database connectivity and report results
-//          - Test LDAP connectivity if doLDAPAuthentication=true
-//          - Test Jira API if jiraEnabled=true
-//          - Guide users through fixing configuration issues
-//          - Document in README.md alongside testAQL.php
 // @todo 40 Add Redis support for long-running query monitoring
 //          - Use CLIENT LIST to get connected clients and current commands
 //          - Use SLOWLOG GET to retrieve slow queries
