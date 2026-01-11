@@ -29,12 +29,36 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 20 Add Redis support for long-running query monitoring
-//          - Use CLIENT LIST to get connected clients and current commands
-//          - Use SLOWLOG GET to retrieve slow queries
-//          - Use INFO commandstats for command statistics
+// @todo 20 Add Redis support for monitoring (Medium effort: 2-3 weeks MVP, 4-5 weeks full)
+//          Connection & Config:
 //          - Implement phpredis or Predis connection in DBConnection.php
+//          - Add Redis as db_type in host table, config for auth/SSL
 //          - Add Redis-specific display in AJAXgetaql.php
+//          Key Monitoring Commands:
+//          - CLIENT LIST: connected clients, idle time, current command, connection age
+//          - SLOWLOG GET: historical slow commands (find KEYS *, large SMEMBERS, etc.)
+//          - INFO sections: clients, memory, stats, replication, persistence, commandstats
+//          - LATENCY DOCTOR/LATEST/HISTORY: latency spike detection (Redis 2.8.13+)
+//          - PUBSUB CHANNELS/NUMSUB: pub/sub channel and subscriber counts
+//          - XINFO STREAM/XPENDING: Streams backlog monitoring (Redis 5.0+)
+//          - MEMORY DOCTOR/STATS: memory fragmentation and issues (Redis 4.0+)
+//          Critical Metrics to Display:
+//          - connected_clients, blocked_clients (waiting on BLPOP etc.)
+//          - used_memory vs maxmemory (eviction risk)
+//          - Cache hit ratio: keyspace_hits / (keyspace_hits + keyspace_misses)
+//          - expired_keys, evicted_keys (evicted = data loss!)
+//          - rejected_connections (maxclients exceeded)
+//          - Memory fragmentation ratio (used_memory_rss / used_memory, alert if >1.5)
+//          - Replication lag (master_repl_offset vs slave offset)
+//          - Per-command stats: calls, total_time, avg_time (find expensive ops)
+//          - Persistence: last RDB save status, AOF rewrite status
+//          Alert Conditions:
+//          - evicted_keys increasing (at maxmemory, losing data)
+//          - rejected_connections > 0
+//          - blocked_clients high
+//          - Fragmentation ratio > 1.5
+//          - Replication lag growing
+//          - KEYS/SMEMBERS on large keyspaces in slowlog
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
