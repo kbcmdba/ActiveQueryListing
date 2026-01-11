@@ -354,8 +354,8 @@ a:visited {
 }
 
 .chartImage {
-    width: 44rem ;
-    height: 40rem ;
+    width: 33rem ;
+    height: 30rem ;
 }
 
 #updatedAt {
@@ -560,9 +560,26 @@ td.blocking {
     background-color: var(--border-dark);
 }
 
-/* Theme Toggle in Settings Menu */
+/* Theme Toggle in Settings Menu - shows preview of target theme */
 #themeToggleBtn {
     cursor: pointer;
+    /* In dark mode, show light theme preview */
+    background-color: #f5f5f5 !important;
+    color: #222 !important;
+}
+
+#themeToggleBtn:hover {
+    background-color: #e0e0e0 !important;
+}
+
+.theme-light #themeToggleBtn {
+    /* In light mode, show dark theme preview */
+    background-color: #333 !important;
+    color: white !important;
+}
+
+.theme-light #themeToggleBtn:hover {
+    background-color: #444 !important;
 }
 
 #themeIcon {
@@ -1042,4 +1059,12 @@ td.blocking {
 
 .mute-status-label {
     font-weight: bold;
+}
+
+.mute-status-on {
+    color: var(--status-success);
+}
+
+.mute-status-muted {
+    color: var(--status-warning);
 }

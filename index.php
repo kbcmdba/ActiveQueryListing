@@ -581,7 +581,8 @@ function updateMuteUI() {
     if (expiry === null || (expiry > 0 && Date.now() >= expiry)) {
         // Not muted or expired
         muteStatus.textContent = 'Alerts: ON';
-        muteStatus.style.color = 'lightgreen';
+        muteStatus.classList.remove('mute-status-muted');
+        muteStatus.classList.add('mute-status-on');
         muteControls.style.display = 'block';
         unmuteBtnContainer.style.display = 'none';
         if (expiry > 0 && Date.now() >= expiry) {
@@ -590,14 +591,16 @@ function updateMuteUI() {
     } else if (expiry === 0) {
         // Indefinite mute
         muteStatus.textContent = 'Alerts: MUTED (indefinite)';
-        muteStatus.style.color = 'yellow';
+        muteStatus.classList.remove('mute-status-on');
+        muteStatus.classList.add('mute-status-muted');
         muteControls.style.display = 'none';
         unmuteBtnContainer.style.display = 'block';
     } else {
         // Timed mute
         const remaining = expiry - Date.now();
         muteStatus.textContent = 'Alerts: MUTED (' + formatTimeRemaining(remaining) + ' left)';
-        muteStatus.style.color = 'yellow';
+        muteStatus.classList.remove('mute-status-on');
+        muteStatus.classList.add('mute-status-muted');
         muteControls.style.display = 'none';
         unmuteBtnContainer.style.display = 'block';
     }
@@ -647,9 +650,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateMuteUI, 60000); // Update every minute
 });
 </script>
-<audio id="klaxon" src="Images/honk-alarm-repeat-loop-101015.mp3" preload="auto"></audio>
+<a id="top"></a>
 <a id="graphs"></a>
-<table id="top" width="100%" border="1">
+<audio id="klaxon" src="Images/honk-alarm-repeat-loop-101015.mp3" preload="auto"></audio>
+<table id="headerTable" width="100%" border="1">
   <tr>
     <td class="headerTableTd"><h1>Active<br/>Query<br/>Listing</h1><div class="version-display">$aqlVersion</div></td>
     <td id="updatedAt">Page last updated at $now</td>
