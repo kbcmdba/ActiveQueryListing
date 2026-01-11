@@ -322,12 +322,12 @@ function myCallback( i, item ) {
             var mwType = ( errorMaintenanceInfo.windowType === 'adhoc' ) ? 'Ad-hoc' : 'Scheduled' ;
             var mwExpiry = errorMaintenanceInfo.expiresAt || ( errorMaintenanceInfo.timeWindow || 'per schedule' ) ;
             var mwDesc = errorMaintenanceInfo.description || '' ;
-            var mwTarget = ( errorMaintenanceInfo.targetType === 'group' )
-                ? 'via group: ' + errorMaintenanceInfo.groupName
-                : 'direct' ;
-            var tooltipText = mwType + ' maintenance (' + mwTarget + ')' ;
-            if ( mwExpiry ) { tooltipText += '\\nExpires: ' + mwExpiry ; }
-            if ( mwDesc ) { tooltipText += '\\nNote: ' + mwDesc ; }
+            var tooltipText = mwType + ' maintenance' ;
+            if ( errorMaintenanceInfo.targetType === 'group' ) {
+                tooltipText += ' (via group: ' + errorMaintenanceInfo.groupName + ')' ;
+            }
+            if ( mwExpiry ) { tooltipText += '&#10;Expires: ' + mwExpiry ; }
+            if ( mwDesc ) { tooltipText += '&#10;Note: ' + mwDesc ; }
             var icon = ( errorMaintenanceInfo.windowType === 'adhoc' ) ? '&#128263;' : '&#128295;' ;
             errorMaintenanceIndicator = ' <span class="maintenanceIndicator ' + errorMaintenanceInfo.windowType
                 + '" title="' + tooltipText.replace( /"/g, '&quot;' ) + '">' + icon + '</span>' ;
@@ -387,15 +387,15 @@ function myCallback( i, item ) {
                 var mwType = ( maintenanceInfo.windowType === 'adhoc' ) ? 'Ad-hoc' : 'Scheduled' ;
                 var mwExpiry = maintenanceInfo.expiresAt || ( maintenanceInfo.timeWindow || 'per schedule' ) ;
                 var mwDesc = maintenanceInfo.description || '' ;
-                var mwTarget = ( maintenanceInfo.targetType === 'group' )
-                    ? 'via group: ' + maintenanceInfo.groupName
-                    : 'direct' ;
-                var tooltipText = mwType + ' maintenance (' + mwTarget + ')' ;
+                var tooltipText = mwType + ' maintenance' ;
+                if ( maintenanceInfo.targetType === 'group' ) {
+                    tooltipText += ' (via group: ' + maintenanceInfo.groupName + ')' ;
+                }
                 if ( mwExpiry ) {
-                    tooltipText += '\\nExpires: ' + mwExpiry ;
+                    tooltipText += '&#10;Expires: ' + mwExpiry ;
                 }
                 if ( mwDesc ) {
-                    tooltipText += '\\nNote: ' + mwDesc ;
+                    tooltipText += '&#10;Note: ' + mwDesc ;
                 }
                 var icon = ( maintenanceInfo.windowType === 'adhoc' ) ? '&#128263;' : '&#128295;' ; // muted speaker / wrench
                 serverLinkAddress += ' <span class="maintenanceIndicator ' + maintenanceInfo.windowType
