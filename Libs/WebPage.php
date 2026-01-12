@@ -356,9 +356,11 @@ HTML
         ] ;
 
         // Check if Redis monitoring is enabled
+        $redisEnabled = false ;
         try {
             $config = new Config() ;
             if ( $config->getRedisEnabled() ) {
+                $redisEnabled = true ;
                 $scoreboardItems[] = [
                     'id' => 'Redis',
                     'label' => 'Redis',
@@ -368,6 +370,16 @@ HTML
             // Future: Add other DBTypes here (MongoDB, MS-SQL, etc.)
         } catch ( \Exception $e ) {
             // Config not available, just show MySQL
+        }
+
+        // Build Redis menu items if enabled
+        $redisMenuItems = '' ;
+        if ( $redisEnabled ) {
+            $redisMenuItems = <<<HTML
+          <li class="divider"></li>
+          <li><a href="index.php#nwRedisOverview">Noteworthy Redis Overview</a></li>
+          <li><a href="index.php#fullRedisOverview">Full Redis Overview</a></li>
+HTML;
         }
 
         // Generate scoreboard HTML - table format like a baseball scoreboard
@@ -409,7 +421,7 @@ HTML;
           <li><a href="index.php#fullStatusOverview">Full Status Overview</a></li>
           <li><a href="index.php#fullProcessListing">Full Process Listing</a></li>
           <li><a href="index.php#versionSummary">Version Summary</a></li>
-        </ul>
+$redisMenuItems        </ul>
       </li>
       <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">History <span class="caret"></span></a>
