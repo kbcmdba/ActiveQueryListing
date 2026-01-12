@@ -996,6 +996,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <span class="dbtype-level level2" id="dbTypeMySQLL2" onclick="showLevelDrilldown('MySQL', 2); event.stopPropagation();">-</span>
         <span class="dbtype-level level1" id="dbTypeMySQLL1" onclick="showLevelDrilldown('MySQL', 1); event.stopPropagation();">-</span>
         <span class="dbtype-level level0" id="dbTypeMySQLL0" onclick="showLevelDrilldown('MySQL', 0); event.stopPropagation();">-</span>
+        <span class="dbtype-blocking" id="dbTypeMySQLBlocking" title="Blocking">-</span>
+        <span class="dbtype-blocked" id="dbTypeMySQLBlocked" title="Blocked">-</span>
         <span class="dbtype-total" id="dbTypeMySQLTotal">- Total</span>
       </div>
     </td>
@@ -1015,6 +1017,8 @@ HTML
         <span class="dbtype-level level2" id="dbTypeRedisL2" onclick="showLevelDrilldown('Redis', 2); event.stopPropagation();">-</span>
         <span class="dbtype-level level1" id="dbTypeRedisL1" onclick="showLevelDrilldown('Redis', 1); event.stopPropagation();">-</span>
         <span class="dbtype-level level0" id="dbTypeRedisL0" onclick="showLevelDrilldown('Redis', 0); event.stopPropagation();">-</span>
+        <span class="dbtype-blocking" id="dbTypeRedisBlocking" title="Blocking">-</span>
+        <span class="dbtype-blocked" id="dbTypeRedisBlocked" title="Blocked">-</span>
         <span class="dbtype-total" id="dbTypeRedisTotal">- Total</span>
       </div>
     </td>

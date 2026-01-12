@@ -1163,6 +1163,35 @@ td.blocking {
     white-space: nowrap;
 }
 
+.dbtype-blocking,
+.dbtype-blocked {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.4rem;
+    border-radius: 0.4rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    font-family: 'Consolas', 'Monaco', monospace;
+    color: var(--text-color);
+    background-color: transparent;
+    cursor: default;
+}
+
+.dbtype-blocking.has-blocking {
+    background-color: #9400d3;
+    color: white;
+    animation: dbtype-pulse 1.5s infinite;
+}
+
+.dbtype-blocked.has-blocked {
+    background-color: #1e90ff;
+    color: white;
+    animation: dbtype-pulse 1.5s infinite;
+}
+
 /* Pulse animation for non-zero high severity levels */
 .dbtype-level.level3:not(:empty),
 .dbtype-level.level4:not(:empty),
@@ -1259,6 +1288,61 @@ td.blocking {
     text-align: right;
 }
 
+.scoreboard-blocking,
+.scoreboard-blocked {
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0.2rem 0.4rem;
+    min-width: 1.5rem;
+    text-align: center;
+    border-radius: 0.25rem;
+    color: var(--navbar-link);
+    background-color: transparent;
+}
+
+.scoreboard-blocking.has-blocking {
+    background-color: #9400d3;
+    color: white;
+    animation: scoreboard-pulse 1.5s infinite;
+}
+
+.scoreboard-blocked.has-blocked {
+    background-color: #1e90ff;
+    color: white;
+    animation: scoreboard-pulse 1.5s infinite;
+}
+
+/* Muted styling for zero values - "nothing to see here" */
+.scoreboard-level.zero-value,
+.scoreboard-blocking.zero-value,
+.scoreboard-blocked.zero-value {
+    background-color: rgba(128, 128, 128, 0.3) !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    animation: none !important;
+}
+
+.dbtype-level.zero-value,
+.dbtype-blocking.zero-value,
+.dbtype-blocked.zero-value {
+    background-color: rgba(128, 128, 128, 0.3) !important;
+    color: rgba(128, 128, 128, 0.7) !important;
+    animation: none !important;
+}
+
+.theme-light .scoreboard-level.zero-value,
+.theme-light .scoreboard-blocking.zero-value,
+.theme-light .scoreboard-blocked.zero-value {
+    background-color: rgba(128, 128, 128, 0.2) !important;
+    color: rgba(0, 0, 0, 0.4) !important;
+}
+
+.theme-light .dbtype-level.zero-value,
+.theme-light .dbtype-blocking.zero-value,
+.theme-light .dbtype-blocked.zero-value {
+    background-color: rgba(128, 128, 128, 0.2) !important;
+    color: rgba(0, 0, 0, 0.4) !important;
+}
+
 /* Pulse animation for non-zero high severity levels */
 .scoreboard-level.level3:not(:empty),
 .scoreboard-level.level4:not(:empty),
@@ -1287,6 +1371,31 @@ td.blocking {
 
 .theme-light .scoreboard-item:hover {
     background-color: rgba(0,0,0,0.2);
+}
+
+.theme-light .scoreboard-blocking,
+.theme-light .scoreboard-blocked {
+    color: #333;
+}
+
+.theme-light .scoreboard-blocking.has-blocking {
+    background-color: #9400d3;
+    color: white;
+}
+
+.theme-light .scoreboard-blocked.has-blocked {
+    background-color: #1e90ff;
+    color: white;
+}
+
+.theme-light .dbtype-blocking.has-blocking {
+    background-color: #9400d3;
+    color: white;
+}
+
+.theme-light .dbtype-blocked.has-blocked {
+    background-color: #1e90ff;
+    color: white;
 }
 
 /* ========== Drill-down Modal Styles ========== */
@@ -1422,6 +1531,24 @@ td.blocking {
     .scoreboard-level.level3 { background-color: #FFA500 !important; color: black !important; }
     .scoreboard-level.level4 { background-color: #FF6347 !important; color: black !important; }
     .scoreboard-level.level9 { background-color: #DC143C !important; color: white !important; }
+
+    .scoreboard-blocking,
+    .scoreboard-blocked {
+        border: 1px solid #333 !important;
+        animation: none !important;
+    }
+
+    .scoreboard-blocking.has-blocking { background-color: #9400d3 !important; color: white !important; }
+    .scoreboard-blocked.has-blocked { background-color: #1e90ff !important; color: white !important; }
+
+    .dbtype-blocking,
+    .dbtype-blocked {
+        border: 1px solid #333 !important;
+        animation: none !important;
+    }
+
+    .dbtype-blocking.has-blocking { background-color: #9400d3 !important; color: white !important; }
+    .dbtype-blocked.has-blocked { background-color: #1e90ff !important; color: white !important; }
 
     /* DBType Overview boxes print with borders */
     .dbtype-overview-table {

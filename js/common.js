@@ -296,8 +296,28 @@ function updateDbTypeOverview() {
             var level = levels[ i ] ;
             var el = document.getElementById( 'dbType' + dbType + 'L' + level ) ;
             if ( el ) {
-                el.textContent = stats.levels[ level ] ;
+                var count = stats.levels[ level ] ;
+                el.textContent = count ;
+                if ( count === 0 ) {
+                    el.classList.add( 'zero-value' ) ;
+                } else {
+                    el.classList.remove( 'zero-value' ) ;
+                }
             }
+        }
+
+        // Update blocking/blocked counts
+        var blockingEl = document.getElementById( 'dbType' + dbType + 'Blocking' ) ;
+        var blockedEl = document.getElementById( 'dbType' + dbType + 'Blocked' ) ;
+        if ( blockingEl ) {
+            var blockingCount = stats.blocking || 0 ;
+            blockingEl.textContent = blockingCount ;
+            blockingEl.className = 'dbtype-blocking' + ( blockingCount > 0 ? ' has-blocking' : ' zero-value' ) ;
+        }
+        if ( blockedEl ) {
+            var blockedCount = ( dbType === 'Redis' ) ? ( stats.blockedClients || 0 ) : ( stats.blocked || 0 ) ;
+            blockedEl.textContent = blockedCount ;
+            blockedEl.className = 'dbtype-blocked' + ( blockedCount > 0 ? ' has-blocked' : ' zero-value' ) ;
         }
 
         // Update total
@@ -335,8 +355,30 @@ function updateScoreboard() {
             var level = levels[ i ] ;
             var el = document.getElementById( 'scoreboard' + dbType + 'L' + level ) ;
             if ( el ) {
-                el.textContent = stats.levels[ level ] ;
+                var count = stats.levels[ level ] ;
+                el.textContent = count ;
+                // Add/remove zero-value class for muted styling
+                if ( count === 0 ) {
+                    el.classList.add( 'zero-value' ) ;
+                } else {
+                    el.classList.remove( 'zero-value' ) ;
+                }
             }
+        }
+
+        // Update blocking/blocked counts (MySQL) or blockedClients (Redis)
+        var blockingEl = document.getElementById( 'scoreboard' + dbType + 'Blocking' ) ;
+        var blockedEl = document.getElementById( 'scoreboard' + dbType + 'Blocked' ) ;
+        if ( blockingEl ) {
+            var blockingCount = stats.blocking || 0 ;
+            blockingEl.textContent = blockingCount ;
+            blockingEl.className = 'scoreboard-blocking' + ( blockingCount > 0 ? ' has-blocking' : ' zero-value' ) ;
+        }
+        if ( blockedEl ) {
+            // For Redis, show blockedClients; for MySQL, show blocked
+            var blockedCount = ( dbType === 'Redis' ) ? ( stats.blockedClients || 0 ) : ( stats.blocked || 0 ) ;
+            blockedEl.textContent = blockedCount ;
+            blockedEl.className = 'scoreboard-blocked' + ( blockedCount > 0 ? ' has-blocked' : ' zero-value' ) ;
         }
 
         // Update total

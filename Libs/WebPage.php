@@ -395,6 +395,8 @@ HTML;
           <td class="scoreboard-level level2" id="scoreboard{$item['id']}L2" onclick="showLevelDrilldown('{$item['id']}', 2)">-</td>
           <td class="scoreboard-level level1" id="scoreboard{$item['id']}L1" onclick="showLevelDrilldown('{$item['id']}', 1)">-</td>
           <td class="scoreboard-level level0" id="scoreboard{$item['id']}L0" onclick="showLevelDrilldown('{$item['id']}', 0)">-</td>
+          <td class="scoreboard-blocking" id="scoreboard{$item['id']}Blocking" title="Blocking">-</td>
+          <td class="scoreboard-blocked" id="scoreboard{$item['id']}Blocked" title="Blocked">-</td>
           <td class="scoreboard-total" id="scoreboard{$item['id']}Total">-</td>
         </tr>
 
