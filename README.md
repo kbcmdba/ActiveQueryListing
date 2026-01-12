@@ -26,10 +26,10 @@ https://www.apachefriends.org/download.html
 
 ## Configuring AQL
 
-Your installation comes with a config_sample.xml file. This file needs to be
-installed in /etc/aql_config.xml. It should be readable only by the web server
-in order to protect it from prying eyes. Protecting this file from prying eyes
-is browser-dependent so that's the reason for asking it be put in /etc.
+Your installation comes with a config_sample.xml file. Copy this file to
+aql_config.xml in the application directory. It should be readable only by the
+web server in order to protect it from prying eyes. This allows multiple AQL
+instances to run with different configurations on the same server.
 
 There are three parts to this configuration file that you need to pay special
 attention to. DbPass is the password you're giving AQL in order to access
@@ -122,7 +122,7 @@ To do this, simply play the setup_db.sql file into your configuration master
 database. It will wipe out the database named aql_db, then re-create it with
 template data.
 
-The user and password you'll set up in /etc/aql_config.xml should be consistent
+The user and password you'll set up in aql_config.xml should be consistent
 across all your MySQL instances. The user will need the following on all the
 instances that AQL will manage (I'll assume you'll use aql_app for the user):
 

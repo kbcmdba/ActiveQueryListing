@@ -40,7 +40,7 @@ class Config
      * Configuration Class
      *
      * Note: There are no setters for this class. All the configuration comes from
-     * /etc/aql_config.xml (described in config_sample.xml).
+     * aql_config.xml in the application directory (described in config_sample.xml).
      *
      * Usage Examples:
      *
