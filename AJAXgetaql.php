@@ -333,11 +333,275 @@ function getHostIdFromHostname( $hostnamePort ) {
     }
 }
 
+/**
+ * Handle Redis host monitoring
+ * Gathers metrics from Redis INFO, CLIENT LIST, and SLOWLOG commands
+ *
+ * @param string $hostname Host:port string
+ * @param int|null $hostId Host ID from aql_db.host
+ * @param array $hostGroups Groups this host belongs to
+ * @param array|null $maintenanceInfo Active maintenance window info
+ * @param Config $config AQL configuration object
+ */
+function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) {
+    $redisOverviewData = [
+        'hostname'           => $hostname,
+        'hostId'             => $hostId,
+        'version'            => '',
+        'uptime'             => 0,
+        'uptimeHuman'        => '',
+        'usedMemory'         => 0,
+        'usedMemoryHuman'    => '',
+        'maxMemory'          => 0,
+        'maxMemoryHuman'     => '',
+        'memoryPct'          => 0,
+        'connectedClients'   => 0,
+        'blockedClients'     => 0,
+        'maxClients'         => 0,
+        'keyspaceHits'       => 0,
+        'keyspaceMisses'     => 0,
+        'hitRatio'           => 0,
+        'evictedKeys'        => 0,
+        'rejectedConnections' => 0,
+        'fragmentationRatio' => 0,
+        'role'               => '',
+        'replLag'            => null,
+        'level'              => 0,
+    ] ;
+    $slowlogData = [] ;
+
+    try {
+        // Parse hostname and port
+        $parts = explode( ':', $hostname ) ;
+        $redisHost = $parts[0] ;
+        $redisPort = isset( $parts[1] ) ? (int) $parts[1] : 6379 ;
+
+        // Check if phpredis extension is available
+        if ( !class_exists( 'Redis' ) ) {
+            throw new \Exception( 'phpredis extension not installed' ) ;
+        }
+
+        // Connect to Redis
+        $redis = new \Redis() ;
+        $timeout = $config->getRedisConnectTimeout() ;
+        if ( !@$redis->connect( $redisHost, $redisPort, $timeout ) ) {
+            throw new \Exception( "Failed to connect to Redis at $redisHost:$redisPort" ) ;
+        }
+
+        // Authenticate if configured
+        $redisUser = $config->getRedisUser() ;
+        $redisPassword = $config->getRedisPassword() ;
+        if ( !empty( $redisPassword ) ) {
+            // Redis 6+ ACL authentication with username
+            if ( !empty( $redisUser ) ) {
+                if ( !@$redis->auth( [ $redisUser, $redisPassword ] ) ) {
+                    throw new \Exception( 'Redis authentication failed (ACL)' ) ;
+                }
+            } else {
+                // Legacy AUTH with password only
+                if ( !@$redis->auth( $redisPassword ) ) {
+                    throw new \Exception( 'Redis authentication failed' ) ;
+                }
+            }
+        }
+
+        // Select database if configured
+        $redisDb = $config->getRedisDatabase() ;
+        if ( $redisDb > 0 ) {
+            $redis->select( $redisDb ) ;
+        }
+
+        // Get INFO (all sections)
+        $infoRaw = $redis->info() ;
+        if ( $infoRaw === false ) {
+            throw new \Exception( 'Failed to get Redis INFO' ) ;
+        }
+
+        // Parse INFO into overview data
+        $redisOverviewData['version'] = $infoRaw['redis_version'] ?? '' ;
+        $redisOverviewData['uptime'] = (int) ( $infoRaw['uptime_in_seconds'] ?? 0 ) ;
+        $redisOverviewData['uptimeHuman'] = Tools::friendlyTime( $redisOverviewData['uptime'] ) ;
+        $redisOverviewData['usedMemory'] = (int) ( $infoRaw['used_memory'] ?? 0 ) ;
+        $redisOverviewData['usedMemoryHuman'] = $infoRaw['used_memory_human'] ?? '0B' ;
+        $redisOverviewData['maxMemory'] = (int) ( $infoRaw['maxmemory'] ?? 0 ) ;
+        $redisOverviewData['maxMemoryHuman'] = $infoRaw['maxmemory_human'] ?? '0B' ;
+        $redisOverviewData['connectedClients'] = (int) ( $infoRaw['connected_clients'] ?? 0 ) ;
+        $redisOverviewData['blockedClients'] = (int) ( $infoRaw['blocked_clients'] ?? 0 ) ;
+        $redisOverviewData['keyspaceHits'] = (int) ( $infoRaw['keyspace_hits'] ?? 0 ) ;
+        $redisOverviewData['keyspaceMisses'] = (int) ( $infoRaw['keyspace_misses'] ?? 0 ) ;
+        $redisOverviewData['evictedKeys'] = (int) ( $infoRaw['evicted_keys'] ?? 0 ) ;
+        $redisOverviewData['rejectedConnections'] = (int) ( $infoRaw['rejected_connections'] ?? 0 ) ;
+        $redisOverviewData['fragmentationRatio'] = (float) ( $infoRaw['mem_fragmentation_ratio'] ?? 1.0 ) ;
+        $redisOverviewData['role'] = $infoRaw['role'] ?? 'unknown' ;
+
+        // Calculate memory percentage (avoid division by zero)
+        if ( $redisOverviewData['maxMemory'] > 0 ) {
+            $redisOverviewData['memoryPct'] = round(
+                ( $redisOverviewData['usedMemory'] / $redisOverviewData['maxMemory'] ) * 100, 1
+            ) ;
+        }
+
+        // Calculate hit ratio
+        $totalRequests = $redisOverviewData['keyspaceHits'] + $redisOverviewData['keyspaceMisses'] ;
+        if ( $totalRequests > 0 ) {
+            $redisOverviewData['hitRatio'] = round(
+                ( $redisOverviewData['keyspaceHits'] / $totalRequests ) * 100, 1
+            ) ;
+        }
+
+        // Calculate replication lag for replicas
+        if ( $redisOverviewData['role'] === 'slave' ) {
+            $masterOffset = (int) ( $infoRaw['master_repl_offset'] ?? 0 ) ;
+            $slaveOffset = (int) ( $infoRaw['slave_repl_offset'] ?? 0 ) ;
+            if ( $masterOffset > 0 ) {
+                $redisOverviewData['replLag'] = $masterOffset - $slaveOffset ;
+            }
+            $redisOverviewData['masterLinkStatus'] = $infoRaw['master_link_status'] ?? 'unknown' ;
+        }
+
+        // Get max clients from CONFIG
+        try {
+            $maxClients = $redis->config( 'GET', 'maxclients' ) ;
+            $redisOverviewData['maxClients'] = (int) ( $maxClients['maxclients'] ?? 10000 ) ;
+        } catch ( \Exception $e ) {
+            $redisOverviewData['maxClients'] = 10000 ; // Default
+        }
+
+        // Calculate alert level based on metrics
+        $level = 0 ;
+
+        // Level 9: Connection error (handled in catch)
+
+        // Level 4: Critical - data loss or service unavailable
+        if ( $redisOverviewData['evictedKeys'] > 0 ) {
+            $level = max( $level, 4 ) ; // Data loss!
+        }
+        if ( $redisOverviewData['rejectedConnections'] > 0 ) {
+            $level = max( $level, 4 ) ; // Can't accept connections
+        }
+        if ( $redisOverviewData['memoryPct'] > 95 ) {
+            $level = max( $level, 4 ) ;
+        }
+        if ( $redisOverviewData['role'] === 'slave' && ( $infoRaw['master_link_status'] ?? 'up' ) === 'down' ) {
+            $level = max( $level, 4 ) ; // Replication broken
+        }
+
+        // Level 3: Warning
+        if ( $redisOverviewData['fragmentationRatio'] > 1.5 ) {
+            $level = max( $level, 3 ) ;
+        }
+        if ( $redisOverviewData['blockedClients'] > 5 ) {
+            $level = max( $level, 3 ) ;
+        }
+        if ( $redisOverviewData['memoryPct'] > 80 ) {
+            $level = max( $level, 3 ) ;
+        }
+
+        // Level 2: Info
+        if ( $redisOverviewData['hitRatio'] < 90 && $totalRequests > 1000 ) {
+            $level = max( $level, 2 ) ;
+        }
+        if ( $redisOverviewData['replLag'] !== null && $redisOverviewData['replLag'] > 10000 ) {
+            $level = max( $level, 2 ) ; // Significant replication lag
+        }
+
+        // Level 1: Normal activity
+        if ( $redisOverviewData['connectedClients'] > 0 ) {
+            $level = max( $level, 1 ) ;
+        }
+
+        $redisOverviewData['level'] = $level ;
+
+        // Get SLOWLOG
+        try {
+            $slowlogRaw = $redis->slowlog( 'get', 10 ) ;
+            if ( is_array( $slowlogRaw ) ) {
+                foreach ( $slowlogRaw as $entry ) {
+                    $durationUs = (int) ( $entry[2] ?? 0 ) ;
+                    $durationMs = round( $durationUs / 1000, 2 ) ;
+                    $command = is_array( $entry[3] ?? null ) ? implode( ' ', $entry[3] ) : '' ;
+
+                    // Calculate level based on duration
+                    $entryLevel = 0 ;
+                    if ( $durationMs >= 1000 ) {
+                        $entryLevel = 4 ; // >= 1 second
+                    } elseif ( $durationMs >= 100 ) {
+                        $entryLevel = 3 ; // >= 100ms
+                    } elseif ( $durationMs >= 50 ) {
+                        $entryLevel = 2 ; // >= 50ms
+                    } elseif ( $durationMs >= 10 ) {
+                        $entryLevel = 1 ; // >= 10ms (default slowlog threshold)
+                    }
+
+                    $slowlogData[] = [
+                        'id'          => (int) ( $entry[0] ?? 0 ),
+                        'timestamp'   => (int) ( $entry[1] ?? 0 ),
+                        'timestampHuman' => date( 'Y-m-d H:i:s', (int) ( $entry[1] ?? 0 ) ),
+                        'durationUs'  => $durationUs,
+                        'durationMs'  => $durationMs,
+                        'command'     => htmlspecialchars( substr( $command, 0, 500 ) ), // Truncate long commands
+                        'level'       => $entryLevel,
+                    ] ;
+                }
+            }
+        } catch ( \Exception $e ) {
+            // SLOWLOG may not be available - continue without it
+        }
+
+        $redis->close() ;
+
+        // Output successful response
+        echo json_encode( [
+            'hostname'          => $hostname,
+            'hostId'            => $hostId,
+            'hostGroups'        => $hostGroups,
+            'dbType'            => 'Redis',
+            'redisOverviewData' => $redisOverviewData,
+            'slowlogData'       => $slowlogData,
+            'maintenanceInfo'   => $maintenanceInfo,
+        ] ) . "\n" ;
+
+    } catch ( \Exception $e ) {
+        // Connection or other error
+        $redisOverviewData['level'] = 9 ;
+        echo json_encode( [
+            'hostname'          => $hostname,
+            'hostId'            => $hostId,
+            'hostGroups'        => $hostGroups,
+            'dbType'            => 'Redis',
+            'error_output'      => $e->getMessage(),
+            'redisOverviewData' => $redisOverviewData,
+            'slowlogData'       => [],
+            'maintenanceInfo'   => $maintenanceInfo,
+        ] ) . "\n" ;
+    }
+}
+
 // Get hostname early so we can look up hostId before connection attempt
 $hostname = Tools::param('hostname') ;
 
-// Look up host ID early (needed for error responses with silence capability)
-$hostId = getHostIdFromHostname( $hostname ) ;
+// Look up host ID and db_type early (needed for Redis vs MySQL handling)
+$hostId = null ;
+$dbType = 'MySQL' ; // Default
+try {
+    $parts = explode( ':', $hostname ) ;
+    $lookupHostname = $parts[0] ;
+    $lookupPort = isset( $parts[1] ) ? (int) $parts[1] : 3306 ;
+    $lookupDbc = new DBConnection() ;
+    $lookupDbh = $lookupDbc->getConnection() ;
+    $lookupStmt = $lookupDbh->prepare( "SELECT host_id, db_type FROM aql_db.host WHERE hostname = ? AND port_number = ?" ) ;
+    $lookupStmt->bind_param( 'si', $lookupHostname, $lookupPort ) ;
+    $lookupStmt->execute() ;
+    $lookupResult = $lookupStmt->get_result() ;
+    $lookupRow = $lookupResult->fetch_assoc() ;
+    if ( $lookupRow ) {
+        $hostId = (int) $lookupRow['host_id'] ;
+        $dbType = $lookupRow['db_type'] ;
+    }
+    $lookupStmt->close() ;
+} catch ( \Exception $e ) {
+    // Continue with defaults - MySQL handling
+}
 
 // Get the groups this host belongs to (for browser-local group silencing)
 $hostGroups = [] ;
@@ -380,6 +644,15 @@ if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {
     }
 }
 
+// Dispatch to appropriate handler based on db_type
+// TODO: Refactor MySQL handling into handleMySQLHost() function for consistency
+//       This would allow using a dispatch array: $handlers[$dbType]($hostname, $hostId, ...)
+if ( $dbType === 'Redis' ) {
+    handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) ;
+    exit( 0 ) ;
+}
+
+// MySQL/MariaDB/InnoDBCluster handling (default)
 try {
     $roQueryPart   = $config->getRoQueryPart() ;
     $debug         = Tools::param('debug') === "1" ;

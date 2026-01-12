@@ -295,6 +295,56 @@ $allParams = [
         'example' => '86400',
         'validate' => 'numeric',
         'default' => '86400'
+    ],
+    'enableSpeechAlerts' => [
+        'required' => false,
+        'description' => 'Announce alerts via speech synthesis',
+        'example' => 'true',
+        'validate' => 'boolean',
+        'default' => 'true'
+    ],
+
+    // Optional parameters - Redis
+    'redisEnabled' => [
+        'required' => false,
+        'description' => 'Enable Redis monitoring',
+        'example' => 'true',
+        'validate' => 'boolean',
+        'default' => 'false',
+        'group' => 'redis'
+    ],
+    'redisPassword' => [
+        'required' => false,
+        'description' => 'Shared password for all Redis hosts',
+        'example' => 'YourRedisPassword',
+        'validate' => 'none',
+        'sensitive' => true,
+        'conditionalOn' => 'redisEnabled',
+        'group' => 'redis'
+    ],
+    'redisUsername' => [
+        'required' => false,
+        'description' => 'Redis username (Redis 6+ ACL)',
+        'example' => 'default',
+        'validate' => 'none',
+        'conditionalOn' => 'redisEnabled',
+        'group' => 'redis'
+    ],
+    'redisConnectTimeout' => [
+        'required' => false,
+        'description' => 'Redis connection timeout (seconds)',
+        'example' => '2',
+        'validate' => 'numeric',
+        'default' => '2',
+        'group' => 'redis'
+    ],
+    'redisDatabase' => [
+        'required' => false,
+        'description' => 'Redis database number (0-15)',
+        'example' => '0',
+        'validate' => 'numeric',
+        'default' => '0',
+        'group' => 'redis'
     ]
 ] ;
 
@@ -548,7 +598,8 @@ $requiredExtensions = [
     'curl' => [ 'required' => true, 'purpose' => 'Jira integration, smoke tests' ],
     'json' => [ 'required' => true, 'purpose' => 'AJAX responses' ],
     'ldap' => [ 'required' => false, 'purpose' => 'LDAP/AD authentication (if enabled)' ],
-    'openssl' => [ 'required' => false, 'purpose' => 'HTTPS and LDAPS connections' ]
+    'openssl' => [ 'required' => false, 'purpose' => 'HTTPS and LDAPS connections' ],
+    'redis' => [ 'required' => false, 'purpose' => 'Redis monitoring (if enabled)' ]
 ] ;
 
 $missingRequired = [] ;
@@ -943,6 +994,79 @@ $testConfigured = !empty( $configValues['testDbUser'] ?? '' ) && !empty( $config
         </table>
 <?php else : ?>
         <p><em>Configure <code>testDbUser</code>, <code>testDbPass</code>, and <code>testDbName</code> to use the <a href="testAQL.php">Test Harness</a>.</em></p>
+<?php endif ; ?>
+    </div>
+
+<?php
+// Redis Configuration
+$redisEnabled = isFeatureEnabled( 'redisEnabled', $configValues ) ;
+?>
+    <div class="param-group">
+        <h3>Redis Monitoring</h3>
+        <p>Status: <?php echo $redisEnabled ? "$passIcon <strong>Enabled</strong>" : "$infoIcon Disabled" ; ?></p>
+
+<?php if ( $redisEnabled ) : ?>
+<?php if ( !extension_loaded( 'redis' ) ) : ?>
+        <div class="summary-box error">
+            <p><?php echo $failIcon ; ?> <strong>PHP Redis extension not installed</strong></p>
+            <p>Redis monitoring is enabled but the phpredis extension is not available.</p>
+        </div>
+        <div class="fix-section">
+            <h3>Install phpredis</h3>
+            <p>On Debian/Ubuntu:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <pre>apt-get install php-redis
+systemctl restart apache2</pre>
+            </div>
+            <p>On RHEL/CentOS/Fedora:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <pre>dnf install php-redis
+systemctl restart httpd</pre>
+            </div>
+        </div>
+<?php else : ?>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+<?php
+    foreach ( $allParams as $name => $info ) :
+        if ( ( $info['group'] ?? '' ) !== 'redis' ) continue ;
+        if ( $name === 'redisEnabled' ) continue ;
+
+        $value = $configValues[$name] ?? '' ;
+        $displayValue = ( $info['sensitive'] ?? false ) ? ( empty( $value ) ? '(not set)' : '********' ) : $value ;
+        $isConditional = isset( $info['conditionalOn'] ) ;
+
+        if ( !empty( $value ) ) {
+            $statusIcon = $passIcon ;
+            $statusText = 'OK' ;
+        } elseif ( isset( $info['default'] ) ) {
+            $statusIcon = $infoIcon ;
+            $statusText = 'Using default' ;
+        } else {
+            $statusIcon = $infoIcon ;
+            $statusText = 'Optional' ;
+        }
+?>
+                <tr>
+                    <td><code><?php echo htmlspecialchars( $name ) ; ?></code></td>
+                    <td><code><?php echo htmlspecialchars( $displayValue ?: '(not set)' ) ; ?></code></td>
+                    <td><?php echo $statusIcon . ' ' . $statusText ; ?></td>
+                </tr>
+<?php endforeach ; ?>
+            </tbody>
+        </table>
+<?php endif ; ?>
+<?php else : ?>
+        <p><em>Set <code>redisEnabled</code> to <code>true</code> to enable Redis monitoring.</em></p>
 <?php endif ; ?>
     </div>
 
@@ -1388,6 +1512,131 @@ if ( $jiraEnabled ) :
 ?>
         <p><?php echo $warnIcon ; ?> Jira enabled but <code>issueTrackerBaseUrl</code> not configured</p>
 <?php
+    endif ;
+?>
+    </div>
+<?php endif ; ?>
+
+<?php
+// Redis connectivity test
+if ( $redisEnabled && extension_loaded( 'redis' ) ) :
+?>
+    <div class="test-section">
+        <h3>Redis Connectivity</h3>
+<?php
+    // Get Redis hosts from database
+    $redisHosts = [] ;
+    try {
+        $redisDbh = @new \mysqli( $dbHost, $dbUser, $dbPass, $dbName, $dbPort ) ;
+        if ( !$redisDbh->connect_error ) {
+            $result = $redisDbh->query( "SELECT hostname, port FROM host WHERE db_type = 'Redis' AND decommissioned = 0 ORDER BY hostname, port" ) ;
+            if ( $result ) {
+                while ( $row = $result->fetch_assoc() ) {
+                    $redisHosts[] = [ 'host' => $row['hostname'], 'port' => (int) $row['port'] ] ;
+                }
+                $result->free() ;
+            }
+            $redisDbh->close() ;
+        }
+    } catch ( \Exception $e ) {
+        // Ignore - Redis host lookup is informational
+    }
+
+    if ( empty( $redisHosts ) ) :
+?>
+        <p><?php echo $infoIcon ; ?> No Redis hosts configured in the host table</p>
+        <p><em>Add Redis hosts via <a href="manageData.php?data=Hosts">Manage Hosts</a> with db_type = 'Redis'.</em></p>
+<?php
+    else :
+        $redisPassword = $configValues['redisPassword'] ?? '' ;
+        $redisUsername = $configValues['redisUsername'] ?? '' ;
+        $redisTimeout = (int) ( $configValues['redisConnectTimeout'] ?? 2 ) ;
+        $testedCount = 0 ;
+        $passedCount = 0 ;
+?>
+        <p><?php echo $infoIcon ; ?> Found <?php echo count( $redisHosts ) ; ?> Redis host(s) configured</p>
+        <table>
+            <thead>
+                <tr><th>Host</th><th>Status</th><th>Details</th></tr>
+            </thead>
+            <tbody>
+<?php
+        foreach ( $redisHosts as $redisHost ) :
+            $testedCount++ ;
+            $redisError = '' ;
+            $redisVersion = '' ;
+            $redisConnected = false ;
+
+            try {
+                $redis = new \Redis() ;
+                $connectResult = @$redis->connect( $redisHost['host'], $redisHost['port'], $redisTimeout ) ;
+
+                if ( $connectResult ) {
+                    // Authenticate if password configured
+                    if ( !empty( $redisPassword ) ) {
+                        if ( !empty( $redisUsername ) ) {
+                            // Redis 6+ ACL auth
+                            $authResult = @$redis->auth( [ $redisUsername, $redisPassword ] ) ;
+                        } else {
+                            // Legacy auth
+                            $authResult = @$redis->auth( $redisPassword ) ;
+                        }
+                        if ( !$authResult ) {
+                            throw new \Exception( 'Authentication failed' ) ;
+                        }
+                    }
+
+                    // Try to get server info
+                    $info = @$redis->info( 'server' ) ;
+                    if ( $info && isset( $info['redis_version'] ) ) {
+                        $redisVersion = 'Redis ' . $info['redis_version'] ;
+                        $redisConnected = true ;
+                        $passedCount++ ;
+                    } else {
+                        throw new \Exception( 'Could not retrieve server info' ) ;
+                    }
+
+                    $redis->close() ;
+                } else {
+                    throw new \Exception( 'Connection refused' ) ;
+                }
+            } catch ( \Exception $e ) {
+                $redisError = $e->getMessage() ;
+            }
+?>
+                <tr>
+                    <td><code><?php echo htmlspecialchars( $redisHost['host'] . ':' . $redisHost['port'] ) ; ?></code></td>
+                    <td><?php echo $redisConnected ? "$passIcon OK" : "$warnIcon Failed" ; ?></td>
+                    <td><?php echo htmlspecialchars( $redisConnected ? $redisVersion : $redisError ) ; ?></td>
+                </tr>
+<?php
+        endforeach ;
+?>
+            </tbody>
+        </table>
+        <p><strong>Summary:</strong> <?php echo $passedCount ; ?>/<?php echo $testedCount ; ?> Redis hosts reachable</p>
+<?php
+        if ( $passedCount < $testedCount ) :
+            $warnings += ( $testedCount - $passedCount ) ;
+?>
+        <div class="fix-section">
+            <h3>Troubleshooting Redis Connections</h3>
+            <ul>
+                <li>Verify Redis is running on the target host(s)</li>
+                <li>Check firewall rules allow connections on the Redis port</li>
+                <li>If authentication is required, ensure <code>redisPassword</code> is configured in aql_config.xml</li>
+                <li>For Redis 6+ with ACLs, also configure <code>redisUsername</code></li>
+            </ul>
+            <p>Test from command line:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <pre>redis-cli -h HOST -p PORT PING
+# Or with authentication:
+redis-cli -h HOST -p PORT -a PASSWORD PING</pre>
+            </div>
+        </div>
+<?php
+        endif ;
     endif ;
 ?>
     </div>

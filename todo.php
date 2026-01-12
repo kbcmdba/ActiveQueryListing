@@ -59,6 +59,11 @@ namespace com\kbcmdba\aql ;
 //          - Fragmentation ratio > 1.5
 //          - Replication lag growing
 //          - KEYS/SMEMBERS on large keyspaces in slowlog
+// @todo 23 Refactor AJAXgetaql.php to use DBType handler dispatch pattern
+//          - Create handleMySQLHost() function (extract existing MySQL code)
+//          - Use dispatch array: $handlers[$dbType]($hostname, $hostId, $hostGroups, $maintenanceInfo, $config)
+//          - Enables cleaner addition of future DBTypes (MongoDB, MS-SQL, etc.)
+//          - handleRedisHost() already implemented as reference pattern
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
