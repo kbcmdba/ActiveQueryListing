@@ -216,6 +216,10 @@ CREATE TABLE IF NOT EXISTS maintenance_window (
        -- Indexes
      , KEY idx_window_type ( window_type )
      , KEY idx_silence_until ( silence_until )
+       -- Covering index for host maintenance window lookups
+     , KEY ix_mw_covering ( window_id, window_type, schedule_type, days_of_week
+                          , day_of_month, month_of_year, period_days, period_start_date
+                          , start_time, end_time, timezone, silence_until, description )
      ) ENGINE=InnoDB
        COMMENT='Maintenance window definitions - scheduled recurring or ad-hoc silencing' ;
 
@@ -228,6 +232,7 @@ CREATE TABLE IF NOT EXISTS maintenance_window_host_map (
      , updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                            ON UPDATE CURRENT_TIMESTAMP
      , UNIQUE KEY ux_window_host ( window_id, host_id )
+     , INDEX ix_host_window ( host_id, window_id )  -- Covering index: WHERE host_id + JOIN window_id
      , FOREIGN KEY fk_mwh_window ( window_id ) REFERENCES maintenance_window( window_id )
                    ON DELETE CASCADE ON UPDATE CASCADE
      , FOREIGN KEY fk_mwh_host ( host_id ) REFERENCES host( host_id )
