@@ -370,14 +370,21 @@ HTML
             // Config not available, just show MySQL
         }
 
-        // Generate scoreboard HTML
+        // Generate scoreboard HTML - table format like a baseball scoreboard
+        // Format: Label | L9 | L4 | L3 | L2 | L1 | L0 | Total |
         $scoreboardHtml = '' ;
         foreach ( $scoreboardItems as $item ) {
             $scoreboardHtml .= <<<HTML
-      <li id="scoreboard{$item['id']}" class="scoreboard-item level0" onclick="scrollToSection('{$item['section']}')" title="{$item['label']}: Loading...">
-        <span class="scoreboard-label">{$item['label']}</span>
-        <span class="scoreboard-count" id="scoreboardCount{$item['id']}">-</span>
-      </li>
+        <tr id="scoreboard{$item['id']}" class="scoreboard-row" title="{$item['label']}: Loading...">
+          <td class="scoreboard-label" onclick="scrollToSection('{$item['section']}')">{$item['label']}</td>
+          <td class="scoreboard-level level9" id="scoreboard{$item['id']}L9" onclick="showLevelDrilldown('{$item['id']}', 9)">-</td>
+          <td class="scoreboard-level level4" id="scoreboard{$item['id']}L4" onclick="showLevelDrilldown('{$item['id']}', 4)">-</td>
+          <td class="scoreboard-level level3" id="scoreboard{$item['id']}L3" onclick="showLevelDrilldown('{$item['id']}', 3)">-</td>
+          <td class="scoreboard-level level2" id="scoreboard{$item['id']}L2" onclick="showLevelDrilldown('{$item['id']}', 2)">-</td>
+          <td class="scoreboard-level level1" id="scoreboard{$item['id']}L1" onclick="showLevelDrilldown('{$item['id']}', 1)">-</td>
+          <td class="scoreboard-level level0" id="scoreboard{$item['id']}L0" onclick="showLevelDrilldown('{$item['id']}', 0)">-</td>
+          <td class="scoreboard-total" id="scoreboard{$item['id']}Total">-</td>
+        </tr>
 
 HTML;
         }
@@ -435,8 +442,8 @@ HTML;
       </li>
     </ul>
     <!-- Scoreboard: Always-visible status indicators -->
-    <ul class="nav navbar-nav navbar-right" id="scoreboard">
-$scoreboardHtml    </ul>
+    <table class="scoreboard-table navbar-right" id="scoreboard">
+$scoreboardHtml    </table>
   </div>
 </nav>
 

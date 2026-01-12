@@ -1077,14 +1077,16 @@ td.blocking {
     border-spacing: 1.25rem;
 }
 
+/* DBType Overview - large baseball-style scoreboard */
 .dbtype-box {
-    padding: 2.5rem;
-    text-align: center;
+    padding: 1.5rem 2rem;
     cursor: pointer;
     border-radius: 1rem;
     transition: transform 0.2s, box-shadow 0.2s;
-    min-width: 25rem;
+    min-width: 30rem;
     vertical-align: top;
+    background-color: var(--table-header-bg);
+    border: 2px solid var(--table-border);
 }
 
 .dbtype-box:hover {
@@ -1095,103 +1097,439 @@ td.blocking {
 .dbtype-label {
     font-size: 1.75rem;
     font-weight: bold;
-    margin-bottom: 1rem;
-}
-
-.dbtype-stats {
-    font-size: 1.25rem;
-    opacity: 0.9;
-}
-
-/* DBType box colors by level */
-.dbtype-box.level0 { background-color: #006400; color: white; }
-.dbtype-box.level1 { background-color: #228b22; color: white; }
-.dbtype-box.level2 { background-color: #daa520; color: black; }
-.dbtype-box.level3 { background-color: #ff8c00; color: black; }
-.dbtype-box.level4 { background-color: #ff4500; color: white; }
-.dbtype-box.level9 { background-color: #8b0000; color: white; }
-
-/* ========== Scoreboard (Navbar Status Indicators) ========== */
-.scoreboard-item {
-    padding: 0.75rem 1.25rem !important;
-    cursor: pointer;
-    display: flex !important;
-    align-items: center;
-    gap: 0.5rem;
-    border-radius: 0.5rem;
-    margin: 0.25rem;
-}
-
-.scoreboard-item:hover {
-    background-color: rgba(255,255,255,0.15);
-}
-
-.scoreboard-label {
-    font-size: 1.125rem;
-    color: var(--navbar-link);
+    margin-right: 1rem;
+    padding-right: 1rem;
+    color: var(--text-color);
     white-space: nowrap;
+    vertical-align: middle;
 }
 
-.scoreboard-count {
+.dbtype-levels {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.dbtype-level {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 2rem;
-    height: 2rem;
+    min-width: 3rem;
+    height: 3rem;
     padding: 0 0.5rem;
-    border-radius: 0.375rem;
-    font-size: 1.125rem;
+    border-radius: 0.5rem;
+    font-size: 1.5rem;
     font-weight: bold;
+    font-family: 'Consolas', 'Monaco', monospace;
+    cursor: pointer;
 }
 
-/* Scoreboard count colors by level - shows issue count with severity color */
-.scoreboard-item.level0 .scoreboard-count {
+.dbtype-level:hover {
+    filter: brightness(1.15);
+}
+
+/* Level colors for DBType badges */
+.dbtype-level.level0 {
     background-color: #006400;
     color: white;
 }
-.scoreboard-item.level1 .scoreboard-count {
+.dbtype-level.level1 {
     background-color: #228b22;
     color: white;
 }
-.scoreboard-item.level2 .scoreboard-count {
+.dbtype-level.level2 {
     background-color: #daa520;
     color: black;
 }
-.scoreboard-item.level3 .scoreboard-count {
+.dbtype-level.level3 {
     background-color: #ff8c00;
     color: black;
 }
-.scoreboard-item.level4 .scoreboard-count {
+.dbtype-level.level4 {
     background-color: #ff4500;
     color: white;
 }
-.scoreboard-item.level9 .scoreboard-count {
+.dbtype-level.level9 {
     background-color: #8b0000;
     color: white;
 }
 
-/* Pulse animation for active alerts (level 3+) */
-.scoreboard-item.level3 .scoreboard-count,
-.scoreboard-item.level4 .scoreboard-count,
-.scoreboard-item.level9 .scoreboard-count {
+.dbtype-total {
+    font-size: 1.25rem;
+    color: var(--text-color);
+    margin-left: 1rem;
+    white-space: nowrap;
+}
+
+/* Pulse animation for non-zero high severity levels */
+.dbtype-level.level3:not(:empty),
+.dbtype-level.level4:not(:empty),
+.dbtype-level.level9:not(:empty) {
+    animation: dbtype-pulse 1.5s infinite;
+}
+
+@keyframes dbtype-pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ========== Scoreboard (Navbar Status Indicators) ========== */
+/* Scoreboard - baseball-style table layout */
+.scoreboard-table {
+    border-collapse: separate;
+    border-spacing: 2px;
+    margin: 8px 15px;
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 0.5rem;
+    padding: 4px;
+}
+
+.scoreboard-row {
+    cursor: pointer;
+}
+
+.scoreboard-row:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+.scoreboard-label {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--navbar-link);
+    white-space: nowrap;
+    padding: 0.25rem 0.5rem;
+    text-align: right;
+    cursor: pointer;
+}
+
+.scoreboard-label:hover {
+    text-decoration: underline;
+}
+
+.scoreboard-level {
+    text-align: center;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    font-weight: bold;
+    font-family: 'Consolas', 'Monaco', monospace;
+    cursor: pointer;
+}
+
+.scoreboard-level:hover {
+    filter: brightness(1.2);
+}
+
+/* Level colors for scoreboard badges */
+.scoreboard-level.level0 {
+    background-color: #006400;
+    color: white;
+}
+.scoreboard-level.level1 {
+    background-color: #228b22;
+    color: white;
+}
+.scoreboard-level.level2 {
+    background-color: #daa520;
+    color: black;
+}
+.scoreboard-level.level3 {
+    background-color: #ff8c00;
+    color: black;
+}
+.scoreboard-level.level4 {
+    background-color: #ff4500;
+    color: white;
+}
+.scoreboard-level.level9 {
+    background-color: #8b0000;
+    color: white;
+}
+
+.scoreboard-total {
+    font-size: 0.8rem;
+    color: var(--navbar-link);
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    text-align: right;
+}
+
+/* Pulse animation for non-zero high severity levels */
+.scoreboard-level.level3:not(:empty),
+.scoreboard-level.level4:not(:empty),
+.scoreboard-level.level9:not(:empty) {
     animation: scoreboard-pulse 1.5s infinite;
 }
 
 @keyframes scoreboard-pulse {
     0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.15); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 0.8; }
     100% { transform: scale(1); opacity: 1; }
 }
 
 /* Light theme adjustments for scoreboard */
-.theme-light .scoreboard-item {
-    color: var(--navbar-link);
+.theme-light .scoreboard-table {
+    background-color: rgba(0,0,0,0.1);
 }
 
 .theme-light .scoreboard-label {
     color: var(--navbar-link);
 }
 
+.theme-light .scoreboard-total {
+    color: var(--navbar-link);
+}
+
 .theme-light .scoreboard-item:hover {
-    background-color: rgba(0,0,0,0.1);
+    background-color: rgba(0,0,0,0.2);
+}
+
+/* ========== Drill-down Modal Styles ========== */
+#drilldownModal .modal-content {
+    background-color: var(--bg-body);
+    color: var(--text-secondary);
+    border: 0.0625rem solid var(--border-dark);
+}
+
+#drilldownModal .modal-header {
+    background-color: var(--bg-secondary);
+    border-bottom: 0.0625rem solid var(--border-dark);
+}
+
+#drilldownModal .modal-header h4 {
+    color: var(--text-primary);
+}
+
+#drilldownModal .modal-header .close {
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+#drilldownModal .modal-header .close:hover {
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+#drilldownModal .modal-body {
+    background-color: var(--bg-body);
+}
+
+#drilldownModal .modal-footer {
+    background-color: var(--bg-secondary);
+    border-top: 0.0625rem solid var(--border-dark);
+}
+
+#drilldownModal .btn-default {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-color: var(--border-medium);
+}
+
+#drilldownModal .btn-default:hover {
+    background-color: var(--bg-header);
+    color: var(--text-primary);
+}
+
+.drilldown-table {
+    margin: 0;
+    background-color: var(--bg-body);
+    color: var(--text-secondary);
+}
+
+.drilldown-table thead th {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom: 0.0625rem solid var(--border-dark);
+}
+
+.drilldown-table tbody tr {
+    cursor: pointer;
+}
+
+.drilldown-table tbody tr:hover {
+    filter: brightness(1.15);
+}
+
+.drilldown-table tbody tr a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.drilldown-table tbody tr a:hover {
+    text-decoration: underline;
+}
+
+/* Highlight row effect when scrolling to a host */
+.highlight-row {
+    animation: highlight-flash 2s ease-out;
+}
+
+@keyframes highlight-flash {
+    0% { background-color: #ffff00 !important; }
+    100% { background-color: inherit; }
+}
+
+/* ========== Print Styles ========== */
+@media print {
+    /* General print setup */
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 10pt;
+    }
+
+    /* Show the navbar and scoreboard when printing */
+    .navbar {
+        position: relative !important;
+        background: #f5f5f5 !important;
+        border-bottom: 1px solid #333 !important;
+        page-break-after: avoid;
+    }
+
+    .navbar-brand {
+        color: black !important;
+    }
+
+    /* Scoreboard prints cleanly */
+    .scoreboard-item {
+        color: black !important;
+        padding: 0.5rem 1rem !important;
+    }
+
+    .scoreboard-label {
+        color: black !important;
+    }
+
+    .scoreboard-level,
+    .scoreboard-total {
+        border: 1px solid #333 !important;
+        animation: none !important;
+    }
+
+    .scoreboard-total {
+        color: black !important;
+    }
+
+    /* Scoreboard level colors print with high contrast */
+    .scoreboard-level.level0 { background-color: #90EE90 !important; color: black !important; }
+    .scoreboard-level.level1 { background-color: #98FB98 !important; color: black !important; }
+    .scoreboard-level.level2 { background-color: #FFD700 !important; color: black !important; }
+    .scoreboard-level.level3 { background-color: #FFA500 !important; color: black !important; }
+    .scoreboard-level.level4 { background-color: #FF6347 !important; color: black !important; }
+    .scoreboard-level.level9 { background-color: #DC143C !important; color: white !important; }
+
+    /* DBType Overview boxes print with borders */
+    .dbtype-overview-table {
+        page-break-inside: avoid;
+    }
+
+    .dbtype-box {
+        border: 2px solid #333 !important;
+        padding: 1rem !important;
+        background-color: #f5f5f5 !important;
+    }
+
+    .dbtype-label {
+        color: black !important;
+    }
+
+    .dbtype-level {
+        border: 1px solid #333 !important;
+        animation: none !important;
+    }
+
+    .dbtype-total {
+        color: black !important;
+    }
+
+    /* DBType level colors print with high contrast */
+    .dbtype-level.level0 { background-color: #90EE90 !important; color: black !important; }
+    .dbtype-level.level1 { background-color: #98FB98 !important; color: black !important; }
+    .dbtype-level.level2 { background-color: #FFD700 !important; color: black !important; }
+    .dbtype-level.level3 { background-color: #FFA500 !important; color: black !important; }
+    .dbtype-level.level4 { background-color: #FF6347 !important; color: black !important; }
+    .dbtype-level.level9 { background-color: #DC143C !important; color: white !important; }
+
+    /* Hide interactive elements when printing */
+    #toggleButton,
+    #muteControls,
+    #unmuteBtnContainer,
+    #localSilencesContainer,
+    .dropdown-menu,
+    .modal,
+    #groupSelect,
+    button[onclick*="Silence"],
+    audio,
+    .help-cursor {
+        display: none !important;
+    }
+
+    /* Tables print with borders */
+    table {
+        border-collapse: collapse !important;
+    }
+
+    th, td {
+        border: 1px solid #333 !important;
+        padding: 0.25rem 0.5rem !important;
+        color: black !important;
+        background: white !important;
+    }
+
+    /* Level row colors for print */
+    tr.level0, tr.legendLevel0 { background-color: #90EE90 !important; }
+    tr.level1, tr.legendLevel1 { background-color: #98FB98 !important; }
+    tr.level2, tr.legendLevel2 { background-color: #FFD700 !important; }
+    tr.level3, tr.legendLevel3 { background-color: #FFA500 !important; }
+    tr.level4, tr.legendLevel4 { background-color: #FF6347 !important; }
+    tr.level9, tr.legendError { background-color: #DC143C !important; color: white !important; }
+
+    /* Headers stay visible on each page */
+    thead {
+        display: table-header-group;
+    }
+
+    /* Avoid breaking inside table rows */
+    tr {
+        page-break-inside: avoid;
+    }
+
+    /* Page break before major sections */
+    h2 {
+        page-break-before: auto;
+        page-break-after: avoid;
+    }
+
+    /* Links show URL when printed */
+    a[href]:after {
+        content: none; /* Don't show URLs inline - too cluttered */
+    }
+
+    /* Charts - hide or reduce size */
+    .chartImage {
+        max-width: 150px !important;
+        max-height: 150px !important;
+    }
+
+    /* Header table adjustments */
+    #headerTable {
+        page-break-after: avoid;
+    }
+
+    /* Maintenance windows panel */
+    .maintenance-windows-panel {
+        background: #f5f5f5 !important;
+        border: 1px solid #333 !important;
+        page-break-inside: avoid;
+    }
+
+    /* Add page title and date header */
+    @page {
+        margin: 1cm;
+    }
 }

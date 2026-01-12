@@ -166,10 +166,66 @@ $NWOverviewHeaderFooter = <<<HTML
     $overviewHeaderFooterCols
 HTML;
 
+// Redis Overview table configuration
+$redisOverviewCols = 12 ;
+$redisOverviewHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Version</th>
+      <th>Uptime</th>
+      <th>Memory <a onclick="alert('Used memory / max memory'); return false;">?</a></th>
+      <th>Mem% <a onclick="alert('Memory usage as percentage of maxmemory'); return false;">?</a></th>
+      <th>Clients</th>
+      <th>Blocked <a onclick="alert('Clients waiting on blocking commands (BLPOP, etc.)'); return false;">?</a></th>
+      <th>Hit% <a onclick="alert('Cache hit ratio: hits / (hits + misses)'); return false;">?</a></th>
+      <th>Evicted <a onclick="alert('Keys evicted due to maxmemory - indicates data loss!'); return false;">?</a></th>
+      <th>Rejected <a onclick="alert('Connections rejected (maxclients exceeded)'); return false;">?</a></th>
+      <th>Frag <a onclick="alert('Memory fragmentation ratio (used_memory_rss / used_memory). >1.5 is concerning.'); return false;">?</a></th>
+      <th>Level</th>
+    </tr>
+HTML;
+$fullRedisOverviewHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisOverviewCols">Full Redis Status Overview</th>
+    </tr>
+    $redisOverviewHeaderFooterCols
+HTML;
+$NWRedisOverviewHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisOverviewCols">Noteworthy Redis Status Overview</th>
+    </tr>
+    $redisOverviewHeaderFooterCols
+HTML;
+
+// Redis Slowlog table configuration
+$redisSlowlogCols = 5 ;
+$redisSlowlogHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Timestamp</th>
+      <th>Duration <a onclick="alert('Command execution time in microseconds'); return false;">?</a></th>
+      <th>Command</th>
+      <th>Level</th>
+    </tr>
+HTML;
+$fullRedisSlowlogHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisSlowlogCols">Full Redis Slowlog</th>
+    </tr>
+    $redisSlowlogHeaderFooterCols
+HTML;
+$NWRedisSlowlogHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisSlowlogCols">Noteworthy Redis Slowlog</th>
+    </tr>
+    $redisSlowlogHeaderFooterCols
+HTML;
+
 $debug = Tools::param('debug') === "1" ;
 $muted = Tools::param('mute') === "1" ;
 $page = new WebPage('Active Queries List');
 $config = new Config();
+$redisEnabled = $config->getRedisEnabled() ;
 $defaultRefresh = $config->getDefaultRefresh() ;
 $minRefresh = $config->getMinRefresh() ;
 $reloadSeconds = Tools::param('refresh', $defaultRefresh) ;
@@ -292,6 +348,35 @@ try {
         'issueTypeId' => $config->getJiraIssueTypeId(),
         'queryHashFieldId' => $config->getJiraQueryHashFieldId()
     ]);
+
+    // Build Redis-specific JS conditionally
+    $redisEnabledJs = $redisEnabled ? 'true' : 'false' ;
+    $speechAlertsEnabledJs = $config->getEnableSpeechAlerts() ? 'true' : 'false' ;
+    $redisTableInitJs = '' ;
+    $redisFigmentRemoveJs = '' ;
+    $redisTableSortJs = '' ;
+    if ( $redisEnabled ) {
+        $redisTableInitJs = <<<JSREDIS
+    \$("#nwredisoverviewtbodyid").html( '<tr id="nwRedisOverviewfigment"><td colspan="$redisOverviewCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#nwredisslowlogtbodyid").html( '<tr id="nwRedisSlowlogfigment"><td colspan="$redisSlowlogCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullredisoverviewtbodyid").html( '<tr id="fullRedisOverviewfigment"><td colspan="$redisOverviewCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullredisslowlogtbodyid").html( '<tr id="fullRedisSlowlogfigment"><td colspan="$redisSlowlogCols"><center>Data loading</center></td></tr>' ) ;
+JSREDIS;
+        $redisFigmentRemoveJs = <<<JSREDIS
+            \$("#nwRedisOverviewfigment").remove() ;
+            \$("#nwRedisSlowlogfigment").remove() ;
+            \$("#fullRedisOverviewfigment").remove() ;
+            \$("#fullRedisSlowlogfigment").remove() ;
+JSREDIS;
+        $redisTableSortJs = <<<JSREDIS
+    // Redis tables
+    initTableSortWithUrl('#nwRedisOverviewTable', 'nwredisoverview', [[4, 1]]);    // Mem% desc
+    initTableSortWithUrl('#nwRedisSlowlogTable', 'nwredisslowlog', [[2, 1]]);      // Duration desc
+    initTableSortWithUrl('#fullRedisOverviewTable', 'fullredisoverview', [[4, 1]]);
+    initTableSortWithUrl('#fullRedisSlowlogTable', 'fullredisslowlog', [[2, 1]]);
+JSREDIS;
+    }
+
     $page->setBottom(
         <<<JS
 <script>
@@ -299,6 +384,8 @@ try {
 var timeoutId = null;
 var reloadSeconds = $reloadSeconds * 1000 ;
 var jiraConfig = {$jiraConfigJson};
+var redisEnabled = $redisEnabledJs ;
+var speechAlertsEnabled = $speechAlertsEnabledJs ;
 
 // Debug logging: enable with ?refresh_debug=1 in URL
 var REFRESH_DEBUG = new URLSearchParams(window.location.search).get('refresh_debug') === '1';
@@ -316,12 +403,14 @@ function resetRefreshTimer() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function loadPage() {
+    resetDbTypeStats() ;
     \$("#nwslavetbodyid").html( '<tr id="nwSlavefigment"><td colspan="$slaveCols"><center>Data loading</center></td></tr>' ) ;
     \$("#nwoverviewtbodyid").html( '<tr id="nwOverviewfigment"><td colspan="$overviewCols"><center>Data loading</center></td></tr>' ) ;
     \$("#nwprocesstbodyid").html( '<tr id="nwProcessfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullslavetbodyid").html( '<tr id="fullSlavefigment"><td colspan="$slaveCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fulloverviewtbodyid").html( '<tr id="fullOverviewfigment"><td colspan="$overviewCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullprocesstbodyid").html( '<tr id="fullProcessfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
+$redisTableInitJs
     \$.when($whenBlock).then(
         function ($thenParamBlock ) { $thenCodeBlock
             \$("#nwSlavefigment").remove() ;
@@ -330,9 +419,12 @@ function loadPage() {
             \$("#fullSlavefigment").remove() ;
             \$("#fullOverviewfigment").remove() ;
             \$("#fullProcessfigment").remove() ;
+$redisFigmentRemoveJs
             \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ;
             initTableSorting();
             displayCharts() ;
+            updateDbTypeOverview() ;
+            updateScoreboard() ;
             scrollToHashIfPresent() ;
         }
     );
@@ -366,6 +458,7 @@ function initTableSorting() {
     // Full tables
     initTableSortWithUrl('#fullSlaveTable', 'fullslave', [[3, 1]]);    // Seconds Behind desc
     initTableSortWithUrl('#fullOverviewTable', 'fulloverview', [[2, 1]]); // Longest Running desc
+$redisTableSortJs
     refreshLog('Table sorting initialized');
 }
 
@@ -859,6 +952,25 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
+<!-- Scoreboard Drill-down Modal -->
+<div class="modal fade" id="drilldownModal" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 id="drilldownModalTitle">Level Details</h4>
+      </div>
+      <div class="modal-body" id="drilldownModalBody">
+        <p class="text-muted">Loading...</p>
+      </div>
+      <div class="modal-footer">
+        <span id="drilldownModalCount" class="pull-left text-muted"></span>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
   $(function() {
       $('#modalForm').on('submit', function(e){
@@ -872,6 +984,49 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 </script>
 
+<h2 id="dbTypeOverviewHeader">Overview by Database Type</h2>
+<table id="dbTypeOverviewTable" class="dbtype-overview-table">
+  <tr>
+    <td id="dbTypeMySQL" class="dbtype-box" onclick="scrollToSection('nwStatusOverview')" title="MySQL/MariaDB: Loading...">
+      <div class="dbtype-levels">
+        <span class="dbtype-label">MySQL / MariaDB</span>
+        <span class="dbtype-level level9" id="dbTypeMySQLL9" onclick="showLevelDrilldown('MySQL', 9); event.stopPropagation();">-</span>
+        <span class="dbtype-level level4" id="dbTypeMySQLL4" onclick="showLevelDrilldown('MySQL', 4); event.stopPropagation();">-</span>
+        <span class="dbtype-level level3" id="dbTypeMySQLL3" onclick="showLevelDrilldown('MySQL', 3); event.stopPropagation();">-</span>
+        <span class="dbtype-level level2" id="dbTypeMySQLL2" onclick="showLevelDrilldown('MySQL', 2); event.stopPropagation();">-</span>
+        <span class="dbtype-level level1" id="dbTypeMySQLL1" onclick="showLevelDrilldown('MySQL', 1); event.stopPropagation();">-</span>
+        <span class="dbtype-level level0" id="dbTypeMySQLL0" onclick="showLevelDrilldown('MySQL', 0); event.stopPropagation();">-</span>
+        <span class="dbtype-total" id="dbTypeMySQLTotal">- Total</span>
+      </div>
+    </td>
+HTML
+    ) ;
+
+    // Add Redis box if Redis monitoring is enabled
+    if ( $redisEnabled ) {
+        $page->appendBody(
+            <<<HTML
+    <td id="dbTypeRedis" class="dbtype-box" onclick="scrollToSection('nwRedisOverview')" title="Redis: Loading...">
+      <div class="dbtype-levels">
+        <span class="dbtype-label">Redis</span>
+        <span class="dbtype-level level9" id="dbTypeRedisL9" onclick="showLevelDrilldown('Redis', 9); event.stopPropagation();">-</span>
+        <span class="dbtype-level level4" id="dbTypeRedisL4" onclick="showLevelDrilldown('Redis', 4); event.stopPropagation();">-</span>
+        <span class="dbtype-level level3" id="dbTypeRedisL3" onclick="showLevelDrilldown('Redis', 3); event.stopPropagation();">-</span>
+        <span class="dbtype-level level2" id="dbTypeRedisL2" onclick="showLevelDrilldown('Redis', 2); event.stopPropagation();">-</span>
+        <span class="dbtype-level level1" id="dbTypeRedisL1" onclick="showLevelDrilldown('Redis', 1); event.stopPropagation();">-</span>
+        <span class="dbtype-level level0" id="dbTypeRedisL0" onclick="showLevelDrilldown('Redis', 0); event.stopPropagation();">-</span>
+        <span class="dbtype-total" id="dbTypeRedisTotal">- Total</span>
+      </div>
+    </td>
+HTML
+        ) ;
+    }
+
+    $page->appendBody(
+        <<<HTML
+  </tr>
+</table>
+
 <h2>Noteworthy Data</h2>
 {$maintenanceWindowsHtml}
 {$cb(xTable( 'nw', 'SlaveStatus', 'Slave', $NWSlaveHeaderFooter, 'slave', $slaveCols ))}
@@ -881,6 +1036,25 @@ document.addEventListener('DOMContentLoaded', function() {
 {$cb(xTable( 'full', 'SlaveStatus', 'Slave', $fullSlaveHeaderFooter, 'slave', $slaveCols ))}
 {$cb(xTable( 'full', 'StatusOverview', 'Overview', $fullOverviewHeaderFooter, 'overview', $overviewCols ))}
 {$cb(xTable( 'full', 'ProcessListing', 'Process', $fullProcessHeaderFooter, 'process', $processCols ))}
+HTML
+    ) ;
+
+    // Add Redis sections if Redis monitoring is enabled
+    if ( $redisEnabled ) {
+        $page->appendBody(
+            <<<HTML
+<h2>Noteworthy Redis Data</h2>
+{$cb(xTable( 'nw', 'RedisOverview', 'RedisOverview', $NWRedisOverviewHeaderFooter, 'redisoverview', $redisOverviewCols ))}
+{$cb(xTable( 'nw', 'RedisSlowlog', 'RedisSlowlog', $NWRedisSlowlogHeaderFooter, 'redisslowlog', $redisSlowlogCols ))}
+<h2>Full Redis Data</h2>
+{$cb(xTable( 'full', 'RedisOverview', 'RedisOverview', $fullRedisOverviewHeaderFooter, 'redisoverview', $redisOverviewCols ))}
+{$cb(xTable( 'full', 'RedisSlowlog', 'RedisSlowlog', $fullRedisSlowlogHeaderFooter, 'redisslowlog', $redisSlowlogCols ))}
+HTML
+        ) ;
+    }
+
+    $page->appendBody(
+        <<<HTML
 
 <p />
 

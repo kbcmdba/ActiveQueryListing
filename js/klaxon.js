@@ -16,6 +16,86 @@
     const playCount = 3;  // number of times to play the alert
     warningAudio.preload = 'auto';
 
+    // -- speech synthesis for announcing affected hosts
+    const canSpeak = () => {
+        if (typeof window.speechAlertsEnabled !== 'undefined' && !window.speechAlertsEnabled) {
+            return false;
+        }
+        return 'speechSynthesis' in window;
+    };
+
+    // Track hosts that are alerting for speech announcement
+    let alertingHosts = { error: [], level4: [] };
+
+    const collectAlertingHosts = () => {
+        alertingHosts = { error: [], level4: [] };
+
+        // Collect error hosts - only from table rows, not UI badges
+        const errorElements = document.querySelectorAll('tr .errorNotice, tr.level9 .errorNotice');
+        errorElements.forEach(el => {
+            const hostname = getHostnameFromElement(el);
+            if (hostname && !isHostSilenced(hostname) && alertingHosts.error.indexOf(hostname) === -1) {
+                alertingHosts.error.push(hostname);
+            }
+        });
+
+        // Collect level4 hosts (only if not already in error) - exclude UI badges
+        const level4Elements = document.querySelectorAll('tr.level4:not(.scoreboard-row)');
+        level4Elements.forEach(el => {
+            const hostname = getHostnameFromElement(el);
+            if (hostname && !isHostSilenced(hostname) &&
+                alertingHosts.error.indexOf(hostname) === -1 &&
+                alertingHosts.level4.indexOf(hostname) === -1) {
+                alertingHosts.level4.push(hostname);
+            }
+        });
+
+        log('collectAlertingHosts:', alertingHosts);
+    };
+
+    const speakAlert = (type) => {
+        if (!canSpeak()) {
+            log('speakAlert: speech not available or disabled');
+            return;
+        }
+
+        const hosts = type === 'error' ? alertingHosts.error : alertingHosts.level4;
+        if (hosts.length === 0) return;
+
+        let message;
+        const alertType = type === 'error' ? 'Error' : 'Critical';
+
+        // Clean up hostnames for speech (remove port, replace dots)
+        const cleanHost = (h) => {
+            let name = h.split(':')[0];  // Remove port
+            name = name.replace(/\./g, ' dot ');  // Make dots pronounceable
+            return name;
+        };
+
+        if (hosts.length === 1) {
+            message = alertType + ' on ' + cleanHost(hosts[0]);
+        } else if (hosts.length <= 3) {
+            message = alertType + ' on ' + hosts.length + ' hosts: ' +
+                hosts.map(cleanHost).join(', ');
+        } else {
+            message = alertType + ' on ' + hosts.length + ' hosts: ' +
+                hosts.slice(0, 3).map(cleanHost).join(', ') +
+                ', and ' + (hosts.length - 3) + ' more';
+        }
+
+        log('speakAlert:', message);
+
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 0.8;
+
+        // Speak after a delay to let the alert sound finish
+        setTimeout(() => {
+            speechSynthesis.speak(utterance);
+        }, 2000);
+    };
+
     // -- check if muted via URL parameter or cookie (supports timed mute)
     const checkMuted = () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -58,6 +138,8 @@
         timesPlayed = 0;
         warningAudio.currentTime = 0;
         warningAudio.play().catch(() => banner());
+        collectAlertingHosts();
+        speakAlert('level4');
     };
 
     const fireKlaxon = () => {
@@ -69,6 +151,8 @@
         klaxonFired = true;
         klaxonAudio.currentTime = 0;
         klaxonAudio.play().catch(() => banner());
+        collectAlertingHosts();
+        speakAlert('error');
     };
 
     // -- replay warning until we've played the desired number of times
@@ -183,8 +267,8 @@
             const silencedSet = {};
             const alertingSet = {};
 
-            // Check error elements
-            const errorElements = document.querySelectorAll('.errorNotice');
+            // Check error elements - only table rows, not UI badges
+            const errorElements = document.querySelectorAll('tr .errorNotice, tr.level9 .errorNotice');
             errorElements.forEach(el => {
                 const hostname = getHostnameFromElement(el);
                 if (hostname && !silencedSet[hostname] && !alertingSet[hostname]) {
@@ -197,8 +281,8 @@
                 }
             });
 
-            // Check level4 elements
-            const level4Elements = document.querySelectorAll('.level4');
+            // Check level4 elements - exclude UI badges
+            const level4Elements = document.querySelectorAll('tr.level4:not(.scoreboard-row)');
             level4Elements.forEach(el => {
                 const hostname = getHostnameFromElement(el);
                 if (hostname && !silencedSet[hostname] && !alertingSet[hostname]) {
@@ -260,6 +344,7 @@
 
     // -- detect alerts: errorNotice gets klaxon, level4 gets warning
     // Suppresses alerts for hosts in maintenance windows or locally silenced
+    // Only checks actual data rows, not UI elements like scoreboard badges
     const runTest = () => {
         // Skip all alerts if all hosts are silenced
         if (areAllHostsSilenced()) {
@@ -268,7 +353,8 @@
         }
 
         // Check for errorNotice (most severe) - gets the klaxon horn
-        const errorElements = document.querySelectorAll('.errorNotice');
+        // Only look in table rows, not scoreboard/overview badges
+        const errorElements = document.querySelectorAll('tr .errorNotice, tr.level9 .errorNotice');
         let hasActiveError = false;
         errorElements.forEach(el => {
             const hostname = getHostnameFromElement(el);
@@ -284,7 +370,8 @@
         }
 
         // Check for level4 (critical but not error) - gets warning ding
-        const level4Elements = document.querySelectorAll('.level4');
+        // Exclude scoreboard and dbtype badges which also use level classes
+        const level4Elements = document.querySelectorAll('tr.level4:not(.scoreboard-row)');
         let hasActiveLevel4 = false;
         level4Elements.forEach(el => {
             const hostname = getHostnameFromElement(el);

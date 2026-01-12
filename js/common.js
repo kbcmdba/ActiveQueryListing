@@ -23,6 +23,7 @@
 const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.get('debug');
 const debugLocks = urlParams.get('debugLocks');
+const debugScoreboard = urlParams.get('debugScoreboard');
 const debugString = ( debug == '1' ? '&debug=1' : '' ) + ( debugLocks == '1' ? '&debugLocks=1' : '' ) ;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,6 +137,416 @@ function getChartColors() {
         });
     }
 })();
+
+///////////////////////////////////////////////////////////////////////////////
+// DBType Statistics Tracking (for Overview boxes and Scoreboard)
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Track statistics by database type for the DBType Overview boxes and Scoreboard
+ * Tracks per-level counts like a real scoreboard
+ * Reset at start of each page load cycle
+ */
+var dbTypeStats = {
+    'MySQL': {
+        hostCount: 0,
+        levels: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 9: 0 },
+        levelHosts: { 0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 9: {} },  // hostname -> count
+        worstLevel: 0,
+        // MySQL-specific aggregates
+        longestRunning: 0,
+        blocking: 0,
+        blocked: 0
+    },
+    'Redis': {
+        hostCount: 0,
+        levels: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 9: 0 },
+        levelHosts: { 0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 9: {} },  // hostname -> count
+        worstLevel: 0,
+        // Redis-specific aggregates
+        evicted: 0,
+        rejected: 0,
+        blockedClients: 0
+    }
+} ;
+
+/**
+ * Reset dbTypeStats at the start of a new data load cycle
+ */
+function resetDbTypeStats() {
+    for ( var dbType in dbTypeStats ) {
+        if ( dbTypeStats.hasOwnProperty( dbType ) ) {
+            dbTypeStats[ dbType ].hostCount = 0 ;
+            dbTypeStats[ dbType ].worstLevel = 0 ;
+            dbTypeStats[ dbType ].levels = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 9: 0 } ;
+            dbTypeStats[ dbType ].levelHosts = { 0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 9: {} } ;
+            // Reset type-specific fields
+            if ( dbType === 'MySQL' ) {
+                dbTypeStats[ dbType ].longestRunning = 0 ;
+                dbTypeStats[ dbType ].blocking = 0 ;
+                dbTypeStats[ dbType ].blocked = 0 ;
+            } else if ( dbType === 'Redis' ) {
+                dbTypeStats[ dbType ].evicted = 0 ;
+                dbTypeStats[ dbType ].rejected = 0 ;
+                dbTypeStats[ dbType ].blockedClients = 0 ;
+            }
+        }
+    }
+}
+
+/**
+ * Track a level count for a DBType
+ * @param {string} dbType - 'MySQL' or 'Redis'
+ * @param {number} level - The level (0, 1, 2, 3, 4, or 9)
+ * @param {number} count - How many to add (default 1)
+ * @param {string} hostname - Required hostname for drill-down tracking
+ */
+function trackLevelByDbType( dbType, level, count, hostname ) {
+    // Normalize dbType
+    if ( dbType === 'MariaDB' || dbType === 'InnoDBCluster' ) {
+        dbType = 'MySQL' ;
+    }
+    if ( !dbTypeStats[ dbType ] ) return ;
+
+    // Hostname is required for drill-down tracking
+    if ( !hostname ) {
+        console.warn( '[scoreboard] trackLevelByDbType called without hostname for ' + dbType + ' L' + level ) ;
+        return ;
+    }
+
+    // Default to 1 only if count is undefined/null, not if it's 0
+    if ( typeof count === 'undefined' || count === null ) {
+        count = 1 ;
+    }
+    if ( count === 0 ) return ;  // Don't track zero counts
+
+    var stats = dbTypeStats[ dbType ] ;
+    stats.levels[ level ] = ( stats.levels[ level ] || 0 ) + count ;
+
+    // Track hostname for drill-down
+    if ( !stats.levelHosts[ level ] ) {
+        stats.levelHosts[ level ] = {} ;
+    }
+    stats.levelHosts[ level ][ hostname ] = ( stats.levelHosts[ level ][ hostname ] || 0 ) + count ;
+
+    // Audit logging - shows hostname attribution
+    if ( debugScoreboard === '1' ) {
+        console.log( '[scoreboard] ' + hostname + ' => ' + dbType + ' L' + level + ' +' + count + ' (total: ' + stats.levels[ level ] + ')' ) ;
+    }
+
+    // Update worst level
+    if ( level > stats.worstLevel ) {
+        stats.worstLevel = level ;
+    }
+}
+
+/**
+ * Track a host for a DBType (increments host count)
+ * @param {string} dbType - 'MySQL' or 'Redis'
+ */
+function trackHostByDbType( dbType ) {
+    if ( dbType === 'MariaDB' || dbType === 'InnoDBCluster' ) {
+        dbType = 'MySQL' ;
+    }
+    if ( !dbTypeStats[ dbType ] ) return ;
+    dbTypeStats[ dbType ].hostCount++ ;
+}
+
+/**
+ * Track MySQL-specific aggregates
+ * @param {object} overviewData - The overviewData from AJAX response
+ */
+function trackMySQLAggregates( overviewData ) {
+    var stats = dbTypeStats[ 'MySQL' ] ;
+    var lr = overviewData[ 'longest_running' ] || 0 ;
+    if ( lr > stats.longestRunning ) stats.longestRunning = lr ;
+    stats.blocking += overviewData[ 'blocking' ] || 0 ;
+    stats.blocked += overviewData[ 'blocked' ] || 0 ;
+}
+
+/**
+ * Track Redis-specific aggregates
+ * @param {object} redisOverview - The redisOverviewData from AJAX response
+ */
+function trackRedisAggregates( redisOverview ) {
+    var stats = dbTypeStats[ 'Redis' ] ;
+    stats.evicted += redisOverview[ 'evictedKeys' ] || 0 ;
+    stats.rejected += redisOverview[ 'rejectedConnections' ] || 0 ;
+    stats.blockedClients += redisOverview[ 'blockedClients' ] || 0 ;
+}
+
+/**
+ * Update the DBType Overview boxes with current stats
+ */
+function updateDbTypeOverview() {
+    for ( var dbType in dbTypeStats ) {
+        if ( !dbTypeStats.hasOwnProperty( dbType ) ) continue ;
+        var stats = dbTypeStats[ dbType ] ;
+        var boxId = 'dbType' + dbType ;
+        var box = document.getElementById( boxId ) ;
+        if ( box ) {
+            // Update tooltip
+            var tooltip = dbType + ' Status: ' + stats.hostCount + ' hosts reporting' ;
+            box.title = tooltip ;
+        }
+
+        // Update each level count: L9, L4, L3, L2, L1, L0
+        var levels = [ 9, 4, 3, 2, 1, 0 ] ;
+        for ( var i = 0 ; i < levels.length ; i++ ) {
+            var level = levels[ i ] ;
+            var el = document.getElementById( 'dbType' + dbType + 'L' + level ) ;
+            if ( el ) {
+                el.textContent = stats.levels[ level ] ;
+            }
+        }
+
+        // Update total
+        var totalEl = document.getElementById( 'dbType' + dbType + 'Total' ) ;
+        if ( totalEl ) {
+            totalEl.textContent = stats.hostCount + ' Total' ;
+        }
+    }
+}
+
+/**
+ * Update the Scoreboard in the navbar with current stats
+ * Shows worst level color with count of items at that level
+ */
+function updateScoreboard() {
+    for ( var dbType in dbTypeStats ) {
+        if ( !dbTypeStats.hasOwnProperty( dbType ) ) continue ;
+        var stats = dbTypeStats[ dbType ] ;
+        var scoreboardItem = document.getElementById( 'scoreboard' + dbType ) ;
+
+        // Debug logging
+        if ( debugScoreboard === '1' ) {
+            console.log( '[scoreboard] updateScoreboard ' + dbType + ':', JSON.stringify( stats.levels ), 'hosts:', stats.hostCount ) ;
+        }
+
+        if ( scoreboardItem ) {
+            // Build tooltip
+            var tooltip = dbType + ' Status: ' + stats.hostCount + ' hosts reporting' ;
+            scoreboardItem.title = tooltip ;
+        }
+
+        // Update each level count: L9, L4, L3, L2, L1, L0
+        var levels = [ 9, 4, 3, 2, 1, 0 ] ;
+        for ( var i = 0 ; i < levels.length ; i++ ) {
+            var level = levels[ i ] ;
+            var el = document.getElementById( 'scoreboard' + dbType + 'L' + level ) ;
+            if ( el ) {
+                el.textContent = stats.levels[ level ] ;
+            }
+        }
+
+        // Update total
+        var totalEl = document.getElementById( 'scoreboard' + dbType + 'Total' ) ;
+        if ( totalEl ) {
+            totalEl.textContent = stats.hostCount + ' Total' ;
+        }
+    }
+}
+
+/**
+ * Show drill-down modal for a specific DBType and level
+ * Shows which hosts contribute to that level count
+ * @param {string} dbType - 'MySQL' or 'Redis'
+ * @param {number} level - The level (0, 1, 2, 3, 4, or 9)
+ */
+function showLevelDrilldown( dbType, level ) {
+    var stats = dbTypeStats[ dbType ] ;
+    if ( !stats ) {
+        console.warn( '[scoreboard] Unknown dbType: ' + dbType ) ;
+        return ;
+    }
+
+    var levelHosts = stats.levelHosts[ level ] || {} ;
+    var hostnames = Object.keys( levelHosts ) ;
+    var count = stats.levels[ level ] || 0 ;
+
+    // Level labels for display
+    var levelLabels = {
+        0: 'Level 0 (Green - Normal)',
+        1: 'Level 1 (Light Green - Low)',
+        2: 'Level 2 (Yellow - Info)',
+        3: 'Level 3 (Orange - Warning)',
+        4: 'Level 4 (Red - Critical)',
+        9: 'Level 9 (Dark Red - Error/Unreachable)'
+    } ;
+
+    // Build modal title
+    var title = dbType + ' - ' + levelLabels[ level ] ;
+
+    // Build host list
+    var listHtml = '' ;
+    if ( hostnames.length === 0 ) {
+        listHtml = '<p class="text-muted">No hosts at this level</p>' ;
+    } else {
+        // Sort by count descending, then by hostname
+        hostnames.sort( function( a, b ) {
+            var countDiff = levelHosts[ b ] - levelHosts[ a ] ;
+            if ( countDiff !== 0 ) return countDiff ;
+            return a.localeCompare( b ) ;
+        } ) ;
+
+        listHtml = '<table class="table table-condensed table-hover drilldown-table">' ;
+        listHtml += '<thead><tr><th>Hostname</th><th class="text-right">Count</th></tr></thead>' ;
+        listHtml += '<tbody>' ;
+        for ( var i = 0 ; i < hostnames.length ; i++ ) {
+            var hostname = hostnames[ i ] ;
+            var hostCount = levelHosts[ hostname ] ;
+            listHtml += '<tr class="level' + level + '">' ;
+            listHtml += '<td><a href="#" onclick="scrollToHost(\'' + hostname.replace( /'/g, "\\'" ) + '\'); $(\'#drilldownModal\').modal(\'hide\'); return false;">' + hostname + '</a></td>' ;
+            listHtml += '<td class="text-right">' + hostCount + '</td>' ;
+            listHtml += '</tr>' ;
+        }
+        listHtml += '</tbody></table>' ;
+    }
+
+    // Update modal content
+    $( '#drilldownModalTitle' ).text( title ) ;
+    $( '#drilldownModalBody' ).html( listHtml ) ;
+    $( '#drilldownModalCount' ).text( count + ' total' ) ;
+
+    // Show modal
+    $( '#drilldownModal' ).modal( 'show' ) ;
+}
+
+/**
+ * Scroll to a specific host in the page
+ * @param {string} hostname - The hostname to scroll to
+ */
+function scrollToHost( hostname ) {
+    // Try to find the host in various tables
+    var found = false ;
+    $( 'td a' ).each( function() {
+        if ( $( this ).text().trim() === hostname ) {
+            var row = $( this ).closest( 'tr' ) ;
+            if ( row.length ) {
+                $( 'html, body' ).animate( {
+                    scrollTop: row.offset().top - 100
+                }, 300 ) ;
+                // Highlight the row briefly
+                row.addClass( 'highlight-row' ) ;
+                setTimeout( function() { row.removeClass( 'highlight-row' ) ; }, 2000 ) ;
+                found = true ;
+                return false ;  // break
+            }
+        }
+    } ) ;
+
+    if ( !found ) {
+        console.log( '[scoreboard] Could not find host in page: ' + hostname ) ;
+    }
+}
+
+/**
+ * Handle Redis host data from AJAX response
+ * @param {number} i - Index
+ * @param {object} item - Response data from AJAXgetaql.php
+ */
+function redisCallback( i, item ) {
+    // Skip if not Redis data
+    if ( item[ 'dbType' ] !== 'Redis' ) return ;
+
+    var redisOverview = item[ 'redisOverviewData' ] ;
+    var slowlogData = item[ 'slowlogData' ] || [] ;
+    var hostname = item[ 'hostname' ] ;
+    var hostId = item[ 'hostId' ] ;
+    var hostGroups = item[ 'hostGroups' ] || [] ;
+    var maintenanceInfo = item[ 'maintenanceInfo' ] ;
+
+    // Track for klaxon silencing
+    if ( typeof window.hostIdMap === 'undefined' ) { window.hostIdMap = {} ; }
+    if ( typeof window.hostGroupMap === 'undefined' ) { window.hostGroupMap = {} ; }
+    if ( typeof window.hostsInMaintenance === 'undefined' ) { window.hostsInMaintenance = {} ; }
+    window.hostIdMap[ hostname ] = hostId ;
+    window.hostGroupMap[ hostname ] = hostGroups ;
+    window.hostsInMaintenance[ hostname ] = ( maintenanceInfo && maintenanceInfo.active ) ? true : false ;
+
+    // Handle error response
+    if ( typeof item[ 'error_output' ] !== 'undefined' ) {
+        var errorRow = '<tr class="level9"><td>' + hostname + '</td>'
+                     + '<td colspan="11" class="errorNotice">' + item[ 'error_output' ] + '</td></tr>' ;
+        $( errorRow ).appendTo( '#fullredisoverviewtbodyid' ) ;
+        $( errorRow ).prependTo( '#nwredisoverviewtbodyid' ) ;
+        trackHostByDbType( 'Redis' ) ;
+        trackLevelByDbType( 'Redis', 9, 1, hostname ) ;
+        return ;
+    }
+
+    if ( typeof redisOverview === 'undefined' ) return ;
+
+    var level = redisOverview[ 'level' ] || 0 ;
+
+    // Track stats for scoreboard
+    trackHostByDbType( 'Redis' ) ;
+    trackLevelByDbType( 'Redis', level, 1, hostname ) ;
+    trackRedisAggregates( redisOverview ) ;
+
+    // Build server link with management icons
+    var serverLink = '<a href="?hosts[]=' + hostname + debugString + '">' + hostname + '</a>' ;
+    if ( maintenanceInfo && maintenanceInfo.active ) {
+        var mwType = ( maintenanceInfo.windowType === 'adhoc' ) ? 'Ad-hoc' : 'Scheduled' ;
+        var icon = ( maintenanceInfo.windowType === 'adhoc' ) ? '&#128263;' : '&#128295;' ;
+        serverLink += ' <span class="maintenanceIndicator ' + maintenanceInfo.windowType
+            + '" title="' + mwType + ' maintenance">' + icon + '</span>' ;
+    }
+    if ( hostId ) {
+        serverLink += ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + hostname.replace(/'/g, "\\'") + '\'); return false;"'
+            + ' title="Silence alerts for this host" class="silence-link">&#128263;</a>' ;
+        serverLink += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
+            + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
+    }
+
+    // Build overview row
+    var levelClass = 'level' + level ;
+    var memPctClass = redisOverview[ 'memoryPct' ] > 80 ? ' class="level3"' : '' ;
+    var blockedClass = redisOverview[ 'blockedClients' ] > 0 ? ' class="level2"' : '' ;
+    var hitClass = redisOverview[ 'hitRatio' ] < 90 ? ' class="level2"' : '' ;
+    var evictedClass = redisOverview[ 'evictedKeys' ] > 0 ? ' class="level4"' : '' ;
+    var rejectedClass = redisOverview[ 'rejectedConnections' ] > 0 ? ' class="level4"' : '' ;
+    var fragClass = redisOverview[ 'fragmentationRatio' ] > 1.5 ? ' class="level3"' : '' ;
+
+    var overviewRow = '<tr class="' + levelClass + '">'
+        + '<td>' + serverLink + '</td>'
+        + '<td>' + ( redisOverview[ 'version' ] || '-' ) + '</td>'
+        + '<td>' + ( redisOverview[ 'uptimeHuman' ] || '-' ) + '</td>'
+        + '<td>' + ( redisOverview[ 'usedMemoryHuman' ] || '-' ) + '</td>'
+        + '<td' + memPctClass + '>' + ( redisOverview[ 'memoryPct' ] || 0 ) + '%</td>'
+        + '<td>' + ( redisOverview[ 'connectedClients' ] || 0 ) + '</td>'
+        + '<td' + blockedClass + '>' + ( redisOverview[ 'blockedClients' ] || 0 ) + '</td>'
+        + '<td' + hitClass + '>' + ( redisOverview[ 'hitRatio' ] || 0 ) + '%</td>'
+        + '<td' + evictedClass + '>' + ( redisOverview[ 'evictedKeys' ] || 0 ) + '</td>'
+        + '<td' + rejectedClass + '>' + ( redisOverview[ 'rejectedConnections' ] || 0 ) + '</td>'
+        + '<td' + fragClass + '>' + ( redisOverview[ 'fragmentationRatio' ] || '-' ) + '</td>'
+        + '<td>' + level + '</td>'
+        + '</tr>' ;
+
+    $( overviewRow ).appendTo( '#fullredisoverviewtbodyid' ) ;
+    if ( hasIssues ) {
+        $( overviewRow ).appendTo( '#nwredisoverviewtbodyid' ) ;
+    }
+
+    // Build slowlog rows
+    if ( slowlogData.length > 0 ) {
+        for ( var j = 0; j < slowlogData.length; j++ ) {
+            var entry = slowlogData[ j ] ;
+            var slLevelClass = 'level' + ( entry[ 'level' ] || 0 ) ;
+            var slowlogRow = '<tr class="' + slLevelClass + '">'
+                + '<td>' + hostname + '</td>'
+                + '<td>' + ( entry[ 'timestampHuman' ] || '-' ) + '</td>'
+                + '<td>' + ( entry[ 'durationMs' ] || 0 ) + ' ms</td>'
+                + '<td>' + ( entry[ 'command' ] || '-' ) + '</td>'
+                + '<td>' + ( entry[ 'level' ] || 0 ) + '</td>'
+                + '</tr>' ;
+            $( slowlogRow ).appendTo( '#fullredisslowlogtbodyid' ) ;
+            if ( entry[ 'level' ] >= 2 ) {
+                $( slowlogRow ).appendTo( '#nwredisslowlogtbodyid' ) ;
+            }
+        }
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -457,6 +868,19 @@ function myCallback( i, item ) {
                   + "</td></tr>" ;
         $(myRow).prependTo( "#nwprocesstbodyid" ) ;
         $(myRow).prependTo( "#fullprocesstbodyid" ) ;
+
+        // Add error row to Status Overview tables too
+        var overviewErrorRow = "<tr data-hostname=\"" + errorServer + "\"><td class=\"errorNotice\">" + errorServer + errorMaintenanceIndicator + errorSilenceIcons
+                  + "</td><td colspan=\"20\" class=\"errorNotice\">" + item[ 'error_output' ]
+                  + "</td></tr>" ;
+        $(overviewErrorRow).prependTo( "#nwoverviewtbodyid" ) ;
+        $(overviewErrorRow).prependTo( "#fulloverviewtbodyid" ) ;
+
+        // Track MySQL error for DBType scoreboard (skip if this is Redis data)
+        if ( item[ 'dbType' ] !== 'Redis' ) {
+            trackHostByDbType( 'MySQL' ) ;
+            trackLevelByDbType( 'MySQL', 9, 1, errorServer ) ;
+        }
     } else {
         if ( typeof overviewData !== 'undefined' ) {
             var server            = item[ 'hostname' ] ;
@@ -589,6 +1013,16 @@ function myCallback( i, item ) {
                 }
                 updateVersionSummary() ;
             }
+
+            // Track MySQL host for DBType scoreboard
+            trackHostByDbType( 'MySQL' ) ;
+            trackLevelByDbType( 'MySQL', 0, overviewData[ 'level0' ] || 0, server ) ;
+            trackLevelByDbType( 'MySQL', 1, overviewData[ 'level1' ] || 0, server ) ;
+            trackLevelByDbType( 'MySQL', 2, overviewData[ 'level2' ] || 0, server ) ;
+            trackLevelByDbType( 'MySQL', 3, overviewData[ 'level3' ] || 0, server ) ;
+            trackLevelByDbType( 'MySQL', 4, overviewData[ 'level4' ] || 0, server ) ;
+            trackLevelByDbType( 'MySQL', 9, overviewData[ 'level9' ] || 0, server ) ;
+            trackMySQLAggregates( overviewData ) ;
         }
         if ( ( typeof slaveData !== 'undefined' ) && ( typeof slaveData[ 0 ] !== 'undefined' ) ) {
             var server            = item[ 'hostname' ] ;
@@ -1322,6 +1756,22 @@ function scrollToHashIfPresent() {
             setTimeout( function() {
                 target.scrollIntoView( { behavior: 'smooth', block: 'start' } ) ;
             }, 100 ) ;
+        }
+    }
+}
+
+/**
+ * Scroll to a specific section by ID.
+ * Used by DBType Overview boxes and Scoreboard clicks.
+ * @param {string} sectionId - The ID of the element to scroll to
+ */
+function scrollToSection( sectionId ) {
+    var target = document.getElementById( sectionId ) ;
+    if ( target ) {
+        target.scrollIntoView( { behavior: 'smooth', block: 'start' } ) ;
+        // Update URL hash without triggering scroll (for shareable URLs)
+        if ( history.pushState ) {
+            history.pushState( null, null, '#' + sectionId ) ;
         }
     }
 }
