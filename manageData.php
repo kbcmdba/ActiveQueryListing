@@ -177,16 +177,23 @@ function verifyHostPermissions( $hostname, $port ) {
 // ///////////////////////////////////////////////////////////////////////////
 
 function doLoginOrDie( $page ) {
+    // Preserve query string parameters through login
+    $dataParam = Tools::param( 'data' ) ;
+    $dataHidden = '' ;
+    if ( ! Tools::isNullOrEmptyString( $dataParam ) ) {
+        $dataHidden = '<input type="hidden" name="data" value="' . htmlspecialchars( $dataParam, ENT_QUOTES, 'UTF-8' ) . '" />' ;
+    }
     $loginPage = <<<HTML
 <h2>Login</h2>
 <div>
     <form method="post" action="manageData.php">
+        $dataHidden
         <label for="user"><b>Username</b></label>
         <input type="text" name="user" required="required" />
         <label for="password"><b>Password</b></label>
         <input type="password" name="password" required="required" />
         <input type="submit" name="submit" value="submit" />
-    </form> 
+    </form>
 </div>
 
 HTML;
