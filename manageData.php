@@ -423,6 +423,30 @@ SQL;
   <input type="submit" name="action" value="Delete"> &nbsp;
 </form>
 
+<script>
+// Default ports for each DB type
+var defaultPorts = {
+    'MySQL': 3306,
+    'MariaDB': 3306,
+    'MS-SQL': 1433,
+    'Redis': 6379,
+    'RLEC': 6379,
+    'InnoDBCluster': 3306,
+    'InnoDBRouter': 6446
+};
+
+// Update port when DB type changes (only if port is still a default value)
+document.getElementById('dbType').addEventListener('change', function() {
+    var portField = document.getElementById('portNumber');
+    var currentPort = parseInt(portField.value, 10);
+    var isDefaultPort = Object.values(defaultPorts).indexOf(currentPort) !== -1 || portField.value === '';
+
+    if (isDefaultPort && defaultPorts[this.value]) {
+        portField.value = defaultPorts[this.value];
+    }
+});
+</script>
+
 <p></p>
 
 <table id="hostEdit" border=1 cellspacing=0 cellpadding=2 class="tablesorter aql-listing">
