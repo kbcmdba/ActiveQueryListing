@@ -229,6 +229,8 @@ function normalizeQueryForHash( $query ) {
     $normalized = preg_replace( '/"(?:[^"\\\\]|\\\\.)*"/', '"S"', $normalized ) ;
     // Numbers -> N (integers, decimals, scientific notation)
     $normalized = preg_replace( '/\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/', 'N', $normalized ) ;
+    // Collapse multiple blank lines into single newline for compact storage
+    $normalized = preg_replace( '/\n\s*\n/', "\n", $normalized ) ;
     return $normalized ;
 }
 

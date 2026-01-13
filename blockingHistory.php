@@ -145,6 +145,7 @@ try {
     // Build the results query with filters
     $sql = "SELECT h.hostname
                  , h.port_number
+                 , bh.query_hash
                  , bh.user
                  , bh.source_host
                  , bh.db_name
@@ -206,6 +207,7 @@ try {
           .  "<thead>\n"
           .  "<tr>\n"
           .  "  <th>Host</th>\n"
+          .  "  <th>Query Hash</th>\n"
           .  "  <th>User</th>\n"
           .  "  <th>Source Host</th>\n"
           .  "  <th>Database</th>\n"
@@ -223,18 +225,22 @@ try {
     while ( $row = $result->fetch_assoc() ) {
         $rowCount++ ;
         $host = htmlspecialchars( $row['hostname'] . ':' . $row['port_number'] ) ;
+        $queryHash = htmlspecialchars( $row['query_hash'] ) ;
         $user = htmlspecialchars( $row['user'] ) ;
         $sourceHost = htmlspecialchars( $row['source_host'] ) ;
         $dbName = htmlspecialchars( $row['db_name'] ?? '' ) ;
         $blockedCount = intval( $row['blocked_count'] ) ;
         $totalBlocked = intval( $row['total_blocked'] ) ;
         $maxBlockSecs = intval( $row['max_block_secs'] ?? 0 ) ;
-        $queryText = htmlspecialchars( $row['query_text'] ) ;
+        // Collapse multiple blank lines into single newline for compact display
+        $queryText = preg_replace( '/\n\s*\n/', "\n", $row['query_text'] ) ;
+        $queryText = htmlspecialchars( $queryText ) ;
         $firstSeen = htmlspecialchars( $row['first_seen'] ) ;
         $lastSeen = htmlspecialchars( $row['last_seen'] ) ;
 
         $body .= "<tr>\n"
               .  "  <td>$host</td>\n"
+              .  "  <td><span class=\"query-hash\">$queryHash</span></td>\n"
               .  "  <td>$user</td>\n"
               .  "  <td>$sourceHost</td>\n"
               .  "  <td>$dbName</td>\n"

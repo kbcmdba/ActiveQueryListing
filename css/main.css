@@ -984,6 +984,17 @@ td.blocking {
     margin: 0;
     white-space: pre-wrap;
     word-break: break-word;
+    color: inherit;
+    background: transparent;
+}
+
+/* Query hash display (monospace, inherits row colors) */
+.query-hash {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: inherit;
+    color: inherit;
+    background: transparent;
+    white-space: nowrap;
 }
 
 /* ========== Test Harness Specific Styles ========== */
