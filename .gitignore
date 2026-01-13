@@ -17,3 +17,4 @@ vendor/
 cache/
 temp.sql
 CLAUDE.md
+.claude
