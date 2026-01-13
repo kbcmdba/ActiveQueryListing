@@ -27,6 +27,38 @@ const debugScoreboard = urlParams.get('debugScoreboard');
 const debugString = ( debug == '1' ? '&debug=1' : '' ) + ( debugLocks == '1' ? '&debugLocks=1' : '' ) ;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Utility Functions
+
+/**
+ * Format seconds into a friendly time string like "9h,27m,32s"
+ * Matches PHP Tools::friendlyTime()
+ * @param {number} seconds - Number of seconds
+ * @return {string} Formatted time string
+ */
+function friendlyTime( seconds ) {
+    if ( seconds === null || seconds === '' || isNaN( seconds ) ) {
+        return '' ;
+    }
+    seconds = parseInt( seconds, 10 ) ;
+    if ( seconds < 60 ) {
+        return seconds + 's' ;
+    }
+    var secs = seconds % 60 ;
+    var mins = Math.floor( seconds / 60 ) ;
+    if ( mins < 60 ) {
+        return mins + 'm,' + secs + 's' ;
+    }
+    var hrs = Math.floor( mins / 60 ) ;
+    mins = mins % 60 ;
+    if ( hrs < 24 ) {
+        return hrs + 'h,' + mins + 'm,' + secs + 's' ;
+    }
+    var days = Math.floor( hrs / 24 ) ;
+    hrs = hrs % 24 ;
+    return days + 'd,' + hrs + 'h,' + mins + 'm,' + secs + 's' ;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Theme Toggle Support
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1080,7 +1112,12 @@ function myCallback( i, item ) {
             }
 
             for ( itemNo=0; itemNo<slaveData.length; itemNo++ ) {
-                var sbmClass = ( 0 < slaveData[ itemNo ][ 'Seconds_Behind_Master' ] ) ? ' class="level4"' : '' ;
+                var sbmSecs = slaveData[ itemNo ][ 'Seconds_Behind_Master' ] ;
+                var sbmClass = ( 0 < sbmSecs ) ? ' class="level4"' : '' ;
+                var sbmDisplay = sbmSecs ;
+                if ( sbmSecs !== null && sbmSecs !== '' && sbmSecs > 0 ) {
+                    sbmDisplay = sbmSecs + ' (' + friendlyTime( sbmSecs ) + ')' ;
+                }
                 var sioClass = ( 'No' == slaveData[ itemNo ][ 'Slave_IO_Running'] ) ? ' class="errorNotice"' : '' ;
                 var sqlClass = ( 'No' == slaveData[ itemNo ][ 'Slave_SQL_Running'] ) ? ' class="errorNotice"' : '' ;
                 var sieClass = ( '' !== slaveData[ itemNo ][ 'Last_IO_Error'] ) ? ' class="errorNotice"' : '' ;
@@ -1089,7 +1126,7 @@ function myCallback( i, item ) {
                           + "</td><td>" + slaveData[ itemNo ][ 'Connection_name']
                           + "</td><td>" + slaveData[ itemNo ][ 'Master_Host' ]
                           + ':' + slaveData[ itemNo ][ 'Master_Port' ]
-                          + "</td><td" + sbmClass + ">" + slaveData[ itemNo ][ 'Seconds_Behind_Master']
+                          + "</td><td" + sbmClass + " data-text=\"" + ( sbmSecs || 0 ) + "\" style=\"text-align:center\">" + sbmDisplay
                           + "</td><td" + sioClass + ">" + slaveData[ itemNo ][ 'Slave_IO_Running']
                           + "</td><td" + sqlClass + ">" + slaveData[ itemNo ][ 'Slave_SQL_Running']
                           + "</td><td" + sieClass + ">" + slaveData[ itemNo ][ 'Last_IO_Error']
