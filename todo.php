@@ -29,6 +29,18 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
+// @todo 10 Add "Reset Mute" functionality for adjusting mute durations
+//          - Global mute: Button to adjust in-browser mute duration without unmuting first
+//          - Local silences: Button on each silenced host/group to reset duration (starting "now")
+//          - Useful when user needs more/less time than originally selected
+// @todo 15 Per-tab vs per-browser silencing behavior (UNDER CONSIDERATION)
+//          - Currently uses localStorage (shared across all tabs)
+//          - Question: Should silencing a host affect all tabs or just current tab?
+//          - Option A: Keep current behavior (all tabs share silence state)
+//          - Option B: Use sessionStorage for per-tab silencing
+//          - Option C: User preference to choose behavior
+//          - Consider: Multiple DBAs monitoring same hosts in different contexts
+//          - Consider: "Silenced by" tracking - who/which session silenced the host
 // @todo 20 Add Redis support for monitoring (see subtasks 20-20 through 20-40)
 // @todo 20-20 Redis Phase 2 - Slowlog and Client Details
 //          - SLOWLOG GET display (data gathered but not shown in UI)
