@@ -905,11 +905,17 @@ document.addEventListener('DOMContentLoaded', function() {
             <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(120)">2h</button>
             <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(240)">4h</button>
             <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(480)">8h</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(1440)">1d</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(2880)">2d</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(7200)">5d</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(10080)">7d</button>
+            <button type="button" class="btn btn-sm btn-default" onclick="setSilenceDuration(20160)">14d</button>
+            <button type="button" class="btn btn-sm btn-warning" id="silenceInfiniteBtn" onclick="setSilenceDuration(0)" style="display:none;">∞</button>
           </p>
           <p>
             <label>Duration (minutes):</label><br/>
-            <input type="number" id="silenceDuration" name="duration" min="1" max="10080" value="60" class="input-medium" />
-            <span class="form-hint">(max 7 days)</span>
+            <input type="number" id="silenceDuration" name="duration" min="0" max="20160" value="60" class="input-medium" />
+            <span class="form-hint">(max 14 days, 0 = infinite with auto-unmute)</span>
           </p>
           <p>
             <label>Description (optional):</label><br/>

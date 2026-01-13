@@ -2150,6 +2150,8 @@ $( document ).ready( function() {
 function toggleAutoRecoverOptions() {
     var checked = $( '#silenceAutoRecover' ).prop( 'checked' ) ;
     $( '#silenceAutoRecoverOptions' ).css( 'display', checked ? 'block' : 'none' ) ;
+    // Show infinite button only when auto-recover is enabled (safety net)
+    $( '#silenceInfiniteBtn' ).css( 'display', checked ? 'inline-block' : 'none' ) ;
 }
 
 /**
@@ -2203,6 +2205,9 @@ function openSilenceGroupModal() {
  */
 function setSilenceDuration( minutes ) {
     $( '#silenceDuration' ).val( minutes ) ;
+    // Highlight the selected button
+    $( '#silenceForm .btn[onclick^="setSilenceDuration"]' ).removeClass( 'silence-duration-selected' ) ;
+    $( '#silenceForm .btn[onclick="setSilenceDuration(' + minutes + ')"]' ).addClass( 'silence-duration-selected' ) ;
 }
 
 /**
@@ -2226,21 +2231,30 @@ function submitSilence() {
         }
     }
 
-    if ( !duration || duration <= 0 ) {
+    var autoRecover = $( '#silenceAutoRecover' ).prop( 'checked' ) ;
+
+    // Allow duration=0 (infinite) only with auto-recover enabled
+    if ( duration === 0 && !autoRecover ) {
+        alert( 'Infinite duration requires auto-unmute to be enabled.' ) ;
+        return ;
+    }
+    if ( isNaN( duration ) || duration < 0 ) {
         alert( 'Please enter a valid duration.' ) ;
         return ;
     }
 
     if ( scope === 'local' ) {
         // Browser-local silencing (no server call)
-        var autoRecover = $( '#silenceAutoRecover' ).prop( 'checked' ) ;
         var recoverLevel = $( '#silenceRecoverLevel' ).val() ;
         var recoverCount = $( '#silenceRecoverCount' ).val() ;
 
-        // Cap auto-recover silences at 72 hours (4320 minutes) as safety net
-        var maxAutoRecoverMins = 4320 ;
-        if ( autoRecover && ( duration > maxAutoRecoverMins || duration <= 0 ) ) {
-            duration = maxAutoRecoverMins ;
+        // Cap silences at 14 days (20160 minutes) unless infinite (0) with auto-recover
+        var maxMins = 20160 ;
+        if ( duration === 0 && autoRecover ) {
+            // Infinite duration allowed only with auto-recover enabled
+            duration = 0 ;
+        } else if ( duration <= 0 || duration > maxMins ) {
+            duration = maxMins ;
         }
 
         if ( targetType === 'host' ) {
@@ -2249,9 +2263,14 @@ function submitSilence() {
             silenceGroupLocally( targetId, targetName, duration, autoRecover, recoverLevel, recoverCount ) ;
         }
 
-        var msg = 'Silenced ' + targetType + ' "' + targetName + '" for ' + duration + ' minutes (this browser only).' ;
-        if ( autoRecover ) {
-            msg += '\n\nWill auto-unmute when service recovers (max 72 hours).' ;
+        var msg ;
+        if ( duration === 0 ) {
+            msg = 'Silenced ' + targetType + ' "' + targetName + '" until the service recovers (this browser only).' ;
+        } else {
+            msg = 'Silenced ' + targetType + ' "' + targetName + '" for ' + duration + ' minutes (this browser only).' ;
+            if ( autoRecover ) {
+                msg += '\n\nWill auto-unmute when service recovers.' ;
+            }
         }
         alert( msg ) ;
         $( '#silenceModal' ).modal( 'hide' ) ;

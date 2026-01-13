@@ -686,6 +686,20 @@ td.blocking {
     border-color: #2e6da4;
 }
 
+/* Selected duration button */
+#silenceModal .silence-duration-selected {
+    background-color: #337ab7 !important;
+    color: white !important;
+    border-color: #2e6da4 !important;
+    box-shadow: 0 0 0 0.125rem rgba(51, 122, 183, 0.5);
+}
+
+#silenceModal .btn-warning.silence-duration-selected {
+    background-color: #ec971f !important;
+    border-color: #d58512 !important;
+    box-shadow: 0 0 0 0.125rem rgba(236, 151, 31, 0.5);
+}
+
 /* Local Silences Panel */
 .local-silences-container {
     display: none;
