@@ -124,11 +124,11 @@ class HostGroupModel extends ModelBase
     }
 
     /**
-     * @param string $fullDescription
+     * @param string $shortDescription
      */
-    public function setFullDescription($fullDescription)
+    public function setShortDescription($shortDescription)
     {
-        $this->fullDescription = $fullDescription ;
+        $this->shortDescription = $shortDescription ;
     }
 
     /**
