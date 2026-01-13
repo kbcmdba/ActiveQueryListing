@@ -29,6 +29,12 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
+// @todo 10 Add query hash to Blocking table for deduplication
+//          - Add query_hash column (MD5/SHA1 of normalized query text)
+//          - Create unique key on query_hash
+//          - Use INSERT...ON DUPLICATE KEY UPDATE pattern
+//          - When duplicate hash exists, update timestamp and counts rather than inserting new row
+//          - Reduces table bloat from repeated blocking patterns
 // @todo 20 Add Redis support for monitoring (see subtasks 20-10 through 20-40)
 // @todo 20-10 Redis MVP - Connection, Config, Basic Metrics (COMPLETED)
 //          - [x] phpredis connection in handleRedisHost()

@@ -160,6 +160,19 @@ for a lock held by another query, you'll see:
 
 Hover over the indicator to see details including the blocking thread ID and query.
 
+### Known MySQL Quirks
+
+MySQL has bugs around reporting blocking/blocked state. Sometimes it will report a
+thread as blocked but show no associated query text (empty or NULL info column).
+This can happen when:
+
+- The blocking query just completed but the blocked thread hasn't updated yet
+- Internal lock manager state is temporarily inconsistent
+- The query text has been truncated or is unavailable
+
+AQL displays what MySQL reports. If you see a "BLOCKED" indicator with no query,
+the thread genuinely was waiting for a lock at the moment of sampling.
+
 ### Blocking Cache (Optional Redis Setup)
 
 AQL caches blocking relationships for 60 seconds so you can see "who was blocking"
@@ -220,7 +233,7 @@ This helps identify repeat offender queries that frequently cause lock contentio
 
 **Features:**
 - Queries are normalized (strings/numbers replaced with placeholders) to avoid storing sensitive data
-- Deduplication via query hash - each unique query pattern stored once per host
+- Deduplication via query hash - each unique query pattern stored once per host to reduce table bloat and allow statistics to be aggregated
 - Tracks how many times a query was seen blocking and total blocked queries
 - Auto-purges entries older than 90 days (runs on ~1% of requests)
 
