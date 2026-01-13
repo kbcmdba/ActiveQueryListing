@@ -243,6 +243,7 @@ pre, code {
 .legendLevel4Alt {
   background-color: #cc7000 !important ;
   color: black !important ;
+  font-size: 1.75rem ;
 }
 
 .error-alt,
