@@ -11,6 +11,7 @@ aql_config.xml
 bob.php
 build/
 composer.lock
+composer.phar
 config.xml
 deploy/appspec.yml
 vendor/
