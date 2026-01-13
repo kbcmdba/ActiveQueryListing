@@ -30,7 +30,6 @@ require( 'vendor/autoload.php' ) ;
 require( 'utility.php' ) ;
 
 use com\kbcmdba\aql\Libs\Config ;
-use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\Exceptions\DaoException;
 use com\kbcmdba\aql\Libs\WebPage ;
 
@@ -75,9 +74,20 @@ $body .= "<p><em>Safe for new installs and existing installs - all operations ar
 $results = [] ;
 $errors = [] ;
 
+// Get database name from config first (before connecting)
+$config = new Config() ;
+$dbName = $config->getDbName() ;
+$dbHost = $config->getDbHost() ;
+$dbPort = $config->getDbPort() ;
+$dbUser = $config->getDbUser() ;
+$dbPass = $config->getDbPass() ;
+
+// Connect WITHOUT specifying database - allows us to create it if needed
 try {
-    $dbc = new DBConnection() ;
-    $dbh = $dbc->getConnection() ;
+    $dbh = @new \mysqli( $dbHost, $dbUser, $dbPass, '', $dbPort ) ;
+    if ( $dbh->connect_error ) {
+        throw new DaoException( 'Connection failed: ' . $dbh->connect_error ) ;
+    }
     $dbh->set_charset( 'utf8' ) ;
 } catch ( DaoException $e ) {
     $body .= "<p class='error'>Database connection failed: " . htmlspecialchars( $e->getMessage() ) . "</p>\n" ;
@@ -85,10 +95,6 @@ try {
     $page->displayPage() ;
     exit ;
 }
-
-// Get database name from config
-$config = new Config() ;
-$dbName = $config->getDbName() ;
 
 // ///////////////////////////////////////////////////////////////////////////
 // Database and Base Table Creation (for new installs)

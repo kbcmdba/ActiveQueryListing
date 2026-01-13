@@ -581,6 +581,35 @@ function isFeatureEnabled( $param, $configValues ) {
             opacity: 1;
         }
     </style>
+<script>
+function copyToClipboard(btn) {
+    const codeBlock = btn.parentElement.querySelector('pre');
+    const text = codeBlock.textContent;
+
+    navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+        }, 2000);
+    }).catch(function(err) {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+}
+</script>
 </head>
 <body>
 <div class="container">
@@ -1696,34 +1725,5 @@ redis-cli -h HOST -p PORT -a PASSWORD PING</pre>
 
 </div>
 
-<script>
-function copyToClipboard(btn) {
-    const codeBlock = btn.parentElement.querySelector('pre');
-    const text = codeBlock.textContent;
-
-    navigator.clipboard.writeText(text).then(function() {
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(function() {
-            btn.textContent = 'Copy';
-            btn.classList.remove('copied');
-        }, 2000);
-    }).catch(function(err) {
-        // Fallback for older browsers
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(function() {
-            btn.textContent = 'Copy';
-            btn.classList.remove('copied');
-        }, 2000);
-    });
-}
-</script>
 </body>
 </html>
