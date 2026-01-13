@@ -92,6 +92,10 @@
 
         // Speak after a delay to let the alert sound finish
         setTimeout(() => {
+            if (checkMuted()) {
+                log('speakAlert: muted before speech fired');
+                return;
+            }
             speechSynthesis.speak(utterance);
         }, 2000);
     };
