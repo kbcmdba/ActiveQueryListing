@@ -78,11 +78,7 @@ function processHost(&$js, $hostname, $baseUrl, $alertCritSecs, $alertWarnSecs, 
     $js['Blocks'] ++ ;
     $js['WhenBlock'] .= "$prefix\$.getJSON( \"$baseUrl?hostname=$hostname&alertCritSecs=$alertCritSecs&alertWarnSecs=$alertWarnSecs&alertInfoSecs=$alertInfoSecs&alertLowSecs=$alertLowSecs$debug$debugLocks\")" ;
     $js['ThenParamBlock'] .= "$prefix res$blockNum" ;
-    if( count(Tools::params('hosts')) === 1 ) {
-        $js['ThenCodeBlock'] = "myCallback( $blockNum, res$blockNum )" ;
-    } else {
-        $js['ThenCodeBlock'] .= "\n            \$.each(res$blockNum, myCallback) ;" ;
-    }
+    $js['ThenCodeBlock'] .= "\n            myCallback( $blockNum, res$blockNum ) ;" ;
 }
 
 /**

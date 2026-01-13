@@ -1673,6 +1673,80 @@ redis-cli -h HOST -p PORT -a PASSWORD PING</pre>
 
 <?php
 // ============================================================================
+// SECTION 5b: SELinux Checks (Fedora/RHEL/CentOS only)
+// ============================================================================
+$selinuxEnabled = false ;
+$selinuxBooleans = [] ;
+
+// Check if SELinux is enabled
+if ( function_exists( 'shell_exec' ) ) {
+    $selinuxStatus = @shell_exec( 'getenforce 2>/dev/null' ) ;
+    if ( $selinuxStatus !== null && trim( $selinuxStatus ) === 'Enforcing' ) {
+        $selinuxEnabled = true ;
+
+        // Get relevant SELinux booleans
+        $booleanOutput = @shell_exec( 'getsebool httpd_can_network_connect_db httpd_can_network_redis 2>/dev/null' ) ;
+        if ( $booleanOutput ) {
+            foreach ( explode( "\n", trim( $booleanOutput ) ) as $line ) {
+                if ( preg_match( '/^(\S+)\s+-->\s+(\S+)$/', $line, $matches ) ) {
+                    $selinuxBooleans[ $matches[1] ] = ( $matches[2] === 'on' ) ;
+                }
+            }
+        }
+    }
+}
+
+if ( $selinuxEnabled ) :
+?>
+    <div class="test-section">
+        <h3>SELinux Configuration</h3>
+        <p>SELinux is <strong>Enforcing</strong> - checking required booleans:</p>
+        <table>
+            <thead><tr><th>Boolean</th><th>Status</th><th>Purpose</th></tr></thead>
+            <tbody>
+<?php
+    // Check httpd_can_network_connect_db (always required)
+    $dbBoolOk = isset( $selinuxBooleans['httpd_can_network_connect_db'] ) && $selinuxBooleans['httpd_can_network_connect_db'] ;
+    if ( !$dbBoolOk ) $criticalErrors++ ;
+?>
+                <tr>
+                    <td><code>httpd_can_network_connect_db</code></td>
+                    <td><?php echo $dbBoolOk ? $passIcon . ' Enabled' : $failIcon . ' Disabled' ; ?></td>
+                    <td>Allow Apache/PHP to connect to databases</td>
+                </tr>
+<?php
+    // Check httpd_can_network_redis (only if Redis is enabled)
+    $redisEnabled = isFeatureEnabled( 'redisEnabled', $configValues ) ;
+    if ( $redisEnabled ) :
+        $redisBoolOk = isset( $selinuxBooleans['httpd_can_network_redis'] ) && $selinuxBooleans['httpd_can_network_redis'] ;
+        if ( !$redisBoolOk ) $warnings++ ;
+?>
+                <tr>
+                    <td><code>httpd_can_network_redis</code></td>
+                    <td><?php echo $redisBoolOk ? $passIcon . ' Enabled' : $warnIcon . ' Disabled' ; ?></td>
+                    <td>Allow Apache/PHP to connect to Redis</td>
+                </tr>
+<?php endif ; ?>
+            </tbody>
+        </table>
+<?php if ( !$dbBoolOk || ( $redisEnabled && !$redisBoolOk ) ) : ?>
+        <div class="fix-section">
+            <h3>Fix SELinux Permissions</h3>
+            <p>Run these commands as root to enable required SELinux booleans:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <pre><?php
+if ( !$dbBoolOk ) echo "sudo setsebool -P httpd_can_network_connect_db 1\n" ;
+if ( $redisEnabled && !$redisBoolOk ) echo "sudo setsebool -P httpd_can_network_redis 1\n" ;
+?></pre>
+            </div>
+        </div>
+<?php endif ; ?>
+    </div>
+<?php endif ; ?>
+
+<?php
+// ============================================================================
 // SECTION 6: Summary and Next Steps
 // ============================================================================
 ?>

@@ -1071,7 +1071,7 @@ HTML
 <a id="versionSummary"></a>
 <table border=1 cellspacing=0 cellpadding=2 id="versionSummaryTable" class="tablesorter aql-listing">
 <thead>
-  <tr><th colspan="2">Version Summary</th></tr>
+  <tr><th colspan="2">Database Version Summary</th></tr>
   <tr><th>Version</th><th>Host Count</th></tr>
 </thead>
 <tbody id="versionsummarytbodyid">

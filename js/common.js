@@ -864,6 +864,10 @@ function updateVersionSummary() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function myCallback( i, item ) {
+    // Skip null/non-object items (can happen when $.each iterates object properties)
+    if ( item === null || typeof item !== 'object' || Array.isArray( item ) ) {
+        return ;
+    }
     const showChars       = 40;
     var itemNo            = 0;
     var level             = -1;
