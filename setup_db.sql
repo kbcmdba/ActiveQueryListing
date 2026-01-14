@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS host (
      , hostname          VARCHAR( 64 ) NOT NULL
      , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
      , description       TEXT NULL DEFAULT NULL
-     , db_type           ENUM('MySQL', 'MariaDB', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB') NOT NULL DEFAULT 'MySQL'
+     , db_type           ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'
      , db_version        VARCHAR( 30 ) NOT NULL DEFAULT ''
      , should_monitor    BOOLEAN NOT NULL DEFAULT 1
      , should_backup     BOOLEAN NOT NULL DEFAULT 1

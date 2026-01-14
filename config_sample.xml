@@ -15,9 +15,9 @@
     <!-- Set jiraEnabled to true and configure your Jira instance -->
     <param name="jiraEnabled">false</param>
     <!-- Database Type Monitoring - enable each type you want to monitor -->
-    <!-- Each type can have optional username/password: {type}Username, {type}Password -->
-    <param name="mysqlEnabled">false</param>
-    <param name="mariadbEnabled">false</param>
+    <!-- mysqlEnabled is REQUIRED - AQL's backend database is MySQL -->
+    <!-- Other types can have optional username/password: {type}Username, {type}Password -->
+    <param name="mysqlEnabled">true</param>
     <param name="innodbclusterEnabled">false</param>
     <param name="redisEnabled">false</param>
     <param name="mssqlEnabled">false</param>

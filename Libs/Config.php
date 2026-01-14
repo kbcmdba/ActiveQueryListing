@@ -167,7 +167,8 @@ class Config
             'redisPassword' => '',
             'redisConnectTimeout' => 2,
             'redisDatabase' => 0,
-            'enableSpeechAlerts' => 'true'
+            'enableSpeechAlerts' => 'true',
+            'mysqlEnabled' => 'true'
         ] ;
         $paramList = [
             'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],
@@ -206,9 +207,11 @@ class Config
             'redisPassword'            => [ 'isRequired' => 0, 'value' => 0 ],
             'redisConnectTimeout'      => [ 'isRequired' => 0, 'value' => 0 ],
             'redisDatabase'            => [ 'isRequired' => 0, 'value' => 0 ],
-            'enableSpeechAlerts'       => [ 'isRequired' => 0, 'value' => 0 ]
-            // Note: DB Type settings ({type}Enabled, {type}Username, {type}Password)
-            // are validated dynamically via isDbTypeConfigParam() to avoid hardcoding
+            'enableSpeechAlerts'       => [ 'isRequired' => 0, 'value' => 0 ],
+            // mysqlEnabled is required - AQL's backend database is MySQL
+            'mysqlEnabled'             => [ 'isRequired' => 1, 'value' => 0 ]
+            // Note: Other DB Type settings ({type}Enabled, {type}Username, {type}Password)
+            // are validated dynamically via pattern matching to avoid hardcoding
         ] ;
 
         // Regex patterns for dynamic DB type config params (avoids hardcoding each type)
@@ -219,31 +222,34 @@ class Config
         $seenDbTypeParams = [] ; // Track DB type params separately
         foreach ( $xml as $v ) {
             $key = (string) $v[ 'name' ] ;
-            // Check if this is a dynamic DB type param (e.g., mysqlEnabled, rdsUsername)
-            $isDbTypeParam = preg_match( $dbTypeParamPattern, $key ) ;
 
-            if ( $isDbTypeParam ) {
-                // DB type params are validated by pattern, track for duplicates
+            // Check $paramList first (for explicitly defined params like mysqlEnabled)
+            if ( isset( $paramList[ $key ] ) ) {
+                if ( $paramList[ $key ][ 'value' ] != 0 ) {
+                    $errors .= "Multiply set parameter: " . $key . "\n" ;
+                } else {
+                    $paramList[ $key ][ 'value' ] ++ ;
+                    switch ( $key ) {
+                        case 'minRefresh' :
+                        case 'defaultRefresh' :
+                        case 'redisConnectTimeout' :
+                        case 'redisDatabase' :
+                            $cfgValues[$key] = (int) $v ;
+                            break ;
+                        default :
+                            $cfgValues[$key] = (string) $v ;
+                    }
+                }
+            } elseif ( preg_match( $dbTypeParamPattern, $key ) ) {
+                // Dynamic DB type params validated by pattern, track for duplicates
                 if ( isset( $seenDbTypeParams[ $key ] ) ) {
                     $errors .= "Multiply set DB type parameter: " . $key . "\n" ;
                 } else {
                     $seenDbTypeParams[ $key ] = true ;
                     $cfgValues[ $key ] = (string) $v ;
                 }
-            } elseif ( ( ! isset($paramList[ $key ] ) ) || ( $paramList[ $key ][ 'value' ] != 0 ) ) {
-                $errors .= "Unset or multiply set name: " . $key . "\n" ;
             } else {
-                $paramList[ $key ][ 'value' ] ++ ;
-                switch ( $key ) {
-                    case 'minRefresh' :
-                    case 'defaultRefresh' :
-                    case 'redisConnectTimeout' :
-                    case 'redisDatabase' :
-                        $cfgValues[$key] = (int) $v ;
-                        break ;
-                    default :
-                        $cfgValues[$key] = (string) $v ;
-                }
+                $errors .= "Unknown parameter: " . $key . "\n" ;
             }
         }
         foreach ($paramList as $key => $x) {

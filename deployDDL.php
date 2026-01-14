@@ -133,7 +133,7 @@ if ( ! tableExists( $dbh, 'host' ) ) {
          , hostname          VARCHAR( 64 ) NOT NULL
          , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
          , description       TEXT NULL DEFAULT NULL
-         , db_type           ENUM('MySQL', 'MariaDB', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'
+         , db_type           ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'
          , db_version        VARCHAR( 30 ) NOT NULL DEFAULT ''
          , should_monitor    BOOLEAN NOT NULL DEFAULT 1
          , should_backup     BOOLEAN NOT NULL DEFAULT 1
@@ -523,6 +523,45 @@ if ( $needsEnumUpdate && tableExists( $dbh, 'host' ) ) {
     }
 } else if ( tableExists( $dbh, 'host' ) ) {
     $body .= "<tr><td>db_type ENUM</td><td>OK</td><td>-</td></tr>\n" ;
+}
+
+// ---------------------------------------------------------------------------
+// Migration 004: Combine MariaDB into MySQL (same monitoring code path)
+// ---------------------------------------------------------------------------
+
+$needsMariaDbMigration = false ;
+$enumResult = $dbh->query( $currentEnumSql ) ;
+if ( $enumResult && $row = $enumResult->fetch_row() ) {
+    if ( strpos( $row[0], 'MariaDB' ) !== false ) {
+        $needsMariaDbMigration = true ;
+    }
+}
+
+if ( $needsMariaDbMigration && tableExists( $dbh, 'host' ) ) {
+    // First, convert any MariaDB hosts to MySQL
+    $sql = "UPDATE host SET db_type = 'MySQL' WHERE db_type = 'MariaDB'" ;
+    $updateResult = $dbh->query( $sql ) ;
+    $rowsAffected = $dbh->affected_rows ;
+
+    if ( $updateResult ) {
+        if ( $rowsAffected > 0 ) {
+            $body .= "<tr><td>MariaDB hosts</td><td>UPDATED</td><td>Converted $rowsAffected host(s) to MySQL type</td></tr>\n" ;
+            $results[] = "Converted $rowsAffected MariaDB host(s) to MySQL" ;
+        }
+
+        // Now remove MariaDB from the ENUM
+        $sql = "ALTER TABLE host MODIFY COLUMN db_type ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'" ;
+        if ( $dbh->query( $sql ) ) {
+            $body .= "<tr><td>db_type ENUM</td><td>UPDATED</td><td>Removed MariaDB (now combined with MySQL)</td></tr>\n" ;
+            $results[] = "Combined MariaDB into MySQL type" ;
+        } else {
+            $body .= "<tr><td>db_type ENUM</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+            $errors[] = "Failed to update db_type ENUM: " . $dbh->error ;
+        }
+    } else {
+        $body .= "<tr><td>MariaDB hosts</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to convert MariaDB hosts: " . $dbh->error ;
+    }
 }
 
 $body .= "</tbody>\n</table>\n" ;
