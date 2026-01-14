@@ -1558,10 +1558,10 @@ if ( $redisEnabled && extension_loaded( 'redis' ) ) :
     try {
         $redisDbh = @new \mysqli( $dbHost, $dbUser, $dbPass, $dbName, $dbPort ) ;
         if ( !$redisDbh->connect_error ) {
-            $result = $redisDbh->query( "SELECT hostname, port FROM host WHERE db_type = 'Redis' AND decommissioned = 0 ORDER BY hostname, port" ) ;
+            $result = $redisDbh->query( "SELECT hostname, port_number FROM host WHERE db_type = 'Redis' AND decommissioned = 0 ORDER BY hostname, port_number" ) ;
             if ( $result ) {
                 while ( $row = $result->fetch_assoc() ) {
-                    $redisHosts[] = [ 'host' => $row['hostname'], 'port' => (int) $row['port'] ] ;
+                    $redisHosts[] = [ 'host' => $row['hostname'], 'port' => (int) $row['port_number'] ] ;
                 }
                 $result->free() ;
             }
