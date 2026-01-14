@@ -145,6 +145,19 @@ Migrations in `deployDDL.php` follow this pattern:
 - Local silencing uses `localStorage` (shared across tabs)
 - Speech synthesis needs to re-check `checkMuted()` before firing (2-second delay)
 - **jQuery $.when() gotcha**: With 2+ promises, results are wrapped as `[data, textStatus, jqXHR]` arrays. With 1 promise, data is passed directly. Handle both cases!
+- **Callback dispatch**: When adding new handler functions (e.g., `redisCallback`), must dispatch to them from `myCallback()` - they won't be called automatically
+- **Variable scope in callbacks**: Define variables like `hasIssues` before using them - undefined variables cause silent JS failures
+
+### Redis/phpredis Patterns
+- `$redis->info()` returns basic sections but NOT commandstats - use `$redis->info('commandstats')` separately
+- CLIENT LIST returns array of client objects with keys: id, addr, name, age, idle, db, cmd, flags
+- Version strings are just numbers (e.g., "7.2.4") - no "Redis" prefix, unlike MariaDB which includes "MariaDB" in version
+
+### Version String Patterns
+- MySQL: Returns plain version like "8.4.6" (no type indicator)
+- MariaDB: Returns version with suffix like "10.5.18-MariaDB" (includes type)
+- Redis: Returns plain version like "7.2.4" (no type indicator)
+- Use regex `/[a-zA-Z]/` to detect if version already contains a type indicator before prefixing
 
 ### User Preferences
 - Remove completed todos from `todo.php` (don't keep them marked done)

@@ -37,12 +37,7 @@ namespace com\kbcmdba\aql ;
 //          - Option C: User preference to choose behavior
 //          - Consider: Multiple DBAs monitoring same hosts in different contexts
 //          - Consider: "Silenced by" tracking - who/which session silenced the host
-// @todo 20 Add Redis support for monitoring (see subtasks 20-20 through 20-40)
-// @todo 20-20 Redis Phase 2 - Slowlog and Client Details
-//          - SLOWLOG GET display (data gathered but not shown in UI)
-//          - CLIENT LIST: idle time, current command, connection age
-//          - Per-command stats from INFO commandstats section
-//          - Persistence status: last RDB save, AOF rewrite status
+// @todo 20 Add Redis support for monitoring (see subtasks 20-30 through 20-40)
 // @todo 20-30 Redis Phase 3 - Advanced Diagnostics
 //          - LATENCY DOCTOR/LATEST/HISTORY (Redis 2.8.13+)
 //          - MEMORY DOCTOR/STATS (Redis 4.0+)
@@ -53,10 +48,9 @@ namespace com\kbcmdba\aql ;
 //          - Redis Cluster topology awareness
 //          - Redis Sentinel monitoring
 // @todo 23 Refactor AJAXgetaql.php to use DBType handler dispatch pattern
-//          - Create handleMySQLHost() function (extract existing MySQL code)
-//          - Use dispatch array: $handlers[$dbType]($hostname, $hostId, $hostGroups, $maintenanceInfo, $config)
-//          - Enables cleaner addition of future DBTypes (MongoDB, MS-SQL, etc.)
-//          - handleRedisHost() already implemented as reference pattern
+//          - handleMySQLHost() and handleRedisHost() now implemented
+//          - Future: Use dispatch array: $handlers[$dbType]($hostname, $hostId, ...)
+//          - Future: Split into separate files (AJAXgetmysqlDB.php, AJAXgetredisDB.php)
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
