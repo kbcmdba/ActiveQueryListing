@@ -29,10 +29,6 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
-// @todo 10 Add "Reset Mute" functionality for adjusting mute durations
-//          - Global mute: Button to adjust in-browser mute duration without unmuting first
-//          - Local silences: Button on each silenced host/group to reset duration (starting "now")
-//          - Useful when user needs more/less time than originally selected
 // @todo 15 Per-tab vs per-browser silencing behavior (UNDER CONSIDERATION)
 //          - Currently uses localStorage (shared across all tabs)
 //          - Question: Should silencing a host affect all tabs or just current tab?

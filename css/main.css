@@ -769,6 +769,21 @@ td.blocking {
     margin-left: 1.25rem;
 }
 
+.local-silence-reset {
+    color: var(--info-accent);
+    text-decoration: none;
+    font-weight: bold;
+    padding: 0 0.75rem;
+}
+
+.local-silence-reset:hover {
+    color: var(--text-color);
+}
+
+.global-mute-reset {
+    margin-right: 0.5rem;
+}
+
 .local-silence-remove {
     color: #f88;
     text-decoration: none;

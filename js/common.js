@@ -864,6 +864,11 @@ function updateVersionSummary() {
 ///////////////////////////////////////////////////////////////////////////////
 
 function myCallback( i, item ) {
+    // When $.when() has multiple promises, each result is wrapped as [data, textStatus, jqXHR]
+    // Extract the actual data if item is an array
+    if ( Array.isArray( item ) ) {
+        item = item[ 0 ] ;
+    }
     // Skip null/non-object items (can happen when $.each iterates object properties)
     if ( item === null || typeof item !== 'object' || Array.isArray( item ) ) {
         return ;
@@ -2107,6 +2112,8 @@ function updateLocalSilencesUI() {
               + '<span><span class="local-silence-name">' + displayName + '</span>'
               + autoBadge
               + '<span class="local-silence-expiry">(' + remaining + ')</span></span>'
+              + '<a href="#" onclick="openSilenceModal(\'host\', \'' + hostId + '\', \'' + displayName.replace(/'/g, "\\'") + '\'); return false;" '
+              + 'class="local-silence-reset" title="Reset duration">⟳</a>'
               + '<a href="#" onclick="removeLocalSilence(\'host\', \'' + hostId + '\'); return false;" '
               + 'class="local-silence-remove" title="Unmute">✕</a>'
               + '</div>' ;
@@ -2131,6 +2138,8 @@ function updateLocalSilencesUI() {
               + '<span><span class="local-silence-name">' + displayName + '</span>'
               + autoBadge
               + '<span class="local-silence-expiry">(' + remaining + ')</span></span>'
+              + '<a href="#" onclick="openSilenceModal(\'group\', \'' + groupId + '\', \'' + displayName.replace(/'/g, "\\'") + '\'); return false;" '
+              + 'class="local-silence-reset" title="Reset duration">⟳</a>'
               + '<a href="#" onclick="removeLocalSilence(\'group\', \'' + groupId + '\'); return false;" '
               + 'class="local-silence-remove" title="Unmute">✕</a>'
               + '</div>' ;

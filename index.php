@@ -732,6 +732,16 @@ function applyDateTimeMute() {
     if (dt) setMuteUntil(dt);
 }
 
+function resetMuteDuration() {
+    // Show mute controls to allow selecting a new duration
+    // Mute remains active until user selects new duration
+    const muteControls = document.getElementById('muteControls');
+    const unmuteBtnContainer = document.getElementById('unmuteBtnContainer');
+    muteControls.style.display = 'block';
+    unmuteBtnContainer.style.display = 'none';
+    // Status text will update when new duration is set
+}
+
 // Sync cookie with URL param on page load
 (function() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -796,6 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </nobr>
         </div>
         <div id="unmuteBtnContainer" style="display: none;">
+          <button onclick="resetMuteDuration(); return false;" class="global-mute-reset" title="Change mute duration without unmuting">⟳ Reset</button>
           <button onclick="clearMute(); return false;">Unmute Alerts</button>
         </div>
         <div id="localSilencesContainer" class="local-silences-container">
