@@ -167,7 +167,7 @@ $NWOverviewHeaderFooter = <<<HTML
 HTML;
 
 // Redis Overview table configuration
-$redisOverviewCols = 12 ;
+$redisOverviewCols = 14 ;
 $redisOverviewHeaderFooterCols = <<<HTML
 <tr class="mytr">
       <th>Server</th>
@@ -181,6 +181,8 @@ $redisOverviewHeaderFooterCols = <<<HTML
       <th>Evicted <a onclick="alert('Keys evicted due to maxmemory - indicates data loss!'); return false;">?</a></th>
       <th>Rejected <a onclick="alert('Connections rejected (maxclients exceeded)'); return false;">?</a></th>
       <th>Frag <a onclick="alert('Memory fragmentation ratio (used_memory_rss / used_memory). >1.5 is concerning.'); return false;">?</a></th>
+      <th>RDB <a onclick="alert('Time since last RDB save / pending changes'); return false;">?</a></th>
+      <th>AOF <a onclick="alert('AOF enabled status'); return false;">?</a></th>
       <th>Level</th>
     </tr>
 HTML;
@@ -219,6 +221,45 @@ $NWRedisSlowlogHeaderFooter = <<<HTML
       <th colspan="$redisSlowlogCols">Noteworthy Redis Slowlog</th>
     </tr>
     $redisSlowlogHeaderFooterCols
+HTML;
+
+// Redis Clients table configuration
+$redisClientsCols = 8 ;
+$redisClientsHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Client ID</th>
+      <th>Address</th>
+      <th>Name</th>
+      <th>Age <a onclick="alert('Connection lifetime'); return false;">?</a></th>
+      <th>Idle <a onclick="alert('Time since last command'); return false;">?</a></th>
+      <th>DB</th>
+      <th>Command <a onclick="alert('Last command executed'); return false;">?</a></th>
+    </tr>
+HTML;
+$fullRedisClientsHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisClientsCols">Redis Connected Clients</th>
+    </tr>
+    $redisClientsHeaderFooterCols
+HTML;
+
+// Redis Command Stats table configuration
+$redisCmdStatsCols = 5 ;
+$redisCmdStatsHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Command</th>
+      <th>Calls <a onclick="alert('Total number of calls'); return false;">?</a></th>
+      <th>Total μs <a onclick="alert('Total microseconds spent on this command'); return false;">?</a></th>
+      <th>Avg μs/call <a onclick="alert('Average microseconds per call'); return false;">?</a></th>
+    </tr>
+HTML;
+$fullRedisCmdStatsHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisCmdStatsCols">Redis Command Statistics (Top 10)</th>
+    </tr>
+    $redisCmdStatsHeaderFooterCols
 HTML;
 
 $debug = Tools::param('debug') === "1" ;
@@ -365,12 +406,16 @@ try {
     \$("#nwredisslowlogtbodyid").html( '<tr id="nwRedisSlowlogfigment"><td colspan="$redisSlowlogCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullredisoverviewtbodyid").html( '<tr id="fullRedisOverviewfigment"><td colspan="$redisOverviewCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullredisslowlogtbodyid").html( '<tr id="fullRedisSlowlogfigment"><td colspan="$redisSlowlogCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullredisclientstbodyid").html( '<tr id="fullRedisClientsfigment"><td colspan="$redisClientsCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullrediscmdstatstbodyid").html( '<tr id="fullRedisCmdStatsfigment"><td colspan="$redisCmdStatsCols"><center>Data loading</center></td></tr>' ) ;
 JSREDIS;
         $redisFigmentRemoveJs = <<<JSREDIS
             \$("#nwRedisOverviewfigment").remove() ;
             \$("#nwRedisSlowlogfigment").remove() ;
             \$("#fullRedisOverviewfigment").remove() ;
             \$("#fullRedisSlowlogfigment").remove() ;
+            \$("#fullRedisClientsfigment").remove() ;
+            \$("#fullRedisCmdStatsfigment").remove() ;
 JSREDIS;
         $redisTableSortJs = <<<JSREDIS
     // Redis tables
@@ -378,6 +423,8 @@ JSREDIS;
     initTableSortWithUrl('#nwRedisSlowlogTable', 'nwredisslowlog', [[2, 1]]);      // Duration desc
     initTableSortWithUrl('#fullRedisOverviewTable', 'fullredisoverview', [[4, 1]]);
     initTableSortWithUrl('#fullRedisSlowlogTable', 'fullredisslowlog', [[2, 1]]);
+    initTableSortWithUrl('#fullRedisClientsTable', 'fullredisclients', [[5, 1]]);   // Idle desc
+    initTableSortWithUrl('#fullRedisCmdStatsTable', 'fullrediscmdstats', [[2, 1]]); // Calls desc
 JSREDIS;
     }
 
@@ -463,6 +510,8 @@ function initTableSorting() {
     initTableSortWithUrl('#fullSlaveTable', 'fullslave', [[3, 1]]);    // Seconds Behind desc
     initTableSortWithUrl('#fullOverviewTable', 'fulloverview', [[2, 1]]); // Longest Running desc
 $redisTableSortJs
+    // Summary tables
+    initTableSortWithUrl('#versionSummaryTable', 'versionsummary', [[0, 0]]);  // Version asc
     refreshLog('Table sorting initialized');
 }
 
@@ -1074,6 +1123,8 @@ HTML
 <h2>Full Redis Data</h2>
 {$cb(xTable( 'full', 'RedisOverview', 'RedisOverview', $fullRedisOverviewHeaderFooter, 'redisoverview', $redisOverviewCols ))}
 {$cb(xTable( 'full', 'RedisSlowlog', 'RedisSlowlog', $fullRedisSlowlogHeaderFooter, 'redisslowlog', $redisSlowlogCols ))}
+{$cb(xTable( 'full', 'RedisClients', 'RedisClients', $fullRedisClientsHeaderFooter, 'redisclients', $redisClientsCols ))}
+{$cb(xTable( 'full', 'RedisCmdStats', 'RedisCmdStats', $fullRedisCmdStatsHeaderFooter, 'rediscmdstats', $redisCmdStatsCols ))}
 HTML
         ) ;
     }

@@ -369,8 +369,16 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         'role'               => '',
         'replLag'            => null,
         'level'              => 0,
+        // Persistence status
+        'rdbLastSaveTime'    => null,
+        'rdbLastSaveAgo'     => null,
+        'rdbChangesPending'  => 0,
+        'aofEnabled'         => false,
+        'aofLastRewriteSecs' => null,
     ] ;
     $slowlogData = [] ;
+    $clientData = [] ;
+    $commandStats = [] ;
 
     try {
         // Parse hostname and port
@@ -461,6 +469,19 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             $redisOverviewData['masterLinkStatus'] = $infoRaw['master_link_status'] ?? 'unknown' ;
         }
 
+        // Parse persistence status from INFO
+        $rdbLastSave = (int) ( $infoRaw['rdb_last_save_time'] ?? 0 ) ;
+        if ( $rdbLastSave > 0 ) {
+            $redisOverviewData['rdbLastSaveTime'] = date( 'Y-m-d H:i:s', $rdbLastSave ) ;
+            $redisOverviewData['rdbLastSaveAgo'] = time() - $rdbLastSave ;
+        }
+        $redisOverviewData['rdbChangesPending'] = (int) ( $infoRaw['rdb_changes_since_last_save'] ?? 0 ) ;
+        $redisOverviewData['aofEnabled'] = ( ( $infoRaw['aof_enabled'] ?? '0' ) === '1' ) ;
+        if ( $redisOverviewData['aofEnabled'] ) {
+            $aofRewrite = (int) ( $infoRaw['aof_last_rewrite_time_sec'] ?? -1 ) ;
+            $redisOverviewData['aofLastRewriteSecs'] = ( $aofRewrite >= 0 ) ? $aofRewrite : null ;
+        }
+
         // Get max clients from CONFIG
         try {
             $maxClients = $redis->config( 'GET', 'maxclients' ) ;
@@ -468,6 +489,40 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         } catch ( \Exception $e ) {
             $redisOverviewData['maxClients'] = 10000 ; // Default
         }
+
+        // Parse commandstats from INFO commandstats section (not included in default INFO)
+        try {
+            $cmdStatsRaw = $redis->info( 'commandstats' ) ;
+            if ( is_array( $cmdStatsRaw ) ) {
+                foreach ( $cmdStatsRaw as $key => $value ) {
+                    if ( strpos( $key, 'cmdstat_' ) === 0 ) {
+                        $cmdName = substr( $key, 8 ) ; // Remove 'cmdstat_' prefix
+                        // Parse value string: "calls=N,usec=N,usec_per_call=N.NN,..."
+                        $stats = [] ;
+                        foreach ( explode( ',', $value ) as $part ) {
+                            $kv = explode( '=', $part, 2 ) ;
+                            if ( count( $kv ) === 2 ) {
+                                $stats[ $kv[0] ] = is_numeric( $kv[1] ) ? (float) $kv[1] : $kv[1] ;
+                            }
+                        }
+                        if ( !empty( $stats ) ) {
+                            $commandStats[] = [
+                                'command'     => $cmdName,
+                                'calls'       => (int) ( $stats['calls'] ?? 0 ),
+                                'usec'        => (int) ( $stats['usec'] ?? 0 ),
+                                'usecPerCall' => (float) ( $stats['usec_per_call'] ?? 0 ),
+                            ] ;
+                        }
+                    }
+                }
+            }
+        } catch ( \Exception $e ) {
+            // commandstats may not be available - log for verifyConfiguration.php to catch
+            error_log( "AQL Redis commandstats failed for $hostname: " . $e->getMessage() ) ;
+        }
+        // Sort by calls descending, keep top 10
+        usort( $commandStats, function( $a, $b ) { return $b['calls'] - $a['calls'] ; } ) ;
+        $commandStats = array_slice( $commandStats, 0, 10 ) ;
 
         // Calculate alert level based on metrics
         $level = 0 ;
@@ -550,6 +605,33 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             // SLOWLOG may not be available - continue without it
         }
 
+        // Get CLIENT LIST for connection details
+        try {
+            $clientListRaw = $redis->client( 'list' ) ;
+            if ( is_array( $clientListRaw ) ) {
+                foreach ( $clientListRaw as $client ) {
+                    // Skip our own monitoring connection
+                    if ( isset( $client['cmd'] ) && $client['cmd'] === 'client' ) {
+                        continue ;
+                    }
+                    $clientData[] = [
+                        'id'      => (int) ( $client['id'] ?? 0 ),
+                        'addr'    => $client['addr'] ?? '',
+                        'name'    => $client['name'] ?? '',
+                        'age'     => (int) ( $client['age'] ?? 0 ),
+                        'ageHuman' => Tools::friendlyTime( (int) ( $client['age'] ?? 0 ) ),
+                        'idle'    => (int) ( $client['idle'] ?? 0 ),
+                        'idleHuman' => Tools::friendlyTime( (int) ( $client['idle'] ?? 0 ) ),
+                        'db'      => (int) ( $client['db'] ?? 0 ),
+                        'cmd'     => $client['cmd'] ?? '',
+                        'flags'   => $client['flags'] ?? '',
+                    ] ;
+                }
+            }
+        } catch ( \Exception $e ) {
+            // CLIENT LIST may not be available - continue without it
+        }
+
         $redis->close() ;
 
         // Output successful response
@@ -560,6 +642,8 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'dbType'            => 'Redis',
             'redisOverviewData' => $redisOverviewData,
             'slowlogData'       => $slowlogData,
+            'clientData'        => $clientData,
+            'commandStats'      => $commandStats,
             'maintenanceInfo'   => $maintenanceInfo,
         ] ) . "\n" ;
 
@@ -572,6 +656,8 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'hostGroups'        => $hostGroups,
             'dbType'            => 'Redis',
             'error_output'      => $e->getMessage(),
+            'clientData'        => [],
+            'commandStats'      => [],
             'redisOverviewData' => $redisOverviewData,
             'slowlogData'       => [],
             'maintenanceInfo'   => $maintenanceInfo,
@@ -647,14 +733,54 @@ if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {
 }
 
 // Dispatch to appropriate handler based on db_type
-// TODO: Refactor MySQL handling into handleMySQLHost() function for consistency
-//       This would allow using a dispatch array: $handlers[$dbType]($hostname, $hostId, ...)
 if ( $dbType === 'Redis' ) {
     handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) ;
-    exit( 0 ) ;
+} else {
+    handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) ;
 }
+exit( 0 ) ;
 
-// MySQL/MariaDB/InnoDBCluster handling (default)
+/**
+ * Handle MySQL/MariaDB/InnoDBCluster host monitoring
+ *
+ * @param string $hostname Host:port string
+ * @param int|null $hostId Host ID from aql_db.host
+ * @param array $hostGroups Groups this host belongs to
+ * @param array|null $maintenanceInfo Active maintenance window info
+ * @param Config $config AQL configuration object
+ */
+function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) {
+    // Initialize variables that were previously global
+    $overviewData = [
+        'aQPS'            => -1
+      , 'blank'           => 0
+      , 'blocked'         => 0
+      , 'blocking'        => 0
+      , 'duplicate'       => 0
+      , 'level0'          => 0
+      , 'level1'          => 0
+      , 'level2'          => 0
+      , 'level3'          => 0
+      , 'level4'          => 0
+      , 'level9'          => 0
+      , 'longest_running' => -1
+      , 'maxConnections'  => 0
+      , 'ro'              => 0
+      , 'rw'              => 0
+      , 'similar'         => 0
+      , 'threads'         => 0
+      , 'threadsConnected' => 0
+      , 'threadsRunning'  => 0
+      , 'time'            => 0
+      , 'unique'          => 0
+      , 'uptime'          => 0
+      , 'version'         => ''
+    ];
+    $queries = [] ;
+    $safeQueries = [] ;
+    $slaveData = [] ;
+    $longestRunning = -1 ;
+
 try {
     $roQueryPart   = $config->getRoQueryPart() ;
     $debug         = Tools::param('debug') === "1" ;
@@ -1506,3 +1632,4 @@ if ( $debugLocks ) {
     $output['debugBlockingCacheType'] = getBlockingCacheType() ;
 }
 echo json_encode( $output ) . "\n" ;
+}

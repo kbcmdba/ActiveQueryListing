@@ -184,13 +184,13 @@ class Tools
      * Return a time-like string of seconds, minutes:seconds or hours:minutes:seconds
      *
      * @param integer $in_seconds
-     *            @fixme Comparison to is_integer isn't working as expected.
      */
     public static function friendlyTime($in_seconds)
     {
-        if (!isset($in_seconds) || (is_integer($in_seconds))) {
+        if (!isset($in_seconds) || !is_numeric($in_seconds)) {
             return $in_seconds ;
         }
+        $in_seconds = (int) $in_seconds ;
         $secs = $in_seconds % 60 ;
         if ($in_seconds < 60) {
             return "{$secs}s" ;

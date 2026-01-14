@@ -525,6 +525,8 @@ function redisCallback( i, item ) {
 
     var redisOverview = item[ 'redisOverviewData' ] ;
     var slowlogData = item[ 'slowlogData' ] || [] ;
+    var clientData = item[ 'clientData' ] || [] ;
+    var commandStats = item[ 'commandStats' ] || [] ;
     var hostname = item[ 'hostname' ] ;
     var hostId = item[ 'hostId' ] ;
     var hostGroups = item[ 'hostGroups' ] || [] ;
@@ -541,7 +543,7 @@ function redisCallback( i, item ) {
     // Handle error response
     if ( typeof item[ 'error_output' ] !== 'undefined' ) {
         var errorRow = '<tr class="level9"><td>' + hostname + '</td>'
-                     + '<td colspan="11" class="errorNotice">' + item[ 'error_output' ] + '</td></tr>' ;
+                     + '<td colspan="13" class="errorNotice">' + item[ 'error_output' ] + '</td></tr>' ;
         $( errorRow ).appendTo( '#fullredisoverviewtbodyid' ) ;
         $( errorRow ).prependTo( '#nwredisoverviewtbodyid' ) ;
         trackHostByDbType( 'Redis' ) ;
@@ -552,11 +554,26 @@ function redisCallback( i, item ) {
     if ( typeof redisOverview === 'undefined' ) return ;
 
     var level = redisOverview[ 'level' ] || 0 ;
+    var hasIssues = ( level >= 2 ) ;
 
     // Track stats for scoreboard
     trackHostByDbType( 'Redis' ) ;
     trackLevelByDbType( 'Redis', level, 1, hostname ) ;
     trackRedisAggregates( redisOverview ) ;
+
+    // Track version data for version summary table (prefix with "Redis " to distinguish)
+    var redisVersion = redisOverview[ 'version' ] ;
+    if ( redisVersion ) {
+        var versionKey = 'Redis ' + redisVersion ;
+        if ( typeof versionData[ versionKey ] === 'undefined' ) {
+            versionData[ versionKey ] = { count: 0, hosts: [] } ;
+        }
+        if ( versionData[ versionKey ].hosts.indexOf( hostname ) === -1 ) {
+            versionData[ versionKey ].count++ ;
+            versionData[ versionKey ].hosts.push( hostname ) ;
+        }
+        updateVersionSummary() ;
+    }
 
     // Build server link with management icons
     var serverLink = '<a href="?hosts[]=' + hostname + debugString + '">' + hostname + '</a>' ;
@@ -582,9 +599,29 @@ function redisCallback( i, item ) {
     var rejectedClass = redisOverview[ 'rejectedConnections' ] > 0 ? ' class="level4"' : '' ;
     var fragClass = redisOverview[ 'fragmentationRatio' ] > 1.5 ? ' class="level3"' : '' ;
 
+    // Build RDB status display
+    var rdbAgo = redisOverview[ 'rdbLastSaveAgo' ] ;
+    var rdbDisplay = '-' ;
+    if ( rdbAgo !== null ) {
+        rdbDisplay = friendlyTime( rdbAgo ) ;
+        var pending = redisOverview[ 'rdbChangesPending' ] || 0 ;
+        if ( pending > 0 ) {
+            rdbDisplay += ' (' + pending + ')' ;
+        }
+    }
+    var rdbClass = ( rdbAgo !== null && rdbAgo > 3600 ) ? ' class="level2"' : '' ;
+
+    // Build AOF status display
+    var aofEnabled = redisOverview[ 'aofEnabled' ] ;
+    var aofDisplay = aofEnabled ? 'Yes' : 'No' ;
+    var aofClass = '' ;
+
+    // Add Redis prefix to version display
+    var redisDisplayVersion = redisOverview[ 'version' ] ? 'Redis ' + redisOverview[ 'version' ] : '-' ;
+
     var overviewRow = '<tr class="' + levelClass + '">'
         + '<td>' + serverLink + '</td>'
-        + '<td>' + ( redisOverview[ 'version' ] || '-' ) + '</td>'
+        + '<td>' + redisDisplayVersion + '</td>'
         + '<td>' + ( redisOverview[ 'uptimeHuman' ] || '-' ) + '</td>'
         + '<td>' + ( redisOverview[ 'usedMemoryHuman' ] || '-' ) + '</td>'
         + '<td' + memPctClass + '>' + ( redisOverview[ 'memoryPct' ] || 0 ) + '%</td>'
@@ -594,6 +631,8 @@ function redisCallback( i, item ) {
         + '<td' + evictedClass + '>' + ( redisOverview[ 'evictedKeys' ] || 0 ) + '</td>'
         + '<td' + rejectedClass + '>' + ( redisOverview[ 'rejectedConnections' ] || 0 ) + '</td>'
         + '<td' + fragClass + '>' + ( redisOverview[ 'fragmentationRatio' ] || '-' ) + '</td>'
+        + '<td' + rdbClass + '>' + rdbDisplay + '</td>'
+        + '<td' + aofClass + '>' + aofDisplay + '</td>'
         + '<td>' + level + '</td>'
         + '</tr>' ;
 
@@ -618,6 +657,40 @@ function redisCallback( i, item ) {
             if ( entry[ 'level' ] >= 2 ) {
                 $( slowlogRow ).appendTo( '#nwredisslowlogtbodyid' ) ;
             }
+        }
+    }
+
+    // Build client list rows
+    if ( clientData.length > 0 ) {
+        for ( var k = 0; k < clientData.length; k++ ) {
+            var client = clientData[ k ] ;
+            var idleLevel = ( client[ 'idle' ] > 300 ) ? 'level2' : 'level1' ;
+            var clientRow = '<tr class="' + idleLevel + '">'
+                + '<td>' + hostname + '</td>'
+                + '<td>' + ( client[ 'id' ] || '-' ) + '</td>'
+                + '<td>' + ( client[ 'addr' ] || '-' ) + '</td>'
+                + '<td>' + ( client[ 'name' ] || '-' ) + '</td>'
+                + '<td>' + ( client[ 'ageHuman' ] || '-' ) + '</td>'
+                + '<td>' + ( client[ 'idleHuman' ] || '-' ) + '</td>'
+                + '<td>' + ( client[ 'db' ] !== undefined ? client[ 'db' ] : '-' ) + '</td>'
+                + '<td>' + ( client[ 'cmd' ] || '-' ) + '</td>'
+                + '</tr>' ;
+            $( clientRow ).appendTo( '#fullredisclientstbodyid' ) ;
+        }
+    }
+
+    // Build command stats rows
+    if ( commandStats.length > 0 ) {
+        for ( var m = 0; m < commandStats.length; m++ ) {
+            var cmd = commandStats[ m ] ;
+            var cmdRow = '<tr class="level1">'
+                + '<td>' + hostname + '</td>'
+                + '<td>' + ( cmd[ 'command' ] || '-' ) + '</td>'
+                + '<td class="text-right">' + ( cmd[ 'calls' ] || 0 ).toLocaleString() + '</td>'
+                + '<td class="text-right">' + ( cmd[ 'usec' ] || 0 ).toLocaleString() + '</td>'
+                + '<td class="text-right">' + ( cmd[ 'usecPerCall' ] || 0 ).toFixed( 2 ) + '</td>'
+                + '</tr>' ;
+            $( cmdRow ).appendTo( '#fullrediscmdstatstbodyid' ) ;
         }
     }
 }
@@ -888,6 +961,12 @@ function myCallback( i, item ) {
     var overviewData      = item[ 'overviewData' ] ;
     var slaveData         = item[ 'slaveData' ] ;
 
+    // Dispatch to Redis handler if this is Redis data
+    if ( item[ 'dbType' ] === 'Redis' ) {
+        redisCallback( i, item ) ;
+        return ;
+    }
+
     // Debug: log lock detection data if present
     if ( debugLocks === '1' ) {
         console.log( 'AQL Lock Debug for ' + item[ 'hostname' ] + ':',
@@ -1048,8 +1127,13 @@ function myCallback( i, item ) {
             var connPct = ( overviewData[ 'maxConnections' ] > 0 )
                         ? Math.round( overviewData[ 'threadsConnected' ] / overviewData[ 'maxConnections' ] * 100 )
                         : 0 ;
+            // Add DB type prefix if version doesn't already contain one (MariaDB includes it, MySQL doesn't)
+            var displayVersion = overviewData[ 'version' ] ;
+            if ( displayVersion && !/[a-zA-Z]/.test( displayVersion ) ) {
+                displayVersion = 'MySQL ' + displayVersion ;
+            }
             var myRow             = "<tr><td>" + serverLinkAddress
-                                  + "</td><td>" + overviewData[ 'version' ]
+                                  + "</td><td>" + displayVersion
                                   + "</td><td>" + overviewData[ 'longest_running' ]
                                   + "</td><td>" + overviewData[ 'aQPS' ]
                                   + "</td><td>" + overviewData[ 'threadsRunning' ]
@@ -1083,16 +1167,17 @@ function myCallback( i, item ) {
                 $(myRow).appendTo( '#nwoverviewtbodyid' ) ;
             }
 
-            // Track version data for version summary table
+            // Track version data for version summary table (prefix with "MySQL " for consistency)
             var version = overviewData[ 'version' ] ;
             if ( version ) {
-                if ( typeof versionData[ version ] === 'undefined' ) {
-                    versionData[ version ] = { count: 0, hosts: [] } ;
+                var versionKey = 'MySQL ' + version ;
+                if ( typeof versionData[ versionKey ] === 'undefined' ) {
+                    versionData[ versionKey ] = { count: 0, hosts: [] } ;
                 }
                 // Only add host if not already tracked (avoid duplicates on refresh)
-                if ( versionData[ version ].hosts.indexOf( server ) === -1 ) {
-                    versionData[ version ].count++ ;
-                    versionData[ version ].hosts.push( server ) ;
+                if ( versionData[ versionKey ].hosts.indexOf( server ) === -1 ) {
+                    versionData[ versionKey ].count++ ;
+                    versionData[ versionKey ].hosts.push( server ) ;
                 }
                 updateVersionSummary() ;
             }
