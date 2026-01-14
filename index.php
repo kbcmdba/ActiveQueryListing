@@ -255,6 +255,10 @@ if ( $config->getEnableMaintenanceWindows() ) {
     $activeMaintenanceWindows = MaintenanceWindow::getAllActiveWindows( $dbh ) ;
 }
 
+// Get enabled DB types from config (reads types from DDL, filters by config settings)
+$enabledDbTypes = $config->getEnabledDbTypes( $dbh ) ;
+$dbTypeList = empty( $enabledDbTypes ) ? "''" : "'" . implode( "', '", $enabledDbTypes ) . "'";
+
 $allHostsQuery = <<<SQL
 SELECT CONCAT( h.hostname, ':', h.port_number )
      , h.alert_crit_secs
@@ -264,9 +268,9 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
   FROM aql_db.host AS h
  WHERE h.decommissioned = 0
    AND h.should_monitor = 1
-   AND h.db_type IN ( 'MySQL', 'MariaDB', 'InnoDBCluster' )
+   AND h.db_type IN ( $dbTypeList )
  ORDER BY h.hostname, h.port_number
- 
+
 SQL;
 $in = "'"
     . implode("', '", array_map( [ $dbh, 'real_escape_string' ], $hostList ) )

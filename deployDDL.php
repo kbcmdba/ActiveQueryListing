@@ -133,7 +133,7 @@ if ( ! tableExists( $dbh, 'host' ) ) {
          , hostname          VARCHAR( 64 ) NOT NULL
          , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
          , description       TEXT NULL DEFAULT NULL
-         , db_type           ENUM('MySQL', 'MariaDB', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB') NOT NULL DEFAULT 'MySQL'
+         , db_type           ENUM('MySQL', 'MariaDB', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'
          , db_version        VARCHAR( 30 ) NOT NULL DEFAULT ''
          , should_monitor    BOOLEAN NOT NULL DEFAULT 1
          , should_backup     BOOLEAN NOT NULL DEFAULT 1
@@ -497,6 +497,32 @@ if ( tableExists( $dbh, 'blocking_history' ) && ! columnExists( $dbh, 'blocking_
     }
 } else if ( tableExists( $dbh, 'blocking_history' ) ) {
     $body .= "<tr><td>max_block_secs column</td><td>OK</td><td>-</td></tr>\n" ;
+}
+
+// ---------------------------------------------------------------------------
+// Migration 003: Add RDS and Aurora to db_type ENUM
+// ---------------------------------------------------------------------------
+
+$currentEnumSql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'aql_db' AND TABLE_NAME = 'host' AND COLUMN_NAME = 'db_type'" ;
+$enumResult = $dbh->query( $currentEnumSql ) ;
+$needsEnumUpdate = true ;
+if ( $enumResult && $row = $enumResult->fetch_row() ) {
+    if ( strpos( $row[0], 'RDS' ) !== false && strpos( $row[0], 'Aurora' ) !== false ) {
+        $needsEnumUpdate = false ;
+    }
+}
+
+if ( $needsEnumUpdate && tableExists( $dbh, 'host' ) ) {
+    $sql = "ALTER TABLE host MODIFY COLUMN db_type ENUM('MySQL', 'MariaDB', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'" ;
+    if ( $dbh->query( $sql ) ) {
+        $body .= "<tr><td>db_type ENUM</td><td>UPDATED</td><td>Added RDS and Aurora types</td></tr>\n" ;
+        $results[] = "Added RDS and Aurora to db_type ENUM" ;
+    } else {
+        $body .= "<tr><td>db_type ENUM</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to update db_type ENUM: " . $dbh->error ;
+    }
+} else if ( tableExists( $dbh, 'host' ) ) {
+    $body .= "<tr><td>db_type ENUM</td><td>OK</td><td>-</td></tr>\n" ;
 }
 
 $body .= "</tbody>\n</table>\n" ;

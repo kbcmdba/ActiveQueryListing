@@ -97,6 +97,15 @@ class Config
     private $enableSpeechAlerts = null;
 
     /**
+     * DB Type properties - stores enabled/username/password for each database type
+     * Structure: $dbTypeProperties['DBType']['enabled'] = true|false
+     *            $dbTypeProperties['DBType']['username'] = string
+     *            $dbTypeProperties['DBType']['password'] = string
+     * @var array
+     */
+    private $dbTypeProperties = [] ;
+
+    /**
      * #@-
      */
 
@@ -198,12 +207,30 @@ class Config
             'redisConnectTimeout'      => [ 'isRequired' => 0, 'value' => 0 ],
             'redisDatabase'            => [ 'isRequired' => 0, 'value' => 0 ],
             'enableSpeechAlerts'       => [ 'isRequired' => 0, 'value' => 0 ]
+            // Note: DB Type settings ({type}Enabled, {type}Username, {type}Password)
+            // are validated dynamically via isDbTypeConfigParam() to avoid hardcoding
         ] ;
 
+        // Regex patterns for dynamic DB type config params (avoids hardcoding each type)
+        // Matches: mysqlEnabled, mariadbUsername, rdsPassword, etc.
+        $dbTypeParamPattern = '/^[a-z]+(?:Enabled|Username|Password)$/' ;
+
         // verify that all the parameters are present and just once.
+        $seenDbTypeParams = [] ; // Track DB type params separately
         foreach ( $xml as $v ) {
             $key = (string) $v[ 'name' ] ;
-            if ( ( ! isset($paramList[ $key ] ) ) || ( $paramList[ $key ][ 'value' ] != 0 ) ) {
+            // Check if this is a dynamic DB type param (e.g., mysqlEnabled, rdsUsername)
+            $isDbTypeParam = preg_match( $dbTypeParamPattern, $key ) ;
+
+            if ( $isDbTypeParam ) {
+                // DB type params are validated by pattern, track for duplicates
+                if ( isset( $seenDbTypeParams[ $key ] ) ) {
+                    $errors .= "Multiply set DB type parameter: " . $key . "\n" ;
+                } else {
+                    $seenDbTypeParams[ $key ] = true ;
+                    $cfgValues[ $key ] = (string) $v ;
+                }
+            } elseif ( ( ! isset($paramList[ $key ] ) ) || ( $paramList[ $key ][ 'value' ] != 0 ) ) {
                 $errors .= "Unset or multiply set name: " . $key . "\n" ;
             } else {
                 $paramList[ $key ][ 'value' ] ++ ;
@@ -617,6 +644,112 @@ class Config
      */
     public function getEnableSpeechAlerts() {
         return ( 'true' === $this->enableSpeechAlerts ) ;
+    }
+
+    /**
+     * Get list of DB types from the DDL ENUM definition
+     *
+     * @param \mysqli $dbh Database connection
+     * @return array List of DB type names
+     */
+    public function getDbTypes( $dbh ) {
+        $dbTypes = [] ;
+        $sql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS "
+             . "WHERE TABLE_SCHEMA = 'aql_db' AND TABLE_NAME = 'host' AND COLUMN_NAME = 'db_type'" ;
+        $result = $dbh->query( $sql ) ;
+        if ( $result && $row = $result->fetch_row() ) {
+            // Parse enum('val1','val2',...) into array
+            if ( preg_match( "/^enum\((.+)\)$/i", $row[0], $matches ) ) {
+                preg_match_all( "/'([^']+)'/", $matches[1], $typeMatches ) ;
+                if ( ! empty( $typeMatches[1] ) ) {
+                    $dbTypes = $typeMatches[1] ;
+                }
+            }
+        }
+        return $dbTypes ;
+    }
+
+    /**
+     * Get properties for all DB types (enabled, username, password)
+     * Reads types from DDL and config settings
+     *
+     * @param \mysqli $dbh Database connection
+     * @return array Associative array: $props['DBType']['enabled'|'username'|'password']
+     */
+    public function getDbTypeProperties( $dbh ) {
+        $properties = [] ;
+        $dbTypes = $this->getDbTypes( $dbh ) ;
+        $cfgValues = $this->oConfig ?? null ;
+
+        foreach ( $dbTypes as $dbType ) {
+            // Config keys use lowercase, e.g., mysqlEnabled, redisUsername
+            // Handle special case: 'MS-SQL' -> 'mssql', 'InnoDBCluster' -> 'innodbcluster'
+            $lcType = strtolower( str_replace( [ '-', ' ' ], '', $dbType ) ) ;
+
+            $properties[ $dbType ] = [
+                'enabled'  => $this->isDbTypeEnabled( $lcType ),
+                'username' => $this->getConfigValue( $lcType . 'Username', '' ),
+                'password' => $this->getConfigValue( $lcType . 'Password', '' ),
+            ] ;
+        }
+        return $properties ;
+    }
+
+    /**
+     * Check if a specific DB type is enabled in config
+     *
+     * @param string $lcType Lowercase DB type name (e.g., 'mysql', 'redis')
+     * @return bool
+     */
+    private function isDbTypeEnabled( $lcType ) {
+        // Check for {dbtype}Enabled in config
+        $value = $this->getConfigValue( $lcType . 'Enabled', 'false' ) ;
+        return ( 'true' === $value ) ;
+    }
+
+    /**
+     * Get a config value by key with default
+     *
+     * @param string $key Config key
+     * @param mixed $default Default value
+     * @return mixed
+     */
+    private function getConfigValue( $key, $default = null ) {
+        // Access the raw config values array
+        static $cfgValues = null ;
+        if ( $cfgValues === null ) {
+            $configFile = dirname( __DIR__ ) . '/aql_config.xml' ;
+            if ( file_exists( $configFile ) ) {
+                $xml = @simplexml_load_file( $configFile ) ;
+                if ( $xml ) {
+                    $cfgValues = [] ;
+                    foreach ( $xml->param as $v ) {
+                        $cfgValues[ (string) $v['name'] ] = (string) $v ;
+                    }
+                }
+            }
+            if ( $cfgValues === null ) {
+                $cfgValues = [] ;
+            }
+        }
+        return $cfgValues[ $key ] ?? $default ;
+    }
+
+    /**
+     * Get list of enabled DB types only
+     *
+     * @param \mysqli $dbh Database connection
+     * @return array List of enabled DB type names
+     */
+    public function getEnabledDbTypes( $dbh ) {
+        $enabled = [] ;
+        $props = $this->getDbTypeProperties( $dbh ) ;
+        foreach ( $props as $dbType => $settings ) {
+            if ( $settings['enabled'] ) {
+                $enabled[] = $dbType ;
+            }
+        }
+        return $enabled ;
     }
 
 }

@@ -14,6 +14,19 @@
     <!-- Jira Integration (optional) - enables "File Issue" button -->
     <!-- Set jiraEnabled to true and configure your Jira instance -->
     <param name="jiraEnabled">false</param>
+    <!-- Database Type Monitoring - enable each type you want to monitor -->
+    <!-- Each type can have optional username/password: {type}Username, {type}Password -->
+    <param name="mysqlEnabled">false</param>
+    <param name="mariadbEnabled">false</param>
+    <param name="innodbclusterEnabled">false</param>
+    <param name="redisEnabled">false</param>
+    <param name="mssqlEnabled">false</param>
+    <param name="oracleEnabled">false</param>
+    <param name="cassandraEnabled">false</param>
+    <param name="datastaxEnabled">false</param>
+    <param name="mongodbEnabled">false</param>
+    <param name="rdsEnabled">false</param>
+    <param name="auroraEnabled">false</param>
     <!-- Jira project ID (numeric) - find via REST API or project settings -->
     <param name="jiraProjectId"></param>
     <!-- Jira issue type ID (numeric) - find via /rest/api/3/issuetype -->

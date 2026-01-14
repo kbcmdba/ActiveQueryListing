@@ -1747,6 +1747,87 @@ if ( $redisEnabled && !$redisBoolOk ) echo "sudo setsebool -P httpd_can_network_
 
 <?php
 // ============================================================================
+// SECTION 5c: Database Type Configuration
+// ============================================================================
+// Check enabled DB types - need database connection to read from DDL
+if ( $dbConnected ) {
+    require_once __DIR__ . '/vendor/autoload.php' ;
+    $dbTypesAvailable = [] ;
+    $dbTypesEnabled = [] ;
+
+    try {
+        $config = new \com\kbcmdba\aql\Libs\Config() ;
+        $dbTypeDbh = @new \mysqli( $dbHost, $dbUser, $dbPass, $dbName, $dbPort ) ;
+        if ( !$dbTypeDbh->connect_error ) {
+            $dbTypesAvailable = $config->getDbTypes( $dbTypeDbh ) ;
+            $dbTypesEnabled = $config->getEnabledDbTypes( $dbTypeDbh ) ;
+            $dbTypeDbh->close() ;
+        }
+    } catch ( \Exception $e ) {
+        // Ignore - DB type check is informational
+    }
+
+    if ( !empty( $dbTypesAvailable ) ) {
+        $html = '    <div class="test-section">' . "\n"
+              . '        <h3>Database Type Configuration</h3>' . "\n" ;
+
+        if ( empty( $dbTypesEnabled ) ) {
+            $criticalErrors++ ;
+            $html .= '        <div class="summary-box error">' . "\n"
+                   . '            <p>' . $failIcon . ' <strong>No database types enabled!</strong></p>' . "\n"
+                   . '            <p>At least one database type must be enabled in <code>aql_config.xml</code> for AQL to monitor any hosts.</p>' . "\n"
+                   . '        </div>' . "\n" ;
+        } else {
+            $html .= '        <p>' . $passIcon . ' <strong>' . count( $dbTypesEnabled ) . '</strong> database type(s) enabled</p>' . "\n" ;
+        }
+
+        $html .= '        <table>' . "\n"
+               . '            <thead>' . "\n"
+               . '                <tr><th>Database Type</th><th>Status</th><th>Config Parameter</th></tr>' . "\n"
+               . '            </thead>' . "\n"
+               . '            <tbody>' . "\n" ;
+
+        foreach ( $dbTypesAvailable as $dbType ) {
+            $lcType = strtolower( str_replace( [ '-', ' ' ], '', $dbType ) ) ;
+            $isEnabled = in_array( $dbType, $dbTypesEnabled ) ;
+            $statusIcon = $isEnabled ? "$passIcon Enabled" : "$infoIcon Disabled" ;
+            $enabledValue = $isEnabled ? 'true' : 'false' ;
+
+            $html .= '                <tr>' . "\n"
+                   . '                    <td><code>' . htmlspecialchars( $dbType ) . '</code></td>' . "\n"
+                   . '                    <td>' . $statusIcon . '</td>' . "\n"
+                   . '                    <td><code>' . htmlspecialchars( $lcType . 'Enabled' ) . '=' . $enabledValue . '</code></td>' . "\n"
+                   . '                </tr>' . "\n" ;
+        }
+
+        $html .= '            </tbody>' . "\n"
+               . '        </table>' . "\n" ;
+
+        if ( empty( $dbTypesEnabled ) ) {
+            $html .= '        <div class="fix-section">' . "\n"
+                   . '            <h3>Enable Database Types</h3>' . "\n"
+                   . '            <p>Add one or more of these to your <code>aql_config.xml</code>:</p>' . "\n"
+                   . '            <div class="code-block">' . "\n"
+                   . '                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>' . "\n"
+                   . '                <pre>&lt;!-- Enable the database types you want to monitor --&gt;' . "\n"
+                   . '&lt;param name="mysqlEnabled"&gt;true&lt;/param&gt;' . "\n"
+                   . '&lt;param name="mariadbEnabled"&gt;true&lt;/param&gt;' . "\n"
+                   . '&lt;param name="redisEnabled"&gt;true&lt;/param&gt;' . "\n"
+                   . '&lt;!-- Add optional credentials per type --&gt;' . "\n"
+                   . '&lt;param name="mysqlUsername"&gt;monitor_user&lt;/param&gt;' . "\n"
+                   . '&lt;param name="mysqlPassword"&gt;monitor_pass&lt;/param&gt;</pre>' . "\n"
+                   . '            </div>' . "\n"
+                   . '        </div>' . "\n" ;
+        }
+
+        $html .= '    </div>' . "\n" ;
+        echo $html ;
+    }
+}
+?>
+
+<?php
+// ============================================================================
 // SECTION 6: Summary and Next Steps
 // ============================================================================
 ?>
