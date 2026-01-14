@@ -262,6 +262,43 @@ $fullRedisCmdStatsHeaderFooter = <<<HTML
     $redisCmdStatsHeaderFooterCols
 HTML;
 
+// Redis Memory Stats table configuration (Phase 3)
+$redisMemStatsCols = 6 ;
+$redisMemStatsHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Peak Alloc <a onclick="alert('Peak memory allocated'); return false;">?</a></th>
+      <th>Total Alloc <a onclick="alert('Total memory allocated'); return false;">?</a></th>
+      <th>Keys</th>
+      <th>Frag Ratio <a onclick="alert('Memory fragmentation ratio'); return false;">?</a></th>
+      <th>Frag Bytes</th>
+    </tr>
+HTML;
+$fullRedisMemStatsHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisMemStatsCols">Redis Memory Statistics</th>
+    </tr>
+    $redisMemStatsHeaderFooterCols
+HTML;
+
+// Redis Streams table configuration (Phase 3)
+$redisStreamsCols = 5 ;
+$redisStreamsHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Stream Key</th>
+      <th>Length</th>
+      <th>Groups</th>
+      <th>Last Entry ID</th>
+    </tr>
+HTML;
+$fullRedisStreamsHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisStreamsCols">Redis Streams</th>
+    </tr>
+    $redisStreamsHeaderFooterCols
+HTML;
+
 $debug = Tools::param('debug') === "1" ;
 $muted = Tools::param('mute') === "1" ;
 $page = new WebPage('Active Queries List');
@@ -408,6 +445,8 @@ try {
     \$("#fullredisslowlogtbodyid").html( '<tr id="fullRedisSlowlogfigment"><td colspan="$redisSlowlogCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullredisclientstbodyid").html( '<tr id="fullRedisClientsfigment"><td colspan="$redisClientsCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullrediscmdstatstbodyid").html( '<tr id="fullRedisCmdStatsfigment"><td colspan="$redisCmdStatsCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullredismemstatstbodyid").html( '<tr id="fullRedisMemStatsfigment"><td colspan="$redisMemStatsCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullredisstreamstbodyid").html( '<tr id="fullRedisStreamsfigment"><td colspan="$redisStreamsCols"><center>Data loading</center></td></tr>' ) ;
 JSREDIS;
         $redisFigmentRemoveJs = <<<JSREDIS
             \$("#nwRedisOverviewfigment").remove() ;
@@ -416,6 +455,8 @@ JSREDIS;
             \$("#fullRedisSlowlogfigment").remove() ;
             \$("#fullRedisClientsfigment").remove() ;
             \$("#fullRedisCmdStatsfigment").remove() ;
+            \$("#fullRedisMemStatsfigment").remove() ;
+            \$("#fullRedisStreamsfigment").remove() ;
 JSREDIS;
         $redisTableSortJs = <<<JSREDIS
     // Redis tables
@@ -425,6 +466,8 @@ JSREDIS;
     initTableSortWithUrl('#fullRedisSlowlogTable', 'fullredisslowlog', [[2, 1]]);
     initTableSortWithUrl('#fullRedisClientsTable', 'fullredisclients', [[5, 1]]);   // Idle desc
     initTableSortWithUrl('#fullRedisCmdStatsTable', 'fullrediscmdstats', [[2, 1]]); // Calls desc
+    initTableSortWithUrl('#fullRedisMemStatsTable', 'fullredismemstats', [[4, 1]]); // Frag ratio desc
+    initTableSortWithUrl('#fullRedisStreamsTable', 'fullredisstreams', [[2, 1]]);   // Length desc
 JSREDIS;
     }
 
@@ -1106,6 +1149,22 @@ HTML
 {$cb(xTable( 'nw', 'SlaveStatus', 'Slave', $NWSlaveHeaderFooter, 'slave', $slaveCols ))}
 {$cb(xTable( 'nw', 'StatusOverview', 'Overview', $NWOverviewHeaderFooter, 'overview', $overviewCols ))}
 {$cb(xTable( 'nw', 'ProcessListing', 'Process', $NWProcessHeaderFooter, 'process', $processCols ))}
+HTML
+    ) ;
+
+    // Add Noteworthy Redis sections if Redis monitoring is enabled
+    if ( $redisEnabled ) {
+        $page->appendBody(
+            <<<HTML
+{$cb(xTable( 'nw', 'RedisOverview', 'RedisOverview', $NWRedisOverviewHeaderFooter, 'redisoverview', $redisOverviewCols ))}
+{$cb(xTable( 'nw', 'RedisSlowlog', 'RedisSlowlog', $NWRedisSlowlogHeaderFooter, 'redisslowlog', $redisSlowlogCols ))}
+HTML
+        ) ;
+    }
+
+    // Full Data section
+    $page->appendBody(
+        <<<HTML
 <h2>Full Data</h2>
 {$cb(xTable( 'full', 'SlaveStatus', 'Slave', $fullSlaveHeaderFooter, 'slave', $slaveCols ))}
 {$cb(xTable( 'full', 'StatusOverview', 'Overview', $fullOverviewHeaderFooter, 'overview', $overviewCols ))}
@@ -1113,18 +1172,16 @@ HTML
 HTML
     ) ;
 
-    // Add Redis sections if Redis monitoring is enabled
+    // Add Full Redis sections if Redis monitoring is enabled
     if ( $redisEnabled ) {
         $page->appendBody(
             <<<HTML
-<h2>Noteworthy Redis Data</h2>
-{$cb(xTable( 'nw', 'RedisOverview', 'RedisOverview', $NWRedisOverviewHeaderFooter, 'redisoverview', $redisOverviewCols ))}
-{$cb(xTable( 'nw', 'RedisSlowlog', 'RedisSlowlog', $NWRedisSlowlogHeaderFooter, 'redisslowlog', $redisSlowlogCols ))}
-<h2>Full Redis Data</h2>
 {$cb(xTable( 'full', 'RedisOverview', 'RedisOverview', $fullRedisOverviewHeaderFooter, 'redisoverview', $redisOverviewCols ))}
 {$cb(xTable( 'full', 'RedisSlowlog', 'RedisSlowlog', $fullRedisSlowlogHeaderFooter, 'redisslowlog', $redisSlowlogCols ))}
 {$cb(xTable( 'full', 'RedisClients', 'RedisClients', $fullRedisClientsHeaderFooter, 'redisclients', $redisClientsCols ))}
 {$cb(xTable( 'full', 'RedisCmdStats', 'RedisCmdStats', $fullRedisCmdStatsHeaderFooter, 'rediscmdstats', $redisCmdStatsCols ))}
+{$cb(xTable( 'full', 'RedisMemStats', 'RedisMemStats', $fullRedisMemStatsHeaderFooter, 'redismemstats', $redisMemStatsCols ))}
+{$cb(xTable( 'full', 'RedisStreams', 'RedisStreams', $fullRedisStreamsHeaderFooter, 'redisstreams', $redisStreamsCols ))}
 HTML
         ) ;
     }

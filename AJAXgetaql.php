@@ -379,6 +379,11 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
     $slowlogData = [] ;
     $clientData = [] ;
     $commandStats = [] ;
+    // Phase 3: Advanced diagnostics
+    $memoryStats = [] ;
+    $latencyData = [] ;
+    $pubsubData = [ 'channels' => [], 'patterns' => 0 ] ;
+    $streamsData = [] ;
 
     try {
         // Parse hostname and port
@@ -632,6 +637,101 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             // CLIENT LIST may not be available - continue without it
         }
 
+        // Phase 3: MEMORY STATS
+        try {
+            $memRaw = $redis->rawCommand( 'MEMORY', 'STATS' ) ;
+            if ( is_array( $memRaw ) ) {
+                // Parse alternating key/value array into associative array
+                for ( $i = 0 ; $i < count( $memRaw ) - 1 ; $i += 2 ) {
+                    $key = $memRaw[$i] ;
+                    $val = $memRaw[$i + 1] ;
+                    // Only include useful stats (skip nested arrays)
+                    if ( !is_array( $val ) ) {
+                        $memoryStats[$key] = $val ;
+                    }
+                }
+            }
+        } catch ( \Exception $e ) {
+            error_log( "AQL Redis MEMORY STATS failed for $hostname: " . $e->getMessage() ) ;
+        }
+
+        // Phase 3: LATENCY LATEST
+        try {
+            $latRaw = $redis->rawCommand( 'LATENCY', 'LATEST' ) ;
+            if ( is_array( $latRaw ) ) {
+                foreach ( $latRaw as $event ) {
+                    if ( is_array( $event ) && count( $event ) >= 4 ) {
+                        $latencyData[] = [
+                            'event'     => $event[0] ?? '',
+                            'timestamp' => (int) ( $event[1] ?? 0 ),
+                            'latencyMs' => (int) ( $event[2] ?? 0 ),
+                            'maxMs'     => (int) ( $event[3] ?? 0 ),
+                        ] ;
+                    }
+                }
+            }
+        } catch ( \Exception $e ) {
+            error_log( "AQL Redis LATENCY LATEST failed for $hostname: " . $e->getMessage() ) ;
+        }
+
+        // Phase 3: PUBSUB stats
+        try {
+            $channels = $redis->pubsub( 'CHANNELS' ) ;
+            $pubsubData['channels'] = is_array( $channels ) ? $channels : [] ;
+            $pubsubData['channelCount'] = count( $pubsubData['channels'] ) ;
+            // NUMPAT returns count of pattern subscriptions
+            $numPat = $redis->pubsub( 'NUMPAT' ) ;
+            $pubsubData['patterns'] = is_int( $numPat ) ? $numPat : 0 ;
+        } catch ( \Exception $e ) {
+            error_log( "AQL Redis PUBSUB failed for $hostname: " . $e->getMessage() ) ;
+        }
+
+        // Phase 3: Streams - scan for stream keys and get basic info
+        try {
+            $streamKeys = [] ;
+            $cursor = '0' ;
+            // Scan for stream type keys (limit to first 100)
+            do {
+                $result = $redis->rawCommand( 'SCAN', $cursor, 'TYPE', 'stream', 'COUNT', '100' ) ;
+                if ( is_array( $result ) && count( $result ) >= 2 ) {
+                    $cursor = $result[0] ;
+                    if ( is_array( $result[1] ) ) {
+                        $streamKeys = array_merge( $streamKeys, $result[1] ) ;
+                    }
+                } else {
+                    break ;
+                }
+            } while ( $cursor !== '0' && count( $streamKeys ) < 100 ) ;
+
+            foreach ( $streamKeys as $streamKey ) {
+                try {
+                    $xinfo = $redis->rawCommand( 'XINFO', 'STREAM', $streamKey ) ;
+                    if ( is_array( $xinfo ) ) {
+                        // Parse alternating key/value array
+                        $streamInfo = [] ;
+                        for ( $i = 0 ; $i < count( $xinfo ) - 1 ; $i += 2 ) {
+                            $key = $xinfo[$i] ;
+                            $val = $xinfo[$i + 1] ;
+                            if ( !is_array( $val ) ) {
+                                $streamInfo[$key] = $val ;
+                            }
+                        }
+                        $streamsData[] = [
+                            'key'       => $streamKey,
+                            'length'    => (int) ( $streamInfo['length'] ?? 0 ),
+                            'groups'    => (int) ( $streamInfo['groups'] ?? 0 ),
+                            'firstId'   => $streamInfo['first-entry'][0] ?? null,
+                            'lastId'    => $streamInfo['last-entry'][0] ?? null,
+                        ] ;
+                    }
+                } catch ( \Exception $e ) {
+                    // Skip streams we can't inspect
+                }
+            }
+        } catch ( \Exception $e ) {
+            error_log( "AQL Redis XINFO failed for $hostname: " . $e->getMessage() ) ;
+        }
+
         $redis->close() ;
 
         // Output successful response
@@ -644,6 +744,11 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'slowlogData'       => $slowlogData,
             'clientData'        => $clientData,
             'commandStats'      => $commandStats,
+            // Phase 3: Advanced diagnostics
+            'memoryStats'       => $memoryStats,
+            'latencyData'       => $latencyData,
+            'pubsubData'        => $pubsubData,
+            'streamsData'       => $streamsData,
             'maintenanceInfo'   => $maintenanceInfo,
         ] ) . "\n" ;
 
@@ -660,6 +765,11 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'commandStats'      => [],
             'redisOverviewData' => $redisOverviewData,
             'slowlogData'       => [],
+            // Phase 3: empty defaults on error
+            'memoryStats'       => [],
+            'latencyData'       => [],
+            'pubsubData'        => [ 'channels' => [], 'channelCount' => 0, 'patterns' => 0 ],
+            'streamsData'       => [],
             'maintenanceInfo'   => $maintenanceInfo,
         ] ) . "\n" ;
     }

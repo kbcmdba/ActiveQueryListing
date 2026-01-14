@@ -58,6 +58,24 @@ function friendlyTime( seconds ) {
     return days + 'd,' + hrs + 'h,' + mins + 'm,' + secs + 's' ;
 }
 
+/**
+ * Format bytes into a human-readable string like "1.5 MB"
+ * @param {number} bytes - Number of bytes
+ * @return {string} Formatted bytes string
+ */
+function formatBytes( bytes ) {
+    if ( bytes === null || bytes === '' || isNaN( bytes ) || bytes === 0 ) {
+        return '0 B' ;
+    }
+    var units = [ 'B', 'KB', 'MB', 'GB', 'TB' ] ;
+    var i = 0 ;
+    while ( bytes >= 1024 && i < units.length - 1 ) {
+        bytes /= 1024 ;
+        i++ ;
+    }
+    return bytes.toFixed( i === 0 ? 0 : 2 ) + ' ' + units[ i ] ;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Theme Toggle Support
 ///////////////////////////////////////////////////////////////////////////////
@@ -527,6 +545,11 @@ function redisCallback( i, item ) {
     var slowlogData = item[ 'slowlogData' ] || [] ;
     var clientData = item[ 'clientData' ] || [] ;
     var commandStats = item[ 'commandStats' ] || [] ;
+    // Phase 3 data
+    var memoryStats = item[ 'memoryStats' ] || {} ;
+    var latencyData = item[ 'latencyData' ] || [] ;
+    var pubsubData = item[ 'pubsubData' ] || {} ;
+    var streamsData = item[ 'streamsData' ] || [] ;
     var hostname = item[ 'hostname' ] ;
     var hostId = item[ 'hostId' ] ;
     var hostGroups = item[ 'hostGroups' ] || [] ;
@@ -691,6 +714,40 @@ function redisCallback( i, item ) {
                 + '<td class="text-right">' + ( cmd[ 'usecPerCall' ] || 0 ).toFixed( 2 ) + '</td>'
                 + '</tr>' ;
             $( cmdRow ).appendTo( '#fullrediscmdstatstbodyid' ) ;
+        }
+    }
+
+    // Phase 3: Build memory stats row
+    if ( Object.keys( memoryStats ).length > 0 ) {
+        var peakAlloc = memoryStats[ 'peak.allocated' ] || 0 ;
+        var totalAlloc = memoryStats[ 'total.allocated' ] || 0 ;
+        var keysCount = memoryStats[ 'keys.count' ] || 0 ;
+        var fragRatio = parseFloat( memoryStats[ 'fragmentation' ] ) || 0 ;
+        var fragBytes = memoryStats[ 'fragmentation.bytes' ] || 0 ;
+        var fragClass = ( fragRatio > 1.5 ) ? 'level3' : 'level1' ;
+        var memRow = '<tr class="' + fragClass + '">'
+            + '<td>' + hostname + '</td>'
+            + '<td class="text-right">' + formatBytes( peakAlloc ) + '</td>'
+            + '<td class="text-right">' + formatBytes( totalAlloc ) + '</td>'
+            + '<td class="text-right">' + keysCount.toLocaleString() + '</td>'
+            + '<td class="text-right">' + fragRatio.toFixed( 2 ) + '</td>'
+            + '<td class="text-right">' + formatBytes( fragBytes ) + '</td>'
+            + '</tr>' ;
+        $( memRow ).appendTo( '#fullredismemstatstbodyid' ) ;
+    }
+
+    // Phase 3: Build streams rows
+    if ( streamsData.length > 0 ) {
+        for ( var s = 0; s < streamsData.length; s++ ) {
+            var stream = streamsData[ s ] ;
+            var streamRow = '<tr class="level1">'
+                + '<td>' + hostname + '</td>'
+                + '<td>' + ( stream[ 'key' ] || '-' ) + '</td>'
+                + '<td class="text-right">' + ( stream[ 'length' ] || 0 ).toLocaleString() + '</td>'
+                + '<td class="text-right">' + ( stream[ 'groups' ] || 0 ) + '</td>'
+                + '<td>' + ( stream[ 'lastId' ] || '-' ) + '</td>'
+                + '</tr>' ;
+            $( streamRow ).appendTo( '#fullredisstreamstbodyid' ) ;
         }
     }
 }
