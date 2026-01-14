@@ -133,7 +133,7 @@ if ( ! tableExists( $dbh, 'host' ) ) {
          , hostname          VARCHAR( 64 ) NOT NULL
          , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
          , description       TEXT NULL DEFAULT NULL
-         , db_type           ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'
+         , db_type           ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'OracleDB', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'
          , db_version        VARCHAR( 30 ) NOT NULL DEFAULT ''
          , should_monitor    BOOLEAN NOT NULL DEFAULT 1
          , should_backup     BOOLEAN NOT NULL DEFAULT 1
@@ -550,7 +550,7 @@ if ( $needsMariaDbMigration && tableExists( $dbh, 'host' ) ) {
         }
 
         // Now remove MariaDB from the ENUM
-        $sql = "ALTER TABLE host MODIFY COLUMN db_type ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'Oracle', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'" ;
+        $sql = "ALTER TABLE host MODIFY COLUMN db_type ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'OracleDB', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'" ;
         if ( $dbh->query( $sql ) ) {
             $body .= "<tr><td>db_type ENUM</td><td>UPDATED</td><td>Removed MariaDB (now combined with MySQL)</td></tr>\n" ;
             $results[] = "Combined MariaDB into MySQL type" ;
@@ -561,6 +561,46 @@ if ( $needsMariaDbMigration && tableExists( $dbh, 'host' ) ) {
     } else {
         $body .= "<tr><td>MariaDB hosts</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
         $errors[] = "Failed to convert MariaDB hosts: " . $dbh->error ;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Migration 005: Rename Oracle to OracleDB (disambiguate from Oracle MySQL)
+// ---------------------------------------------------------------------------
+
+$needsOracleRename = false ;
+$enumResult = $dbh->query( $currentEnumSql ) ;
+if ( $enumResult && $row = $enumResult->fetch_row() ) {
+    // Check if we have 'Oracle' but not 'OracleDB'
+    if ( strpos( $row[0], "'Oracle'" ) !== false && strpos( $row[0], 'OracleDB' ) === false ) {
+        $needsOracleRename = true ;
+    }
+}
+
+if ( $needsOracleRename && tableExists( $dbh, 'host' ) ) {
+    // First, convert any Oracle hosts to OracleDB
+    $sql = "UPDATE host SET db_type = 'OracleDB' WHERE db_type = 'Oracle'" ;
+    $updateResult = $dbh->query( $sql ) ;
+    $rowsAffected = $dbh->affected_rows ;
+
+    if ( $updateResult ) {
+        if ( $rowsAffected > 0 ) {
+            $body .= "<tr><td>Oracle hosts</td><td>UPDATED</td><td>Renamed $rowsAffected host(s) to OracleDB</td></tr>\n" ;
+            $results[] = "Renamed $rowsAffected Oracle host(s) to OracleDB" ;
+        }
+
+        // Now update the ENUM
+        $sql = "ALTER TABLE host MODIFY COLUMN db_type ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'OracleDB', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'" ;
+        if ( $dbh->query( $sql ) ) {
+            $body .= "<tr><td>db_type ENUM</td><td>UPDATED</td><td>Renamed Oracle to OracleDB</td></tr>\n" ;
+            $results[] = "Renamed Oracle to OracleDB in ENUM" ;
+        } else {
+            $body .= "<tr><td>db_type ENUM</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+            $errors[] = "Failed to update db_type ENUM: " . $dbh->error ;
+        }
+    } else {
+        $body .= "<tr><td>Oracle hosts</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to rename Oracle hosts: " . $dbh->error ;
     }
 }
 

@@ -21,7 +21,7 @@
     <param name="innodbclusterEnabled">false</param>
     <param name="redisEnabled">false</param>
     <param name="mssqlEnabled">false</param>
-    <param name="oracleEnabled">false</param>
+    <param name="oracledbEnabled">false</param>
     <param name="cassandraEnabled">false</param>
     <param name="datastaxEnabled">false</param>
     <param name="mongodbEnabled">false</param>
