@@ -352,11 +352,35 @@ $fullRedisDiagHeaderFooter = <<<HTML
     $redisDiagHeaderFooterCols
 HTML;
 
-$debug = Tools::param('debug') === "1" ;
 $muted = Tools::param('mute') === "1" ;
 $page = new WebPage('Active Queries List');
 $config = new Config();
 $redisEnabled = $config->getRedisEnabled() ;
+
+// Get DB types in use for per-type debug checkboxes
+$cfgDbc = new DBConnection() ;
+$cfgDbh = $cfgDbc->getConnection() ;
+$dbTypesInUse = $config->getDbTypesInUse( $cfgDbh ) ;
+
+// Debug mode - single param: debug=MySQL,Redis,AQL (AQL means all)
+// Backward compat: debug=1 maps to debug=AQL
+$debugParam = Tools::param('debug') ;
+$debugTypes = [] ;
+$debugAQL = false ;
+if ( $debugParam === "1" || $debugParam === "AQL" ) {
+    $debugAQL = true ;
+    $debugTypes = $dbTypesInUse ;
+} elseif ( ! empty( $debugParam ) ) {
+    $requestedTypes = array_map( 'trim', explode( ',', $debugParam ) ) ;
+    if ( in_array( 'AQL', $requestedTypes ) ) {
+        $debugAQL = true ;
+        $debugTypes = $dbTypesInUse ;
+    } else {
+        $debugTypes = array_intersect( $requestedTypes, $dbTypesInUse ) ;
+    }
+}
+// Legacy $debug for backward compat with existing code
+$debug = $debugAQL ;
 $defaultRefresh = $config->getDefaultRefresh() ;
 $minRefresh = $config->getMinRefresh() ;
 $reloadSeconds = Tools::param('refresh', $defaultRefresh) ;
@@ -556,6 +580,21 @@ function resetRefreshTimer() {
     }
 }
 
+// Build comma-separated debug param from checkboxes
+function updateDebugParam() {
+    var parts = [] ;
+    if ( \$('#debugAQLCheckbox').is(':checked') ) {
+        parts.push('AQL') ;
+        // Uncheck individual types when AQL is checked
+        \$('.debug-type-cb').prop('checked', false) ;
+    } else {
+        \$('.debug-type-cb:checked').each(function() {
+            parts.push( \$(this).data('type') ) ;
+        }) ;
+    }
+    \$('#debugParam').val( parts.join(',') ) ;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 function loadPage() {
@@ -642,7 +681,22 @@ JS
     );
     $now          = Tools::currentTimestamp();
     $aqlVersion   = Config::VERSION ;
-    $debugChecked = ( $debug ) ? 'checked="checked"' : '' ;
+    $debugAQLChecked = ( $debugAQL ) ? 'checked="checked"' : '' ;
+    // Generate per-type debug checkboxes HTML (uses JS to build comma-separated debug param)
+    $debugTypeCheckboxes = '' ;
+    foreach ( $dbTypesInUse as $dbType ) {
+        $checked = in_array( $dbType, $debugTypes ) && ! $debugAQL ? 'checked="checked"' : '' ;
+        $debugTypeCheckboxes .= '<input type="checkbox" class="debug-type-cb" data-type="' . htmlspecialchars( $dbType ) . '" ' . $checked . ' onchange="updateDebugParam()"/> ' . htmlspecialchars( $dbType ) . '<br />' ;
+    }
+    // Build initial debug param value for hidden input
+    $debugParamValue = '' ;
+    if ( $debugAQL ) {
+        $debugParamValue = 'AQL' ;
+    } elseif ( ! empty( $debugTypes ) ) {
+        $debugParamValue = implode( ',', $debugTypes ) ;
+    }
+    // Expand debug options if any are checked
+    $debugOptionsDisplay = ( $debugAQL || ! empty( $debugTypes ) ) ? 'block' : 'none' ;
     $muteButtonText = ( $muted ) ? 'Unmute Alerts' : 'Mute Alerts' ;
     $muteToggleValue = ( $muted ) ? '0' : '1' ;
     $cb = function ($fn) { return $fn; };
@@ -930,7 +984,12 @@ document.addEventListener('DOMContentLoaded', function() {
             $allHostsList
           </select><br />
           Refresh every <input type="text" name="refresh" value="$reloadSeconds" size="3" /> seconds<br />
-          <input type="checkbox" name="debug" value="1" $debugChecked/> Debug Mode<br />
+          <a href="#" onclick="$('#debugOptions').toggle(); return false;" class="debug-toggle">Debug Options ▼</a>
+          <div id="debugOptions" style="display: $debugOptionsDisplay; margin: 5px 0; padding: 5px; border: 1px solid var(--border-light); border-radius: 4px;">
+            <input type="checkbox" id="debugAQLCheckbox" $debugAQLChecked onchange="updateDebugParam()"/> AQL (all)<br />
+            $debugTypeCheckboxes
+          </div>
+          <input type="hidden" name="debug" id="debugParam" value="$debugParamValue" />
           <input type="submit" value="Update" />
         </form>
         <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>

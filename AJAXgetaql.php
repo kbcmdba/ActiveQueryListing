@@ -345,7 +345,7 @@ function getHostIdFromHostname( $hostnamePort ) {
  * @param array|null $maintenanceInfo Active maintenance window info
  * @param Config $config AQL configuration object
  */
-function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) {
+function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false ) {
     $redisOverviewData = [
         'hostname'           => $hostname,
         'hostId'             => $hostId,
@@ -940,11 +940,27 @@ if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {
     }
 }
 
+// Debug param: debug=MySQL,Redis,AQL (AQL means all, or comma-separated types)
+// Backward compat: debug=1 treated as debug=AQL
+$debugParam = Tools::param('debug') ?? '' ;
+$debugTypes = [] ;
+$debugAQL = false ;
+if ( $debugParam === '1' || $debugParam === 'AQL' ) {
+    $debugAQL = true ;
+} elseif ( ! empty( $debugParam ) ) {
+    $debugTypes = array_map( 'trim', explode( ',', $debugParam ) ) ;
+    if ( in_array( 'AQL', $debugTypes ) ) {
+        $debugAQL = true ;
+    }
+}
+// Determine if debug is enabled for this specific db_type
+$debugThisType = $debugAQL || in_array( $dbType, $debugTypes ) ;
+
 // Dispatch to appropriate handler based on db_type
 if ( $dbType === 'Redis' ) {
-    handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) ;
+    handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType ) ;
 } else {
-    handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) ;
+    handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType ) ;
 }
 exit( 0 ) ;
 
@@ -957,7 +973,7 @@ exit( 0 ) ;
  * @param array|null $maintenanceInfo Active maintenance window info
  * @param Config $config AQL configuration object
  */
-function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config ) {
+function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false ) {
     // Initialize variables that were previously global
     $overviewData = [
         'aQPS'            => -1
@@ -991,7 +1007,7 @@ function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
 
 try {
     $roQueryPart   = $config->getRoQueryPart() ;
-    $debug         = Tools::param('debug') === "1" ;
+    // $debug is now passed as parameter
     $debugLocks    = Tools::param('debugLocks') === "1" ;
     $alertCritSecs = Tools::param('alertCritSecs') ;
     $alertWarnSecs = Tools::param('alertWarnSecs') ;

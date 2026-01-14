@@ -37,8 +37,18 @@ namespace com\kbcmdba\aql ;
 //          - Option C: User preference to choose behavior
 //          - Consider: Multiple DBAs monitoring same hosts in different contexts
 //          - Consider: "Silenced by" tracking - who/which session silenced the host
+// @todo 19 Per-database-type debug mode (prerequisite for 20-35) [IN PROGRESS]
+//          - Single param: debug=MySQL,Redis,AQL (comma-separated)
+//          - AQL = all non-admin debug for active DB types
+//          - Admin-level debug (e.g., debugLDAP) requires separate explicit params
+//          - Collapsible "Debug Options" section with checkboxes
+//          - Uses Config::getDbTypesInUse() to show only active types
+//          - Backward compat: debug=1 maps to debug=AQL
+//          - Benefits:
+//            - Debug Redis without flooding display with MySQL debug info
+//            - More targeted troubleshooting
 // @todo 20 Add Redis support for monitoring (see subtasks 20-35 through 20-40)
-// @todo 20-35 Redis Debug Mode - Additional diagnostics when debug=1
+// @todo 20-35 Redis Debug Mode - Additional diagnostics when debugRedis=1
 //          - High Value (troubleshooting essentials):
 //            - Keyspace breakdown: keys per DB, keys with TTL, expired count
 //            - Ops/sec & throughput: instantaneous_ops_per_sec, input/output_kbps
@@ -57,16 +67,6 @@ namespace com\kbcmdba\aql ;
 //          - SSL/TLS connection support
 //          - Redis Cluster topology awareness
 //          - Redis Sentinel monitoring
-// @todo 21 Per-database-type debug mode
-//          - Rename "Debug Mode" checkbox to "Debug AQL" (param: debugAQL=1, enables all types)
-//          - Add per-type checkboxes alongside it (e.g., "Debug MySQL", "Debug Redis")
-//          - Only show per-type checkboxes for DB types that exist in host table
-//          - Query: SELECT DISTINCT db_type FROM host WHERE should_monitor = 1 AND decommissioned = 0
-//          - URL params: debugAQL=1 (all), debugMySQL=1, debugRedis=1, etc.
-//          - Backward compat: debug=1 maps to debugAQL=1
-//          - Benefits:
-//            - Debug Redis without flooding display with MySQL debug info
-//            - More targeted troubleshooting
 // @todo 23 Refactor AJAXgetaql.php to use DBType handler dispatch pattern
 //          - handleMySQLHost() and handleRedisHost() now implemented
 //          - Future: Use dispatch array: $handlers[$dbType]($hostname, $hostId, ...)

@@ -21,10 +21,24 @@
  */
 
 const urlParams = new URLSearchParams(window.location.search);
-const debug = urlParams.get('debug');
+// Debug param: debug=MySQL,Redis,AQL (AQL means all, or comma-separated types)
+// Backward compat: debug=1 treated as debug=AQL
+const debugParam = urlParams.get('debug') || '' ;
+const debugTypes = ( debugParam === '1' || debugParam === 'AQL' )
+    ? ['AQL']
+    : debugParam.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) ;
+const debugAQL = debugTypes.indexOf('AQL') >= 0 || debugParam === '1' ;
 const debugLocks = urlParams.get('debugLocks');
 const debugScoreboard = urlParams.get('debugScoreboard');
-const debugString = ( debug == '1' ? '&debug=1' : '' ) + ( debugLocks == '1' ? '&debugLocks=1' : '' ) ;
+// Build debug string for URL propagation
+var debugString = debugParam ? '&debug=' + encodeURIComponent( debugParam ) : '' ;
+if ( debugLocks == '1' ) { debugString += '&debugLocks=1' ; }
+// Legacy: keep debug variable for backward compat
+const debug = debugAQL ? '1' : null ;
+// Helper to check if debug is enabled for a specific type
+function isDebugType( dbType ) {
+    return debugAQL || debugTypes.indexOf( dbType ) >= 0 ;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Utility Functions

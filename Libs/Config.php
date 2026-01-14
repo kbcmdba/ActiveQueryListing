@@ -758,5 +758,25 @@ class Config
         return $enabled ;
     }
 
+    /**
+     * Get list of DB types that have active hosts in the database
+     *
+     * @param \mysqli $dbh Database connection
+     * @return array List of DB type names with active hosts
+     */
+    public function getDbTypesInUse( $dbh ) {
+        $inUse = [] ;
+        $sql = "SELECT DISTINCT db_type FROM aql_db.host "
+             . "WHERE should_monitor = 1 AND decommissioned = 0 ORDER BY db_type" ;
+        $result = $dbh->query( $sql ) ;
+        if ( $result ) {
+            while ( $row = $result->fetch_assoc() ) {
+                $inUse[] = $row['db_type'] ;
+            }
+            $result->close() ;
+        }
+        return $inUse ;
+    }
+
 }
 
