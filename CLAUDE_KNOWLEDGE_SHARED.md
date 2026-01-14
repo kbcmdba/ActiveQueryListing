@@ -47,6 +47,11 @@ The `db_type` ENUM in the host table: MySQL, InnoDBCluster, MS-SQL, Redis, Oracl
 
 ## Task Tracking
 
+**Workflow**: Before implementing new features, add them to todo.php first. This ensures:
+- Ideas don't get lost if the session ends unexpectedly
+- You're communicating with your future self
+- The user has visibility into planned work
+
 ### todo.php
 - Contains active todos using format `// @todo XX description`
 - Sub-tasks use format `// @todo XX-YY description`

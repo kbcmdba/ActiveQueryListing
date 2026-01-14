@@ -47,6 +47,21 @@ namespace com\kbcmdba\aql ;
 //            - LATENCY DOCTOR/HISTORY for deeper latency analysis
 //            - MEMORY DOCTOR for memory optimization recommendations
 //            - XPENDING for consumer group pending entry monitoring
+// @todo 20-35 Redis Debug Mode - Additional diagnostics when debug=1
+//          - High Value (troubleshooting essentials):
+//            - Keyspace breakdown: keys per DB, keys with TTL, expired count
+//            - Ops/sec & throughput: instantaneous_ops_per_sec, input/output_kbps
+//            - CPU usage: used_cpu_sys, used_cpu_user
+//            - Persistence status: bgsave/AOF rewrite in progress, last bgsave status
+//            - Client buffer details: output buffer (omem), query buffer (qbuf)
+//          - Medium Value (deeper diagnostics):
+//            - Replication details (replicas): master link status, seconds since IO, offset lag
+//            - Latency events: display LATENCY LATEST spike data (already gathered)
+//            - Pub/Sub details: channel names, subscribers per channel (NUMSUB)
+//            - Client flags decoded: N=normal, M=master, S=slave, O=MONITOR, etc.
+//          - Lower Priority:
+//            - Memory by data type: strings vs lists vs hashes vs sets vs zsets
+//            - Cluster topology (if clustered): slots, nodes, state
 // @todo 20-40 Redis Phase 4 - Enterprise Features
 //          - SSL/TLS connection support
 //          - Redis Cluster topology awareness
