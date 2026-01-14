@@ -37,16 +37,6 @@ namespace com\kbcmdba\aql ;
 //          - Option C: User preference to choose behavior
 //          - Consider: Multiple DBAs monitoring same hosts in different contexts
 //          - Consider: "Silenced by" tracking - who/which session silenced the host
-// @todo 19 Per-database-type debug mode (prerequisite for 20-35) [IN PROGRESS]
-//          - Single param: debug=MySQL,Redis,AQL (comma-separated)
-//          - AQL = all non-admin debug for active DB types
-//          - Admin-level debug (e.g., debugLDAP) requires separate explicit params
-//          - Collapsible "Debug Options" section with checkboxes
-//          - Uses Config::getDbTypesInUse() to show only active types
-//          - Backward compat: debug=1 maps to debug=AQL
-//          - Benefits:
-//            - Debug Redis without flooding display with MySQL debug info
-//            - More targeted troubleshooting
 // @todo 20 Add Redis support for monitoring (see subtasks 20-35 through 20-40)
 // @todo 20-35 Redis Debug Mode - Additional diagnostics when debugRedis=1
 //          - High Value (troubleshooting essentials):
