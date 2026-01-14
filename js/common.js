@@ -823,6 +823,102 @@ function redisCallback( i, item ) {
             + '</tr>' ;
         $( memDiagRow ).appendTo( '#fullredisdiagtbodyid' ) ;
     }
+
+    // Debug Mode: Additional diagnostics when debug=Redis
+    var debugData = item[ 'debugData' ] || {} ;
+    if ( isDebugType( 'Redis' ) && Object.keys( debugData ).length > 0 ) {
+        // Keyspace breakdown
+        var keyspace = debugData[ 'keyspace' ] || [] ;
+        if ( keyspace.length > 0 ) {
+            for ( var ks = 0; ks < keyspace.length; ks++ ) {
+                var ksRow = '<tr class="level1">'
+                    + '<td>' + hostname + '</td>'
+                    + '<td>' + keyspace[ ks ][ 'db' ] + '</td>'
+                    + '<td class="text-right">' + ( keyspace[ ks ][ 'keys' ] || 0 ).toLocaleString() + '</td>'
+                    + '<td class="text-right">' + ( keyspace[ ks ][ 'expires' ] || 0 ).toLocaleString() + '</td>'
+                    + '<td class="text-right">' + ( keyspace[ ks ][ 'avgTtl' ] || 0 ).toLocaleString() + ' ms</td>'
+                    + '</tr>' ;
+                $( ksRow ).appendTo( '#redisdebugkeyspacetbodyid' ) ;
+            }
+        }
+        // Show expired keys total
+        var expiredRow = '<tr class="level1">'
+            + '<td>' + hostname + '</td>'
+            + '<td><em>Total Expired</em></td>'
+            + '<td class="text-right">' + ( debugData[ 'expiredKeys' ] || 0 ).toLocaleString() + '</td>'
+            + '<td class="text-right">-</td>'
+            + '<td class="text-right">-</td>'
+            + '</tr>' ;
+        $( expiredRow ).appendTo( '#redisdebugkeyspacetbodyid' ) ;
+
+        // Ops/sec & Throughput
+        var opsRow = '<tr class="level1">'
+            + '<td>' + hostname + '</td>'
+            + '<td class="text-right">' + ( debugData[ 'instantaneousOpsPerSec' ] || 0 ).toLocaleString() + '</td>'
+            + '<td class="text-right">' + ( debugData[ 'instantaneousInputKbps' ] || 0 ).toFixed( 2 ) + '</td>'
+            + '<td class="text-right">' + ( debugData[ 'instantaneousOutputKbps' ] || 0 ).toFixed( 2 ) + '</td>'
+            + '<td class="text-right">' + ( debugData[ 'totalCommandsProcessed' ] || 0 ).toLocaleString() + '</td>'
+            + '<td class="text-right">' + formatBytes( debugData[ 'totalNetInputBytes' ] || 0 ) + '</td>'
+            + '<td class="text-right">' + formatBytes( debugData[ 'totalNetOutputBytes' ] || 0 ) + '</td>'
+            + '</tr>' ;
+        $( opsRow ).appendTo( '#redisdebugopstbodyid' ) ;
+
+        // CPU usage
+        var cpuRow = '<tr class="level1">'
+            + '<td>' + hostname + '</td>'
+            + '<td class="text-right">' + ( debugData[ 'usedCpuSys' ] || 0 ).toFixed( 2 ) + '</td>'
+            + '<td class="text-right">' + ( debugData[ 'usedCpuUser' ] || 0 ).toFixed( 2 ) + '</td>'
+            + '<td class="text-right">' + ( debugData[ 'usedCpuSysChildren' ] || 0 ).toFixed( 2 ) + '</td>'
+            + '<td class="text-right">' + ( debugData[ 'usedCpuUserChildren' ] || 0 ).toFixed( 2 ) + '</td>'
+            + '</tr>' ;
+        $( cpuRow ).appendTo( '#redisdebugcputbodyid' ) ;
+
+        // Persistence status
+        var rdbStatus = debugData[ 'rdbBgsaveInProgress' ] ? 'In Progress' : debugData[ 'rdbLastBgsaveStatus' ] ;
+        var rdbTime = debugData[ 'rdbBgsaveInProgress' ]
+            ? ( debugData[ 'rdbCurrentBgsaveTimeSec' ] + 's elapsed' )
+            : ( debugData[ 'rdbLastBgsaveTimeSec' ] >= 0 ? debugData[ 'rdbLastBgsaveTimeSec' ] + 's' : '-' ) ;
+        var aofStatus = debugData[ 'aofRewriteInProgress' ] ? 'Rewriting' :
+            ( debugData[ 'aofRewriteScheduled' ] ? 'Scheduled' : debugData[ 'aofLastRewriteStatus' ] ) ;
+        var aofTime = debugData[ 'aofRewriteInProgress' ]
+            ? ( debugData[ 'aofCurrentRewriteTimeSec' ] + 's elapsed' )
+            : '-' ;
+        var persistLevel = ( debugData[ 'rdbBgsaveInProgress' ] || debugData[ 'aofRewriteInProgress' ] ) ? 'level2' : 'level1' ;
+        var persistRow = '<tr class="' + persistLevel + '">'
+            + '<td>' + hostname + '</td>'
+            + '<td>' + rdbStatus + '</td>'
+            + '<td>' + rdbTime + '</td>'
+            + '<td>' + aofStatus + '</td>'
+            + '<td>' + aofTime + '</td>'
+            + '</tr>' ;
+        $( persistRow ).appendTo( '#redisdebugpersisttbodyid' ) ;
+
+        // Client buffer details
+        var clientBuffers = debugData[ 'clientBuffers' ] || [] ;
+        if ( clientBuffers.length > 0 ) {
+            for ( var cb = 0; cb < clientBuffers.length; cb++ ) {
+                var buf = clientBuffers[ cb ] ;
+                var bufLevel = ( buf[ 'omem' ] > 1048576 || buf[ 'qbuf' ] > 1048576 ) ? 'level3' : 'level1' ;
+                var bufRow = '<tr class="' + bufLevel + '">'
+                    + '<td>' + hostname + '</td>'
+                    + '<td>' + buf[ 'id' ] + '</td>'
+                    + '<td>' + ( buf[ 'addr' ] || '-' ) + '</td>'
+                    + '<td>' + ( buf[ 'name' ] || '-' ) + '</td>'
+                    + '<td class="text-right">' + formatBytes( buf[ 'omem' ] || 0 ) + '</td>'
+                    + '<td class="text-right">' + formatBytes( buf[ 'qbuf' ] || 0 ) + '</td>'
+                    + '<td class="text-right">' + formatBytes( buf[ 'qbufFree' ] || 0 ) + '</td>'
+                    + '<td>' + ( buf[ 'cmd' ] || '-' ) + '</td>'
+                    + '<td>' + ( buf[ 'flags' ] || '-' ) + '</td>'
+                    + '</tr>' ;
+                $( bufRow ).appendTo( '#redisdebugbufferstbodyid' ) ;
+            }
+        } else {
+            // No significant buffers - show a placeholder row
+            var noBufRow = '<tr class="level0"><td>' + hostname + '</td>'
+                + '<td colspan="8"><em>No clients with significant buffer usage</em></td></tr>' ;
+            $( noBufRow ).appendTo( '#redisdebugbufferstbodyid' ) ;
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

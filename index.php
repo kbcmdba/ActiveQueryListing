@@ -352,6 +352,98 @@ $fullRedisDiagHeaderFooter = <<<HTML
     $redisDiagHeaderFooterCols
 HTML;
 
+// Redis Debug Mode tables configuration (only shown when debug=Redis)
+$redisDebugKeyspaceCols = 5 ;
+$redisDebugKeyspaceHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Database</th>
+      <th>Keys</th>
+      <th>Expiring</th>
+      <th>Avg TTL</th>
+    </tr>
+HTML;
+$fullRedisDebugKeyspaceHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisDebugKeyspaceCols">Redis Debug: Keyspace Breakdown</th>
+    </tr>
+    $redisDebugKeyspaceHeaderFooterCols
+HTML;
+
+$redisDebugOpsCols = 7 ;
+$redisDebugOpsHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Ops/sec</th>
+      <th>Input KB/s</th>
+      <th>Output KB/s</th>
+      <th>Total Cmds</th>
+      <th>Total In</th>
+      <th>Total Out</th>
+    </tr>
+HTML;
+$fullRedisDebugOpsHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisDebugOpsCols">Redis Debug: Throughput (Ops/sec &amp; Network)</th>
+    </tr>
+    $redisDebugOpsHeaderFooterCols
+HTML;
+
+$redisDebugCpuCols = 5 ;
+$redisDebugCpuHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>CPU Sys</th>
+      <th>CPU User</th>
+      <th>CPU Sys (Children)</th>
+      <th>CPU User (Children)</th>
+    </tr>
+HTML;
+$fullRedisDebugCpuHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisDebugCpuCols">Redis Debug: CPU Usage (seconds)</th>
+    </tr>
+    $redisDebugCpuHeaderFooterCols
+HTML;
+
+$redisDebugPersistCols = 5 ;
+$redisDebugPersistHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>RDB Status</th>
+      <th>RDB Time</th>
+      <th>AOF Status</th>
+      <th>AOF Time</th>
+    </tr>
+HTML;
+$fullRedisDebugPersistHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisDebugPersistCols">Redis Debug: Persistence Status</th>
+    </tr>
+    $redisDebugPersistHeaderFooterCols
+HTML;
+
+$redisDebugBuffersCols = 9 ;
+$redisDebugBuffersHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Client ID</th>
+      <th>Address</th>
+      <th>Name</th>
+      <th>Output Buf</th>
+      <th>Query Buf</th>
+      <th>Query Buf Free</th>
+      <th>Cmd</th>
+      <th>Flags</th>
+    </tr>
+HTML;
+$fullRedisDebugBuffersHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisDebugBuffersCols">Redis Debug: Client Buffer Details</th>
+    </tr>
+    $redisDebugBuffersHeaderFooterCols
+HTML;
+
 $muted = Tools::param('mute') === "1" ;
 $page = new WebPage('Active Queries List');
 $config = new Config();
@@ -557,6 +649,35 @@ JSREDIS;
 JSREDIS;
     }
 
+    // Redis Debug Mode JS (only when debug=Redis is enabled)
+    $redisDebugTableInitJs = '' ;
+    $redisDebugFigmentRemoveJs = '' ;
+    $redisDebugTableSortJs = '' ;
+    if ( $redisEnabled && in_array( 'Redis', $debugTypes ) ) {
+        $redisDebugTableInitJs = <<<JSREDIS
+    \$("#redisdebugkeyspacetbodyid").html( '<tr id="redisDebugKeyspacefigment"><td colspan="$redisDebugKeyspaceCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#redisdebugopstbodyid").html( '<tr id="redisDebugOpsfigment"><td colspan="$redisDebugOpsCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#redisdebugcputbodyid").html( '<tr id="redisDebugCpufigment"><td colspan="$redisDebugCpuCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#redisdebugpersisttbodyid").html( '<tr id="redisDebugPersistfigment"><td colspan="$redisDebugPersistCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#redisdebugbufferstbodyid").html( '<tr id="redisDebugBuffersfigment"><td colspan="$redisDebugBuffersCols"><center>Data loading</center></td></tr>' ) ;
+JSREDIS;
+        $redisDebugFigmentRemoveJs = <<<JSREDIS
+            \$("#redisDebugKeyspacefigment").remove() ;
+            \$("#redisDebugOpsfigment").remove() ;
+            \$("#redisDebugCpufigment").remove() ;
+            \$("#redisDebugPersistfigment").remove() ;
+            \$("#redisDebugBuffersfigment").remove() ;
+JSREDIS;
+        $redisDebugTableSortJs = <<<JSREDIS
+    // Redis Debug tables
+    initTableSortWithUrl('#fullRedisDebugKeyspaceTable', 'fullredisdebugkeyspace', [[0, 0]]);  // Server asc
+    initTableSortWithUrl('#fullRedisDebugOpsTable', 'fullredisdebugops', [[1, 1]]);            // Ops/sec desc
+    initTableSortWithUrl('#fullRedisDebugCpuTable', 'fullredisdebugcpu', [[0, 0]]);            // Server asc
+    initTableSortWithUrl('#fullRedisDebugPersistTable', 'fullredisdebugpersist', [[0, 0]]);    // Server asc
+    initTableSortWithUrl('#fullRedisDebugBuffersTable', 'fullredisdebugbuffers', [[4, 1]]);    // Output Buf desc
+JSREDIS;
+    }
+
     $page->setBottom(
         <<<JS
 <script>
@@ -606,6 +727,7 @@ function loadPage() {
     \$("#fulloverviewtbodyid").html( '<tr id="fullOverviewfigment"><td colspan="$overviewCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullprocesstbodyid").html( '<tr id="fullProcessfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
 $redisTableInitJs
+$redisDebugTableInitJs
     \$.when($whenBlock).then(
         function ($thenParamBlock ) { $thenCodeBlock
             \$("#nwSlavefigment").remove() ;
@@ -615,6 +737,7 @@ $redisTableInitJs
             \$("#fullOverviewfigment").remove() ;
             \$("#fullProcessfigment").remove() ;
 $redisFigmentRemoveJs
+$redisDebugFigmentRemoveJs
             \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ;
             initTableSorting();
             displayCharts() ;
@@ -654,6 +777,7 @@ function initTableSorting() {
     initTableSortWithUrl('#fullSlaveTable', 'fullslave', [[3, 1]]);    // Seconds Behind desc
     initTableSortWithUrl('#fullOverviewTable', 'fulloverview', [[2, 1]]); // Longest Running desc
 $redisTableSortJs
+$redisDebugTableSortJs
     // Summary tables
     initTableSortWithUrl('#versionSummaryTable', 'versionsummary', [[0, 0]]);  // Version asc
     refreshLog('Table sorting initialized');
@@ -1306,6 +1430,20 @@ HTML
 {$cb(xTable( 'full', 'RedisLatencyHist', 'RedisLatencyHist', $fullRedisLatencyHistHeaderFooter, 'redislatencyhist', $redisLatencyHistCols ))}
 {$cb(xTable( 'full', 'RedisPending', 'RedisPending', $fullRedisPendingHeaderFooter, 'redispending', $redisPendingCols ))}
 {$cb(xTable( 'full', 'RedisDiag', 'RedisDiag', $fullRedisDiagHeaderFooter, 'redisdiag', $redisDiagCols ))}
+HTML
+        ) ;
+    }
+
+    // Add Redis Debug tables if Redis debug mode is enabled
+    if ( $redisEnabled && in_array( 'Redis', $debugTypes ) ) {
+        $page->appendBody(
+            <<<HTML
+<h3>Redis Debug Mode Data</h3>
+{$cb(xTable( 'full', 'RedisDebugKeyspace', 'RedisDebugKeyspace', $fullRedisDebugKeyspaceHeaderFooter, 'redisdebugkeyspace', $redisDebugKeyspaceCols ))}
+{$cb(xTable( 'full', 'RedisDebugOps', 'RedisDebugOps', $fullRedisDebugOpsHeaderFooter, 'redisdebugops', $redisDebugOpsCols ))}
+{$cb(xTable( 'full', 'RedisDebugCpu', 'RedisDebugCpu', $fullRedisDebugCpuHeaderFooter, 'redisdebugcpu', $redisDebugCpuCols ))}
+{$cb(xTable( 'full', 'RedisDebugPersist', 'RedisDebugPersist', $fullRedisDebugPersistHeaderFooter, 'redisdebugpersist', $redisDebugPersistCols ))}
+{$cb(xTable( 'full', 'RedisDebugBuffers', 'RedisDebugBuffers', $fullRedisDebugBuffersHeaderFooter, 'redisdebugbuffers', $redisDebugBuffersCols ))}
 HTML
         ) ;
     }

@@ -388,6 +388,8 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
     $pubsubData = [ 'channels' => [], 'patterns' => 0 ] ;
     $streamsData = [] ;
     $pendingData = [] ;
+    // Debug mode data (only populated when $debug is true)
+    $debugData = [] ;
 
     try {
         // Parse hostname and port
@@ -822,6 +824,87 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             error_log( "AQL Redis XPENDING failed for $hostname: " . $e->getMessage() ) ;
         }
 
+        // Debug Mode: Additional diagnostics when $debug is true
+        if ( $debug ) {
+            // High Value: Keyspace breakdown - keys per DB, TTL info, expired count
+            $keyspaceInfo = [] ;
+            foreach ( $infoRaw as $key => $value ) {
+                if ( strpos( $key, 'db' ) === 0 && is_numeric( substr( $key, 2 ) ) ) {
+                    // Parse db0, db1, etc: "keys=N,expires=N,avg_ttl=N"
+                    $dbStats = [] ;
+                    foreach ( explode( ',', $value ) as $part ) {
+                        $kv = explode( '=', $part, 2 ) ;
+                        if ( count( $kv ) === 2 ) {
+                            $dbStats[$kv[0]] = (int) $kv[1] ;
+                        }
+                    }
+                    $keyspaceInfo[] = [
+                        'db'       => $key,
+                        'keys'     => $dbStats['keys'] ?? 0,
+                        'expires'  => $dbStats['expires'] ?? 0,
+                        'avgTtl'   => $dbStats['avg_ttl'] ?? 0,
+                    ] ;
+                }
+            }
+            $debugData['keyspace'] = $keyspaceInfo ;
+            $debugData['expiredKeys'] = (int) ( $infoRaw['expired_keys'] ?? 0 ) ;
+            $debugData['expiredStalePerc'] = (float) ( $infoRaw['expired_stale_perc'] ?? 0 ) ;
+
+            // High Value: Ops/sec & throughput
+            $debugData['instantaneousOpsPerSec'] = (int) ( $infoRaw['instantaneous_ops_per_sec'] ?? 0 ) ;
+            $debugData['instantaneousInputKbps'] = (float) ( $infoRaw['instantaneous_input_kbps'] ?? 0 ) ;
+            $debugData['instantaneousOutputKbps'] = (float) ( $infoRaw['instantaneous_output_kbps'] ?? 0 ) ;
+            $debugData['totalConnectionsReceived'] = (int) ( $infoRaw['total_connections_received'] ?? 0 ) ;
+            $debugData['totalCommandsProcessed'] = (int) ( $infoRaw['total_commands_processed'] ?? 0 ) ;
+            $debugData['totalNetInputBytes'] = (int) ( $infoRaw['total_net_input_bytes'] ?? 0 ) ;
+            $debugData['totalNetOutputBytes'] = (int) ( $infoRaw['total_net_output_bytes'] ?? 0 ) ;
+
+            // High Value: CPU usage
+            $debugData['usedCpuSys'] = (float) ( $infoRaw['used_cpu_sys'] ?? 0 ) ;
+            $debugData['usedCpuUser'] = (float) ( $infoRaw['used_cpu_user'] ?? 0 ) ;
+            $debugData['usedCpuSysChildren'] = (float) ( $infoRaw['used_cpu_sys_children'] ?? 0 ) ;
+            $debugData['usedCpuUserChildren'] = (float) ( $infoRaw['used_cpu_user_children'] ?? 0 ) ;
+
+            // High Value: Persistence status (bgsave/AOF in progress)
+            $debugData['rdbBgsaveInProgress'] = ( ( $infoRaw['rdb_bgsave_in_progress'] ?? '0' ) === '1' ) ;
+            $debugData['rdbLastBgsaveStatus'] = $infoRaw['rdb_last_bgsave_status'] ?? 'unknown' ;
+            $debugData['rdbLastBgsaveTimeSec'] = (int) ( $infoRaw['rdb_last_bgsave_time_sec'] ?? -1 ) ;
+            $debugData['rdbCurrentBgsaveTimeSec'] = (int) ( $infoRaw['rdb_current_bgsave_time_sec'] ?? -1 ) ;
+            $debugData['aofRewriteInProgress'] = ( ( $infoRaw['aof_rewrite_in_progress'] ?? '0' ) === '1' ) ;
+            $debugData['aofLastRewriteStatus'] = $infoRaw['aof_last_rewrite_status'] ?? 'unknown' ;
+            $debugData['aofCurrentRewriteTimeSec'] = (int) ( $infoRaw['aof_current_rewrite_time_sec'] ?? -1 ) ;
+            $debugData['aofRewriteScheduled'] = ( ( $infoRaw['aof_rewrite_scheduled'] ?? '0' ) === '1' ) ;
+
+            // High Value: Client buffer details (omem, qbuf from CLIENT LIST)
+            $clientBuffers = [] ;
+            try {
+                $clientListRaw = $redis->client( 'list' ) ;
+                if ( is_array( $clientListRaw ) ) {
+                    foreach ( $clientListRaw as $client ) {
+                        // Only include clients with significant buffer usage
+                        $omem = (int) ( $client['omem'] ?? 0 ) ;
+                        $qbuf = (int) ( $client['qbuf'] ?? 0 ) ;
+                        $qbufFree = (int) ( $client['qbuf-free'] ?? 0 ) ;
+                        if ( $omem > 0 || $qbuf > 0 ) {
+                            $clientBuffers[] = [
+                                'id'       => (int) ( $client['id'] ?? 0 ),
+                                'addr'     => $client['addr'] ?? '',
+                                'name'     => $client['name'] ?? '',
+                                'omem'     => $omem,
+                                'qbuf'     => $qbuf,
+                                'qbufFree' => $qbufFree,
+                                'cmd'      => $client['cmd'] ?? '',
+                                'flags'    => $client['flags'] ?? '',
+                            ] ;
+                        }
+                    }
+                }
+            } catch ( \Exception $e ) {
+                // CLIENT LIST for debug may fail - continue without
+            }
+            $debugData['clientBuffers'] = $clientBuffers ;
+        }
+
         $redis->close() ;
 
         // Output successful response
@@ -844,6 +927,8 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'streamsData'       => $streamsData,
             'pendingData'       => $pendingData,
             'maintenanceInfo'   => $maintenanceInfo,
+            // Debug mode data (only populated when debug=Redis)
+            'debugData'         => $debugData,
         ] ) . "\n" ;
 
     } catch ( \Exception $e ) {
@@ -869,6 +954,8 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'streamsData'       => [],
             'pendingData'       => [],
             'maintenanceInfo'   => $maintenanceInfo,
+            // Debug mode data (empty on error)
+            'debugData'         => [],
         ] ) . "\n" ;
     }
 }

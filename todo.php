@@ -38,13 +38,8 @@ namespace com\kbcmdba\aql ;
 //          - Consider: Multiple DBAs monitoring same hosts in different contexts
 //          - Consider: "Silenced by" tracking - who/which session silenced the host
 // @todo 20 Add Redis support for monitoring (see subtasks 20-35 through 20-40)
-// @todo 20-35 Redis Debug Mode - Additional diagnostics when debugRedis=1
-//          - High Value (troubleshooting essentials):
-//            - Keyspace breakdown: keys per DB, keys with TTL, expired count
-//            - Ops/sec & throughput: instantaneous_ops_per_sec, input/output_kbps
-//            - CPU usage: used_cpu_sys, used_cpu_user
-//            - Persistence status: bgsave/AOF rewrite in progress, last bgsave status
-//            - Client buffer details: output buffer (omem), query buffer (qbuf)
+// @todo 20-35 Redis Debug Mode - Additional diagnostics when debug=Redis
+//          - HIGH VALUE COMPLETE: keyspace, ops/sec, CPU, persistence, client buffers
 //          - Medium Value (deeper diagnostics):
 //            - Replication details (replicas): master link status, seconds since IO, offset lag
 //            - Latency events: display LATENCY LATEST spike data (already gathered)
