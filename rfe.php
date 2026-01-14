@@ -454,6 +454,15 @@ namespace com\kbcmdba\aql ;
 //          - Iframe-friendly embedding
 //          - Simplified view (just the essentials)
 //          - Auto-rotate between host groups
+//
+// @rfe 705 Customizable section ordering
+//          - Allow users to reorder page sections by DB type priority
+//          - Example: Redis admin sees Redis tables first, MySQL second
+//          - Drag-and-drop reordering or preference settings
+//          - Persist order in localStorage or user profile (if auth enabled)
+//          - Per-user preference: "My priority: Redis > MS-SQL > MySQL"
+//          - Option to collapse/hide sections not relevant to user
+//          - Responsive: remember different layouts for different screen sizes
 
 // ----------------------------------------------------------------------------
 // SECURITY & ACCESS CONTROL

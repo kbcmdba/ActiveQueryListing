@@ -38,11 +38,15 @@ namespace com\kbcmdba\aql ;
 //          - Consider: Multiple DBAs monitoring same hosts in different contexts
 //          - Consider: "Silenced by" tracking - who/which session silenced the host
 // @todo 20 Add Redis support for monitoring (see subtasks 20-30 through 20-40)
-// @todo 20-30 Redis Phase 3 - Advanced Diagnostics
-//          - LATENCY DOCTOR/LATEST/HISTORY (Redis 2.8.13+)
-//          - MEMORY DOCTOR/STATS (Redis 4.0+)
-//          - PUBSUB CHANNELS/NUMSUB monitoring
-//          - XINFO STREAM/XPENDING for Streams (Redis 5.0+)
+// @todo 20-30 Redis Phase 3 - Advanced Diagnostics (partially complete)
+//          - [DONE] LATENCY LATEST (Redis 2.8.13+)
+//          - [DONE] MEMORY STATS with Memory Statistics table (Redis 4.0+)
+//          - [DONE] PUBSUB CHANNELS/NUMPAT monitoring
+//          - [DONE] XINFO STREAM with Streams table (Redis 5.0+)
+//          - Remaining:
+//            - LATENCY DOCTOR/HISTORY for deeper latency analysis
+//            - MEMORY DOCTOR for memory optimization recommendations
+//            - XPENDING for consumer group pending entry monitoring
 // @todo 20-40 Redis Phase 4 - Enterprise Features
 //          - SSL/TLS connection support
 //          - Redis Cluster topology awareness
