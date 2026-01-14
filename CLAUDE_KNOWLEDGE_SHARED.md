@@ -152,6 +152,9 @@ Migrations in `deployDDL.php` follow this pattern:
 - `$redis->info()` returns basic sections but NOT commandstats - use `$redis->info('commandstats')` separately
 - CLIENT LIST returns array of client objects with keys: id, addr, name, age, idle, db, cmd, flags
 - Version strings are just numbers (e.g., "7.2.4") - no "Redis" prefix, unlike MariaDB which includes "MariaDB" in version
+- **MEMORY STATS returns strings**: Values like `fragmentation` come back as strings (e.g., `"9.92"`), not numbers. Use `parseFloat()` in JS before calling `.toFixed()` or comparisons fail silently.
+- **Fragmentation ratio misleading on small instances**: A 10:1 ratio on 1MB = only 9MB wasted (harmless). Check absolute bytes (`usedMemoryRss - usedMemory > 100MB`) instead of ratio for alerts.
+- **phpredis scan() signature**: Doesn't accept associative array options. Use `$redis->rawCommand('SCAN', $cursor, 'TYPE', 'stream', 'COUNT', '100')` instead.
 
 ### Version String Patterns
 - MySQL: Returns plain version like "8.4.6" (no type indicator)
