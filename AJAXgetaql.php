@@ -438,6 +438,7 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         $redisOverviewData['uptimeHuman'] = Tools::friendlyTime( $redisOverviewData['uptime'] ) ;
         $redisOverviewData['usedMemory'] = (int) ( $infoRaw['used_memory'] ?? 0 ) ;
         $redisOverviewData['usedMemoryHuman'] = $infoRaw['used_memory_human'] ?? '0B' ;
+        $redisOverviewData['usedMemoryRss'] = (int) ( $infoRaw['used_memory_rss'] ?? 0 ) ;
         $redisOverviewData['maxMemory'] = (int) ( $infoRaw['maxmemory'] ?? 0 ) ;
         $redisOverviewData['maxMemoryHuman'] = $infoRaw['maxmemory_human'] ?? '0B' ;
         $redisOverviewData['connectedClients'] = (int) ( $infoRaw['connected_clients'] ?? 0 ) ;
@@ -549,7 +550,9 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         }
 
         // Level 3: Warning
-        if ( $redisOverviewData['fragmentationRatio'] > 1.5 ) {
+        // Fragmentation: only warn if wasted bytes > 100MB (ratio alone misleads on small instances)
+        $fragBytes = $redisOverviewData['usedMemoryRss'] - $redisOverviewData['usedMemory'] ;
+        if ( $fragBytes > 100 * 1024 * 1024 ) {
             $level = max( $level, 3 ) ;
         }
         if ( $redisOverviewData['blockedClients'] > 5 ) {

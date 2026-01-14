@@ -63,6 +63,21 @@ namespace com\kbcmdba\aql ;
 //          - Certificate on ce-cook-adc1101.cashtn.com expired Jan 9, 2025
 //          - Currently using ldapVerifyCert=false as workaround (security risk)
 //          - Once renewed, remove ldapVerifyCert=false from aql_config.xml
+// @todo 40 Per-host alert thresholds for all DB types
+//          - MySQL: already has time-based thresholds (alert_crit_secs, etc.) per host
+//          - Redis: currently hardcoded (frag_bytes > 100MB, mem_pct > 80%, etc.)
+//          - MS-SQL: will need its own thresholds when implemented
+//          - Design: Alert Template system
+//            - alert_template table: template_id, name, db_type, thresholds (JSON)
+//            - host table: add alert_template_id FK (nullable for custom overrides)
+//            - Templates define common configurations (e.g., "Production Redis", "Dev MySQL")
+//            - Hosts can use a template OR have custom thresholds (JSON column)
+//            - Precedence: host custom > host template > global defaults
+//          - Benefits:
+//            - New hosts can inherit from template - easy onboarding
+//            - Change template = update all hosts using it
+//            - Still allows per-host customization when needed
+//          - Need to update manageData.php for template CRUD and host assignment
 // @todo 50 Add user statistics drilldown
 //          - Display like Noteworthy Status Overview but per-user across all watched systems
 //          - Columns: User, Longest Running, Idle Time (aggregate), Level counts (0-4, Error)
