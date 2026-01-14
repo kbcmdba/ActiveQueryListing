@@ -299,6 +299,59 @@ $fullRedisStreamsHeaderFooter = <<<HTML
     $redisStreamsHeaderFooterCols
 HTML;
 
+// Redis Latency History table configuration (Phase 3)
+$redisLatencyHistCols = 4 ;
+$redisLatencyHistHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Event <a onclick="alert('Latency event type (e.g., command, fast-command, fork)'); return false;">?</a></th>
+      <th>Time</th>
+      <th>Latency (ms)</th>
+    </tr>
+HTML;
+$fullRedisLatencyHistHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisLatencyHistCols">Redis Latency History</th>
+    </tr>
+    $redisLatencyHistHeaderFooterCols
+HTML;
+
+// Redis Pending Entries table configuration (Phase 3)
+$redisPendingCols = 7 ;
+$redisPendingHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Stream</th>
+      <th>Group</th>
+      <th>Pending <a onclick="alert('Number of entries awaiting acknowledgment'); return false;">?</a></th>
+      <th>Lag <a onclick="alert('Entries in stream not yet delivered to group'); return false;">?</a></th>
+      <th>Consumers</th>
+      <th>ID Range</th>
+    </tr>
+HTML;
+$fullRedisPendingHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisPendingCols">Redis Stream Pending Entries</th>
+    </tr>
+    $redisPendingHeaderFooterCols
+HTML;
+
+// Redis Diagnostics table configuration (Phase 3 - LATENCY DOCTOR / MEMORY DOCTOR)
+$redisDiagCols = 3 ;
+$redisDiagHeaderFooterCols = <<<HTML
+<tr class="mytr">
+      <th>Server</th>
+      <th>Type</th>
+      <th>Diagnostic Report</th>
+    </tr>
+HTML;
+$fullRedisDiagHeaderFooter = <<<HTML
+<tr class="mytr">
+      <th colspan="$redisDiagCols">Redis Diagnostics (LATENCY DOCTOR / MEMORY DOCTOR)</th>
+    </tr>
+    $redisDiagHeaderFooterCols
+HTML;
+
 $debug = Tools::param('debug') === "1" ;
 $muted = Tools::param('mute') === "1" ;
 $page = new WebPage('Active Queries List');
@@ -447,6 +500,9 @@ try {
     \$("#fullrediscmdstatstbodyid").html( '<tr id="fullRedisCmdStatsfigment"><td colspan="$redisCmdStatsCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullredismemstatstbodyid").html( '<tr id="fullRedisMemStatsfigment"><td colspan="$redisMemStatsCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullredisstreamstbodyid").html( '<tr id="fullRedisStreamsfigment"><td colspan="$redisStreamsCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullredislatencyhisttbodyid").html( '<tr id="fullRedisLatencyHistfigment"><td colspan="$redisLatencyHistCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullredispendingtbodyid").html( '<tr id="fullRedisPendingfigment"><td colspan="$redisPendingCols"><center>Data loading</center></td></tr>' ) ;
+    \$("#fullredisdiagtbodyid").html( '<tr id="fullRedisDiagfigment"><td colspan="$redisDiagCols"><center>Data loading</center></td></tr>' ) ;
 JSREDIS;
         $redisFigmentRemoveJs = <<<JSREDIS
             \$("#nwRedisOverviewfigment").remove() ;
@@ -457,6 +513,9 @@ JSREDIS;
             \$("#fullRedisCmdStatsfigment").remove() ;
             \$("#fullRedisMemStatsfigment").remove() ;
             \$("#fullRedisStreamsfigment").remove() ;
+            \$("#fullRedisLatencyHistfigment").remove() ;
+            \$("#fullRedisPendingfigment").remove() ;
+            \$("#fullRedisDiagfigment").remove() ;
 JSREDIS;
         $redisTableSortJs = <<<JSREDIS
     // Redis tables
@@ -468,6 +527,9 @@ JSREDIS;
     initTableSortWithUrl('#fullRedisCmdStatsTable', 'fullrediscmdstats', [[2, 1]]); // Calls desc
     initTableSortWithUrl('#fullRedisMemStatsTable', 'fullredismemstats', [[4, 1]]); // Frag ratio desc
     initTableSortWithUrl('#fullRedisStreamsTable', 'fullredisstreams', [[2, 1]]);   // Length desc
+    initTableSortWithUrl('#fullRedisLatencyHistTable', 'fullredislatencyhist', [[3, 1]]); // Latency desc
+    initTableSortWithUrl('#fullRedisPendingTable', 'fullredispending', [[3, 1]]);  // Pending desc
+    initTableSortWithUrl('#fullRedisDiagTable', 'fullredisdiag', [[0, 0]]);  // Server asc
 JSREDIS;
     }
 
@@ -1182,6 +1244,9 @@ HTML
 {$cb(xTable( 'full', 'RedisCmdStats', 'RedisCmdStats', $fullRedisCmdStatsHeaderFooter, 'rediscmdstats', $redisCmdStatsCols ))}
 {$cb(xTable( 'full', 'RedisMemStats', 'RedisMemStats', $fullRedisMemStatsHeaderFooter, 'redismemstats', $redisMemStatsCols ))}
 {$cb(xTable( 'full', 'RedisStreams', 'RedisStreams', $fullRedisStreamsHeaderFooter, 'redisstreams', $redisStreamsCols ))}
+{$cb(xTable( 'full', 'RedisLatencyHist', 'RedisLatencyHist', $fullRedisLatencyHistHeaderFooter, 'redislatencyhist', $redisLatencyHistCols ))}
+{$cb(xTable( 'full', 'RedisPending', 'RedisPending', $fullRedisPendingHeaderFooter, 'redispending', $redisPendingCols ))}
+{$cb(xTable( 'full', 'RedisDiag', 'RedisDiag', $fullRedisDiagHeaderFooter, 'redisdiag', $redisDiagCols ))}
 HTML
         ) ;
     }

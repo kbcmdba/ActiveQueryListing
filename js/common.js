@@ -750,6 +750,65 @@ function redisCallback( i, item ) {
             $( streamRow ).appendTo( '#fullredisstreamstbodyid' ) ;
         }
     }
+
+    // Phase 3: Build latency history rows
+    var latencyHistory = item[ 'latencyHistory' ] || [] ;
+    if ( latencyHistory.length > 0 ) {
+        for ( var lh = 0; lh < latencyHistory.length; lh++ ) {
+            var latHist = latencyHistory[ lh ] ;
+            var latHistTime = new Date( latHist[ 'timestamp' ] * 1000 ).toLocaleString() ;
+            var latHistLevel = ( latHist[ 'latencyMs' ] > 100 ) ? 'level3' : ( latHist[ 'latencyMs' ] > 10 ) ? 'level2' : 'level1' ;
+            var latHistRow = '<tr class="' + latHistLevel + '">'
+                + '<td>' + hostname + '</td>'
+                + '<td>' + ( latHist[ 'event' ] || '-' ) + '</td>'
+                + '<td>' + latHistTime + '</td>'
+                + '<td class="text-right">' + ( latHist[ 'latencyMs' ] || 0 ) + '</td>'
+                + '</tr>' ;
+            $( latHistRow ).appendTo( '#fullredislatencyhisttbodyid' ) ;
+        }
+    }
+
+    // Phase 3: Build pending entries rows
+    var pendingData = item[ 'pendingData' ] || [] ;
+    if ( pendingData.length > 0 ) {
+        for ( var pd = 0; pd < pendingData.length; pd++ ) {
+            var pending = pendingData[ pd ] ;
+            var pendingLevel = ( pending[ 'pending' ] > 1000 ) ? 'level3' : ( pending[ 'pending' ] > 100 ) ? 'level2' : 'level1' ;
+            var idRange = ( pending[ 'minId' ] || '-' ) + ' ... ' + ( pending[ 'maxId' ] || '-' ) ;
+            var pendingRow = '<tr class="' + pendingLevel + '">'
+                + '<td>' + hostname + '</td>'
+                + '<td>' + ( pending[ 'stream' ] || '-' ) + '</td>'
+                + '<td>' + ( pending[ 'group' ] || '-' ) + '</td>'
+                + '<td class="text-right">' + ( pending[ 'pending' ] || 0 ).toLocaleString() + '</td>'
+                + '<td class="text-right">' + ( pending[ 'lag' ] || 0 ).toLocaleString() + '</td>'
+                + '<td class="text-right">' + ( pending[ 'consumers' ] || 0 ) + '</td>'
+                + '<td>' + idRange + '</td>'
+                + '</tr>' ;
+            $( pendingRow ).appendTo( '#fullredispendingtbodyid' ) ;
+        }
+    }
+
+    // Phase 3: Build diagnostics rows (LATENCY DOCTOR / MEMORY DOCTOR)
+    var latencyDoctor = item[ 'latencyDoctor' ] || '' ;
+    var memoryDoctor = item[ 'memoryDoctor' ] || '' ;
+    if ( latencyDoctor ) {
+        var latDocLevel = latencyDoctor.indexOf( 'I have a few') >= 0 ? 'level2' : 'level1' ;
+        var diagRow = '<tr class="' + latDocLevel + '">'
+            + '<td>' + hostname + '</td>'
+            + '<td>Latency</td>'
+            + '<td class="diag-text"><pre>' + escapeHtml( latencyDoctor ) + '</pre></td>'
+            + '</tr>' ;
+        $( diagRow ).appendTo( '#fullredisdiagtbodyid' ) ;
+    }
+    if ( memoryDoctor ) {
+        var memDocLevel = memoryDoctor.indexOf( 'Sam, I have a few') >= 0 ? 'level2' : 'level1' ;
+        var memDiagRow = '<tr class="' + memDocLevel + '">'
+            + '<td>' + hostname + '</td>'
+            + '<td>Memory</td>'
+            + '<td class="diag-text"><pre>' + escapeHtml( memoryDoctor ) + '</pre></td>'
+            + '</tr>' ;
+        $( memDiagRow ).appendTo( '#fullredisdiagtbodyid' ) ;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

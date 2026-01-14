@@ -979,6 +979,19 @@ td.blocking {
     text-align: center;
 }
 
+/* Diagnostic text (LATENCY DOCTOR / MEMORY DOCTOR output) */
+.diag-text pre {
+    margin: 0;
+    padding: 0.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.85rem;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
 /* Status/message colors */
 .msg-error {
     color: var(--status-error);

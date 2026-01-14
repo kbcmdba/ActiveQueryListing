@@ -382,8 +382,12 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
     // Phase 3: Advanced diagnostics
     $memoryStats = [] ;
     $latencyData = [] ;
+    $latencyDoctor = '' ;
+    $latencyHistory = [] ;
+    $memoryDoctor = '' ;
     $pubsubData = [ 'channels' => [], 'patterns' => 0 ] ;
     $streamsData = [] ;
+    $pendingData = [] ;
 
     try {
         // Parse hostname and port
@@ -658,6 +662,16 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             error_log( "AQL Redis MEMORY STATS failed for $hostname: " . $e->getMessage() ) ;
         }
 
+        // Phase 3: MEMORY DOCTOR - human-readable memory health report
+        try {
+            $memDocRaw = $redis->rawCommand( 'MEMORY', 'DOCTOR' ) ;
+            if ( is_string( $memDocRaw ) ) {
+                $memoryDoctor = $memDocRaw ;
+            }
+        } catch ( \Exception $e ) {
+            // MEMORY DOCTOR may not be available (requires Redis 4.0+)
+        }
+
         // Phase 3: LATENCY LATEST
         try {
             $latRaw = $redis->rawCommand( 'LATENCY', 'LATEST' ) ;
@@ -675,6 +689,39 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             }
         } catch ( \Exception $e ) {
             error_log( "AQL Redis LATENCY LATEST failed for $hostname: " . $e->getMessage() ) ;
+        }
+
+        // Phase 3: LATENCY DOCTOR - human-readable latency analysis
+        try {
+            $docRaw = $redis->rawCommand( 'LATENCY', 'DOCTOR' ) ;
+            if ( is_string( $docRaw ) ) {
+                $latencyDoctor = $docRaw ;
+            }
+        } catch ( \Exception $e ) {
+            // LATENCY DOCTOR may not be available (requires Redis 2.8.13+)
+        }
+
+        // Phase 3: LATENCY HISTORY - get history for each known event from LATENCY LATEST
+        if ( !empty( $latencyData ) ) {
+            try {
+                foreach ( $latencyData as $event ) {
+                    $eventName = $event['event'] ;
+                    $histRaw = $redis->rawCommand( 'LATENCY', 'HISTORY', $eventName ) ;
+                    if ( is_array( $histRaw ) ) {
+                        foreach ( $histRaw as $histEntry ) {
+                            if ( is_array( $histEntry ) && count( $histEntry ) >= 2 ) {
+                                $latencyHistory[] = [
+                                    'event'     => $eventName,
+                                    'timestamp' => (int) $histEntry[0],
+                                    'latencyMs' => (int) $histEntry[1],
+                                ] ;
+                            }
+                        }
+                    }
+                }
+            } catch ( \Exception $e ) {
+                error_log( "AQL Redis LATENCY HISTORY failed for $hostname: " . $e->getMessage() ) ;
+            }
         }
 
         // Phase 3: PUBSUB stats
@@ -735,6 +782,46 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             error_log( "AQL Redis XINFO failed for $hostname: " . $e->getMessage() ) ;
         }
 
+        // Phase 3: XPENDING - get pending entries for consumer groups
+        try {
+            foreach ( $streamsData as $streamInfo ) {
+                if ( $streamInfo['groups'] > 0 ) {
+                    // Get consumer groups for this stream
+                    $groups = $redis->rawCommand( 'XINFO', 'GROUPS', $streamInfo['key'] ) ;
+                    if ( is_array( $groups ) ) {
+                        foreach ( $groups as $group ) {
+                            if ( is_array( $group ) ) {
+                                // Parse alternating key/value array
+                                $groupInfo = [] ;
+                                for ( $i = 0 ; $i < count( $group ) - 1 ; $i += 2 ) {
+                                    $groupInfo[$group[$i]] = $group[$i + 1] ;
+                                }
+                                $groupName = $groupInfo['name'] ?? 'unknown' ;
+                                // Get XPENDING summary for this group
+                                $pending = $redis->rawCommand( 'XPENDING', $streamInfo['key'], $groupName ) ;
+                                if ( is_array( $pending ) && count( $pending ) >= 4 ) {
+                                    $pendingCount = (int) $pending[0] ;
+                                    if ( $pendingCount > 0 ) {
+                                        $pendingData[] = [
+                                            'stream'       => $streamInfo['key'],
+                                            'group'        => $groupName,
+                                            'pending'      => $pendingCount,
+                                            'minId'        => $pending[1] ?? '-',
+                                            'maxId'        => $pending[2] ?? '-',
+                                            'consumers'    => is_array( $pending[3] ) ? count( $pending[3] ) : 0,
+                                            'lag'          => $groupInfo['lag'] ?? 0,
+                                        ] ;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch ( \Exception $e ) {
+            error_log( "AQL Redis XPENDING failed for $hostname: " . $e->getMessage() ) ;
+        }
+
         $redis->close() ;
 
         // Output successful response
@@ -749,9 +836,13 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'commandStats'      => $commandStats,
             // Phase 3: Advanced diagnostics
             'memoryStats'       => $memoryStats,
+            'memoryDoctor'      => $memoryDoctor,
             'latencyData'       => $latencyData,
+            'latencyDoctor'     => $latencyDoctor,
+            'latencyHistory'    => $latencyHistory,
             'pubsubData'        => $pubsubData,
             'streamsData'       => $streamsData,
+            'pendingData'       => $pendingData,
             'maintenanceInfo'   => $maintenanceInfo,
         ] ) . "\n" ;
 
@@ -770,9 +861,13 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'slowlogData'       => [],
             // Phase 3: empty defaults on error
             'memoryStats'       => [],
+            'memoryDoctor'      => '',
             'latencyData'       => [],
+            'latencyDoctor'     => '',
+            'latencyHistory'    => [],
             'pubsubData'        => [ 'channels' => [], 'channelCount' => 0, 'patterns' => 0 ],
             'streamsData'       => [],
+            'pendingData'       => [],
             'maintenanceInfo'   => $maintenanceInfo,
         ] ) . "\n" ;
     }
