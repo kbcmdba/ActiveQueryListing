@@ -16,6 +16,8 @@ This prevents merge conflicts and ensures we have the latest changes from the re
 
 **Do NOT push to GitHub** - authentication is not configured for this repo. Commits are fine, but the user will handle pushing independently.
 
+**Before every commit, ask yourself:** Is there anything learned worth adding to CLAUDE.md? If so, vet with the user whether it should also go into CLAUDE_KNOWLEDGE_SHARED.md.
+
 ## Project Overview
 
 - **Type**: PHP web application for monitoring database servers (AQL - Active Query Listing)
