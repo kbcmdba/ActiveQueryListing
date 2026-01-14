@@ -2,7 +2,7 @@
 
 ## Self-Improvement
 
-**Update this file** with lessons learned during each session. When you discover something important about the codebase, patterns, gotchas, or user preferences - add it here. This helps us both work together more effectively over time.
+**Update this file** with lessons learned during each session. When you discover something important about the codebase, patterns, gotchas, or user preferences - add it here. This helps us both work together more effectively over time. When you find something that applies to both this and the other environment, apply that same knowledge to both this file and CLAUDE_KNOWLEDGE_SHARED.md. This makes it possible to keep two versions of the file - one local and one shared in GitHub.
 
 ## Git Workflow
 
@@ -121,7 +121,7 @@ Migrations in `deployDDL.php` follow this pattern:
 ## Testing
 
 - Run `php -l <file>` to check PHP syntax before committing
-- Run `php-cgi <file>` to test page output from command line
+- Run `php index.php 2>&1 | head` to test page output and see runtime errors
 - Test the app via browser at the configured baseUrl
 - Use `verifyAQLConfiguration.php` to check environment setup
 
@@ -131,6 +131,7 @@ Migrations in `deployDDL.php` follow this pattern:
 - After `git pull`, new required config parameters can break AQL with 500 errors
 - Config file is `./aql_config.xml` (local to each instance, not `/etc/`)
 - Test with `php index.php 2>&1 | head` to see runtime errors, not just syntax
+  - Use `verifyAQLConfiguration.php` to check environment setup
 
 ### CSS Patterns
 - Use `rem` units, not `em`
@@ -150,3 +151,4 @@ Migrations in `deployDDL.php` follow this pattern:
 - Commit messages should be descriptive but concise
 - Center-align numeric columns in tables
 - Friendly time format: "34052 (9h,27m,32s)"
+
