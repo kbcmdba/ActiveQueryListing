@@ -24,7 +24,6 @@
 
 namespace com\kbcmdba\aql ;
 
-// @todo 01 verifyAQLConfiguration.php doesn't have a navbar at the top. It should be re-added.
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
 // @todo 02-60 LDAP/authentication tests (when doLDAPAuthentication=true)
 //             - Test LDAP server connectivity

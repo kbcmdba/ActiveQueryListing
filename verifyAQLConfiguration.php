@@ -29,9 +29,85 @@
 
 namespace com\kbcmdba\aql ;
 
+require 'vendor/autoload.php' ;
+
+use com\kbcmdba\aql\Libs\WebPage ;
+
 // Minimal bootstrap - don't fail if config is broken
 error_reporting( E_ALL ) ;
 ini_set( 'display_errors', 0 ) ;
+
+$page = new WebPage( 'AQL Configuration Verification' ) ;
+
+// Custom styles for verification page
+$page->setStyles( <<<'CSS'
+<style>
+    .verify-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .verify-container h1, .verify-container h2, .verify-container h3, .verify-container h4 {
+        color: #fff; border-bottom: 1px solid #444; padding-bottom: 10px;
+    }
+    .verify-container h1 { font-size: 1.8rem; }
+    .verify-container h2 { font-size: 1.4rem; margin-top: 30px; }
+    .verify-container h3 { font-size: 1.2rem; margin-top: 20px; border-bottom: none; }
+    .status-pass { color: #4caf50; font-weight: bold; }
+    .status-fail { color: #f44336; font-weight: bold; }
+    .status-warn { color: #ff9800; font-weight: bold; }
+    .status-info { color: #2196f3; }
+    .summary-box { background: #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 30px; border-left: 4px solid #2196f3; }
+    .summary-box.error { border-left-color: #f44336; }
+    .summary-box.success { border-left-color: #4caf50; }
+    .summary-box.warning { border-left-color: #ff9800; }
+    .verify-container table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
+    .verify-container th, .verify-container td { padding: 10px 12px; text-align: left; border: 1px solid #444; }
+    .verify-container th { background: #2a2a2a; font-weight: 600; }
+    .verify-container tr:hover { background: rgba(255,255,255,0.03); }
+    .verify-container code { background: #2d2d2d; padding: 2px 6px; border-radius: 3px; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85em; }
+    .verify-container pre { background: #2d2d2d; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85rem; border: 1px solid #444; }
+    .param-group { margin-top: 25px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px; }
+    .param-group h3 { margin-top: 0; color: #2196f3; }
+    .test-section { margin: 25px 0; padding: 20px; background: #2a2a2a; border-radius: 8px; }
+    .test-section h3 { margin-top: 0; }
+    .next-steps { background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; border-radius: 8px; padding: 20px; margin-top: 30px; }
+    .next-steps h3 { color: #4caf50; margin-top: 0; }
+    .next-steps ol { margin-bottom: 0; }
+    .next-steps li { margin-bottom: 10px; }
+    .fix-section { background: rgba(244, 67, 54, 0.1); border: 1px solid #f44336; border-radius: 8px; padding: 20px; margin-top: 20px; }
+    .fix-section h3 { color: #f44336; margin-top: 0; }
+    .verify-container a { color: #2196f3; text-decoration: none; }
+    .verify-container a:hover { text-decoration: underline; }
+    .version-info { color: #888; font-size: 0.85rem; margin-top: 30px; padding-top: 20px; border-top: 1px solid #444; }
+    .code-block { position: relative; }
+    .code-block pre { margin: 0; }
+    .copy-btn { position: absolute; top: 8px; right: 8px; background: #2a2a2a; border: 1px solid #444; color: #e0e0e0; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; opacity: 0.7; transition: opacity 0.2s; }
+    .copy-btn:hover { opacity: 1; background: #444; }
+    .copy-btn.copied { background: #4caf50; color: white; opacity: 1; }
+</style>
+<script>
+function copyToClipboard(btn) {
+    const codeBlock = btn.parentElement.querySelector('pre');
+    const text = codeBlock.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    }).catch(function(err) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+}
+</script>
+CSS
+) ;
+
+// Start output buffering to capture body content
+ob_start() ;
 
 $configFile = __DIR__ . '/aql_config.xml' ;
 $sampleFile = __DIR__ . '/config_sample.xml' ;
@@ -381,238 +457,7 @@ function isFeatureEnabled( $param, $configValues ) {
 }
 
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AQL Configuration Verification</title>
-    <style>
-        :root {
-            --bg-color: #1a1a1a;
-            --text-color: #e0e0e0;
-            --border-color: #444;
-            --header-bg: #2a2a2a;
-            --pass-color: #4caf50;
-            --fail-color: #f44336;
-            --warn-color: #ff9800;
-            --info-color: #2196f3;
-            --code-bg: #2d2d2d;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1, h2, h3, h4 {
-            color: #fff;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
-        h1 { font-size: 1.8rem; }
-        h2 { font-size: 1.4rem; margin-top: 30px; }
-        h3 { font-size: 1.2rem; margin-top: 20px; border-bottom: none; }
-
-        .status-pass { color: var(--pass-color); font-weight: bold; }
-        .status-fail { color: var(--fail-color); font-weight: bold; }
-        .status-warn { color: var(--warn-color); font-weight: bold; }
-        .status-info { color: var(--info-color); }
-
-        .summary-box {
-            background: var(--header-bg);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-left: 4px solid var(--info-color);
-        }
-        .summary-box.error { border-left-color: var(--fail-color); }
-        .summary-box.success { border-left-color: var(--pass-color); }
-        .summary-box.warning { border-left-color: var(--warn-color); }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 0.9rem;
-        }
-        th, td {
-            padding: 10px 12px;
-            text-align: left;
-            border: 1px solid var(--border-color);
-        }
-        th {
-            background: var(--header-bg);
-            font-weight: 600;
-        }
-        tr:hover {
-            background: rgba(255,255,255,0.03);
-        }
-
-        code {
-            background: var(--code-bg);
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.85em;
-        }
-        pre {
-            background: var(--code-bg);
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.85rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .param-group {
-            margin-top: 25px;
-            padding: 15px;
-            background: rgba(255,255,255,0.02);
-            border-radius: 8px;
-        }
-        .param-group h3 {
-            margin-top: 0;
-            color: var(--info-color);
-        }
-
-        .test-section {
-            margin: 25px 0;
-            padding: 20px;
-            background: var(--header-bg);
-            border-radius: 8px;
-        }
-        .test-section h3 {
-            margin-top: 0;
-        }
-
-        .next-steps {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid var(--pass-color);
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 30px;
-        }
-        .next-steps h3 {
-            color: var(--pass-color);
-            margin-top: 0;
-        }
-        .next-steps ol {
-            margin-bottom: 0;
-        }
-        .next-steps li {
-            margin-bottom: 10px;
-        }
-
-        .fix-section {
-            background: rgba(244, 67, 54, 0.1);
-            border: 1px solid var(--fail-color);
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        .fix-section h3 {
-            color: var(--fail-color);
-            margin-top: 0;
-        }
-
-        a {
-            color: var(--info-color);
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .badge-required { background: var(--fail-color); color: white; }
-        .badge-optional { background: #666; color: white; }
-        .badge-conditional { background: var(--warn-color); color: black; }
-
-        .version-info {
-            color: #888;
-            font-size: 0.85rem;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .code-block {
-            position: relative;
-        }
-        .code-block pre {
-            margin: 0;
-        }
-        .copy-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: var(--header-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        .copy-btn:hover {
-            opacity: 1;
-            background: var(--border-color);
-        }
-        .copy-btn.copied {
-            background: var(--pass-color);
-            color: white;
-            opacity: 1;
-        }
-    </style>
-<script>
-function copyToClipboard(btn) {
-    const codeBlock = btn.parentElement.querySelector('pre');
-    const text = codeBlock.textContent;
-
-    navigator.clipboard.writeText(text).then(function() {
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(function() {
-            btn.textContent = 'Copy';
-            btn.classList.remove('copied');
-        }, 2000);
-    }).catch(function(err) {
-        // Fallback for older browsers
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(function() {
-            btn.textContent = 'Copy';
-            btn.classList.remove('copied');
-        }, 2000);
-    });
-}
-</script>
-</head>
-<body>
-<div class="container">
+<div class="verify-container">
     <h1>AQL Configuration Verification</h1>
 
 <?php
@@ -1879,6 +1724,9 @@ if ( $dbConnected ) {
     </div>
 
 </div>
+<?php
 
-</body>
-</html>
+// Capture body content and display page
+$body = ob_get_clean() ;
+$page->setBody( $body ) ;
+$page->displayPage() ;
