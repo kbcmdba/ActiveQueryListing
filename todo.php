@@ -57,6 +57,15 @@ namespace com\kbcmdba\aql ;
 //          - SSL/TLS connection support
 //          - Redis Cluster topology awareness
 //          - Redis Sentinel monitoring
+// @todo 21 Per-database-type debug mode
+//          - Replace single "Debug Mode" checkbox with per-type checkboxes
+//          - Only show checkboxes for DB types that exist in host table (not all supported types)
+//          - Query: SELECT DISTINCT db_type FROM host WHERE active = 1
+//          - URL params: debugMySQL=1, debugRedis=1, etc. (instead of debug=1)
+//          - Benefits:
+//            - Debug Redis without flooding display with MySQL debug info
+//            - More targeted troubleshooting
+//            - Preserves backward compat: debug=1 could enable all types
 // @todo 23 Refactor AJAXgetaql.php to use DBType handler dispatch pattern
 //          - handleMySQLHost() and handleRedisHost() now implemented
 //          - Future: Use dispatch array: $handlers[$dbType]($hostname, $hostId, ...)

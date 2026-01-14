@@ -58,6 +58,7 @@ The `db_type` ENUM in the host table: MySQL, InnoDBCluster, MS-SQL, Redis, Oracl
 - **Remove todos when completed** - don't mark as done, just delete them
 - Lower numbers = higher priority
 - **Leave gaps between numbers** for future insertions (e.g., 10, 15, 20 allows adding 12 or 18 later)
+- **Subtasks belong to their parent** - New top-level todo (e.g., 21) goes AFTER all subtasks of previous number (e.g., 20-35, 20-40), not between parent and subtasks
 
 ### rfe.php
 - Contains feature requests using format `// @rfe XXX description`
