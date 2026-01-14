@@ -1097,7 +1097,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 </script>
 
-<h2 id="dbTypeOverviewHeader">Overview by Database Type</h2>
+<h2 id="dbTypeOverviewHeader">Scoreboards</h2>
 <table id="dbTypeOverviewTable" class="dbtype-overview-table">
   <tr>
     <td id="dbTypeMySQL" class="dbtype-box" onclick="scrollToSection('nwStatusOverview')" title="MySQL/MariaDB: Loading...">
