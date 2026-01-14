@@ -39,72 +39,6 @@ ini_set( 'display_errors', 0 ) ;
 
 $page = new WebPage( 'AQL Configuration Verification' ) ;
 
-// Custom styles for verification page
-$page->setStyles( <<<'CSS'
-<style>
-    .verify-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .verify-container h1, .verify-container h2, .verify-container h3, .verify-container h4 {
-        color: #fff; border-bottom: 1px solid #444; padding-bottom: 10px;
-    }
-    .verify-container h1 { font-size: 1.8rem; }
-    .verify-container h2 { font-size: 1.4rem; margin-top: 30px; }
-    .verify-container h3 { font-size: 1.2rem; margin-top: 20px; border-bottom: none; }
-    .status-pass { color: #4caf50; font-weight: bold; }
-    .status-fail { color: #f44336; font-weight: bold; }
-    .status-warn { color: #ff9800; font-weight: bold; }
-    .status-info { color: #2196f3; }
-    .summary-box { background: #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 30px; border-left: 4px solid #2196f3; }
-    .summary-box.error { border-left-color: #f44336; }
-    .summary-box.success { border-left-color: #4caf50; }
-    .summary-box.warning { border-left-color: #ff9800; }
-    .verify-container table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
-    .verify-container th, .verify-container td { padding: 10px 12px; text-align: left; border: 1px solid #444; }
-    .verify-container th { background: #2a2a2a; font-weight: 600; }
-    .verify-container tr:hover { background: rgba(255,255,255,0.03); }
-    .verify-container code { background: #2d2d2d; padding: 2px 6px; border-radius: 3px; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85em; }
-    .verify-container pre { background: #2d2d2d; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85rem; border: 1px solid #444; }
-    .param-group { margin-top: 25px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px; }
-    .param-group h3 { margin-top: 0; color: #2196f3; }
-    .test-section { margin: 25px 0; padding: 20px; background: #2a2a2a; border-radius: 8px; }
-    .test-section h3 { margin-top: 0; }
-    .next-steps { background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; border-radius: 8px; padding: 20px; margin-top: 30px; }
-    .next-steps h3 { color: #4caf50; margin-top: 0; }
-    .next-steps ol { margin-bottom: 0; }
-    .next-steps li { margin-bottom: 10px; }
-    .fix-section { background: rgba(244, 67, 54, 0.1); border: 1px solid #f44336; border-radius: 8px; padding: 20px; margin-top: 20px; }
-    .fix-section h3 { color: #f44336; margin-top: 0; }
-    .verify-container a { color: #2196f3; text-decoration: none; }
-    .verify-container a:hover { text-decoration: underline; }
-    .version-info { color: #888; font-size: 0.85rem; margin-top: 30px; padding-top: 20px; border-top: 1px solid #444; }
-    .code-block { position: relative; }
-    .code-block pre { margin: 0; }
-    .copy-btn { position: absolute; top: 8px; right: 8px; background: #2a2a2a; border: 1px solid #444; color: #e0e0e0; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; opacity: 0.7; transition: opacity 0.2s; }
-    .copy-btn:hover { opacity: 1; background: #444; }
-    .copy-btn.copied { background: #4caf50; color: white; opacity: 1; }
-</style>
-<script>
-function copyToClipboard(btn) {
-    const codeBlock = btn.parentElement.querySelector('pre');
-    const text = codeBlock.textContent;
-    navigator.clipboard.writeText(text).then(function() {
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-    }).catch(function(err) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-    });
-}
-</script>
-CSS
-) ;
 
 // Start output buffering to capture body content
 ob_start() ;
@@ -505,7 +439,7 @@ if ( !empty( $missingRequired ) || !empty( $missingOptional ) ) :
         <h3>Install Missing Extensions</h3>
         <p>On Debian/Ubuntu:</p>
         <div class="code-block">
-            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
             <pre>apt-get install <?php
 foreach ( $missingRequired as $ext ) {
     echo "php-$ext " ;
@@ -514,7 +448,7 @@ foreach ( $missingRequired as $ext ) {
         </div>
         <p>On RHEL/CentOS/Fedora:</p>
         <div class="code-block">
-            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
             <pre>dnf install <?php
 foreach ( $missingRequired as $ext ) {
     echo "php-$ext " ;
@@ -523,7 +457,7 @@ foreach ( $missingRequired as $ext ) {
         </div>
         <p>Then restart your web server:</p>
         <div class="code-block">
-            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
             <pre># Apache
 systemctl restart apache2    # Debian/Ubuntu
 systemctl restart httpd      # RHEL/CentOS/Fedora
@@ -569,7 +503,7 @@ systemctl restart nginx</pre>
         <h3>How to Fix</h3>
         <p>Copy the sample configuration file and edit it:</p>
         <div class="code-block">
-            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
             <pre>cp <?php echo htmlspecialchars( basename( $sampleFile ) ) ; ?> <?php echo htmlspecialchars( basename( $configFile ) ) ; ?>
 # Then edit <?php echo htmlspecialchars( basename( $configFile ) ) ; ?> with your settings</pre>
         </div>
@@ -586,7 +520,7 @@ systemctl restart nginx</pre>
         <h3>How to Fix</h3>
         <p>Check file permissions:</p>
         <div class="code-block">
-            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
             <pre>chmod 640 <?php echo htmlspecialchars( basename( $configFile ) ) ; ?>
 chown www-data:www-data <?php echo htmlspecialchars( basename( $configFile ) ) ; ?></pre>
         </div>
@@ -608,7 +542,7 @@ chown www-data:www-data <?php echo htmlspecialchars( basename( $configFile ) ) ;
         </ul>
         <p>Validate your XML:</p>
         <div class="code-block">
-            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+            <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
             <pre>xmllint --noout <?php echo htmlspecialchars( basename( $configFile ) ) ; ?></pre>
         </div>
     </div>
@@ -889,13 +823,13 @@ $redisEnabled = isFeatureEnabled( 'redisEnabled', $configValues ) ;
             <h3>Install phpredis</h3>
             <p>On Debian/Ubuntu:</p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
                 <pre>apt-get install php-redis
 systemctl restart apache2</pre>
             </div>
             <p>On RHEL/CentOS/Fedora:</p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
                 <pre>dnf install php-redis
 systemctl restart httpd</pre>
             </div>
@@ -1118,7 +1052,7 @@ if ( !empty( $dbHost ) && !empty( $dbUser ) && !empty( $dbPass ) && !empty( $dbN
             <p>Without PROCESS privilege, AQL can only see its own queries - not queries from other users. This is critical for monitoring.</p>
             <p><em>Run on each monitored database server:</em></p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
                 <pre>-- Create user if needed (use your password)
 CREATE USER IF NOT EXISTS <?php echo $sqlUserHost ; ?> IDENTIFIED BY 'your_password_here' ;
 
@@ -1134,7 +1068,7 @@ FLUSH PRIVILEGES ;</pre>
             <h3>Recommended Additional Privileges</h3>
             <p><em>Run on each monitored database server:</em></p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
                 <pre><?php if ( !$replOk ) : ?>-- For replica status monitoring
 GRANT REPLICATION CLIENT ON *.* TO <?php echo $sqlUserHost ; ?> ;
 <?php endif ; ?>
@@ -1164,7 +1098,7 @@ FLUSH PRIVILEGES ;</pre>
             </ul>
             <p>Test from command line:</p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
                 <pre>mysql -h <?php echo htmlspecialchars( $dbHost ) ; ?> -P <?php echo htmlspecialchars( $dbPort ) ; ?> -u <?php echo htmlspecialchars( $dbUser ) ; ?> -p <?php echo htmlspecialchars( $dbName ) ; ?></pre>
             </div>
         </div>
@@ -1255,7 +1189,7 @@ if ( $dbConnected ) :
             <h3>Create Missing Tables</h3>
             <p>Run the deployment script:</p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
                 <pre># Via browser
 Open: <?php echo htmlspecialchars( dirname( $configValues['baseUrl'] ?? 'https://yourserver/aql' ) ) ; ?>/deployDDL.php
 
@@ -1503,7 +1437,7 @@ if ( $redisEnabled && extension_loaded( 'redis' ) ) :
             </ul>
             <p>Test from command line:</p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
                 <pre>redis-cli -h HOST -p PORT PING
 # Or with authentication:
 redis-cli -h HOST -p PORT -a PASSWORD PING</pre>
@@ -1579,7 +1513,7 @@ if ( $selinuxEnabled ) :
             <h3>Fix SELinux Permissions</h3>
             <p>Run these commands as root to enable required SELinux booleans:</p>
             <div class="code-block">
-                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>
                 <pre><?php
 if ( !$dbBoolOk ) echo "sudo setsebool -P httpd_can_network_connect_db 1\n" ;
 if ( $redisEnabled && !$redisBoolOk ) echo "sudo setsebool -P httpd_can_network_redis 1\n" ;
@@ -1653,7 +1587,7 @@ if ( $dbConnected ) {
                    . '            <h3>Enable Database Types</h3>' . "\n"
                    . '            <p>Add one or more of these to your <code>aql_config.xml</code>:</p>' . "\n"
                    . '            <div class="code-block">' . "\n"
-                   . '                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>' . "\n"
+                   . '                <button class="copy-btn" onclick="copyCodeBlock(this)">Copy</button>' . "\n"
                    . '                <pre>&lt;!-- Enable the database types you want to monitor --&gt;' . "\n"
                    . '&lt;param name="mysqlEnabled"&gt;true&lt;/param&gt;' . "\n"
                    . '&lt;param name="mariadbEnabled"&gt;true&lt;/param&gt;' . "\n"

@@ -2583,4 +2583,36 @@ function copyToClipboard( elementId, buttonId ) {
     }) ;
 }
 
+/**
+ * Copy code block content to clipboard (button variant)
+ * Finds the pre element within the same parent as the button
+ * @param {HTMLElement} btn - The button element that was clicked
+ */
+function copyCodeBlock( btn ) {
+    var codeBlock = btn.parentElement.querySelector( 'pre' ) ;
+    var text = codeBlock.textContent ;
+    navigator.clipboard.writeText( text ).then( function() {
+        btn.textContent = 'Copied!' ;
+        btn.classList.add( 'copied' ) ;
+        setTimeout( function() {
+            btn.textContent = 'Copy' ;
+            btn.classList.remove( 'copied' ) ;
+        }, 2000 ) ;
+    }).catch( function( err ) {
+        // Fallback for older browsers
+        var textarea = document.createElement( 'textarea' ) ;
+        textarea.value = text ;
+        document.body.appendChild( textarea ) ;
+        textarea.select() ;
+        document.execCommand( 'copy' ) ;
+        document.body.removeChild( textarea ) ;
+        btn.textContent = 'Copied!' ;
+        btn.classList.add( 'copied' ) ;
+        setTimeout( function() {
+            btn.textContent = 'Copy' ;
+            btn.classList.remove( 'copied' ) ;
+        }, 2000 ) ;
+    }) ;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
