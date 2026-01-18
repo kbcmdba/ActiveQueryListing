@@ -212,6 +212,20 @@ namespace com\kbcmdba\aql ;
 //          - Elastic pool monitoring
 //          - DTU/vCore utilization visibility
 //
+// @rfe 312a Google Cloud SQL for MySQL support
+//          - Standard MySQL monitoring (MySQL-compatible)
+//          - Cloud SQL Admin API for instance metrics
+//          - CPU, memory, disk, connections via API
+//          - Replica lag and failover status
+//          - Maintenance window awareness
+//
+// @rfe 312b Azure Database for MySQL support
+//          - Standard MySQL monitoring (MySQL-compatible)
+//          - Azure Monitor metrics integration
+//          - Flexible Server specific metrics
+//          - Storage and IOPS utilization
+//          - High availability status
+//
 // @rfe 313 Percona XtraDB Cluster support
 //          - wsrep status (similar to Galera)
 //          - PXC-specific status variables
