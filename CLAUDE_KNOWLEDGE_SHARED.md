@@ -158,6 +158,10 @@ Migrations in `deployDDL.php` follow this pattern:
 - **jQuery $.when() gotcha**: With 2+ promises, results are wrapped as `[data, textStatus, jqXHR]` arrays. With 1 promise, data is passed directly. Handle both cases!
 - **Callback dispatch**: When adding new handler functions (e.g., `redisCallback`), must dispatch to them from `myCallback()` - they won't be called automatically
 - **Variable scope in callbacks**: Define variables like `hasIssues` before using them - undefined variables cause silent JS failures
+- **CSS tooltips vs native title**: Use `data-tooltip` attribute with CSS `::after` pseudo-element for instant tooltips. Native `title` has ~500ms browser delay.
+- **Use `<span>` not `<a>` for non-link clickables**: Anchor tags without `href` can cause unexpected navigation in Chrome. Use `<span class="help-link">` with `cursor: pointer` styling instead.
+- **sessionStorage for per-session delta tracking**: Use `sessionStorage` to track baselines for cumulative counters. Each tab gets independent tracking, cleared on tab close.
+- **noscript inline styles**: Use inline styles in `<noscript>` blocks since CSS variables and external stylesheets may not be available.
 
 ### Redis/phpredis Patterns
 - `$redis->info()` returns basic sections but NOT commandstats - use `$redis->info('commandstats')` separately
@@ -166,6 +170,7 @@ Migrations in `deployDDL.php` follow this pattern:
 - **MEMORY STATS returns strings**: Values like `fragmentation` come back as strings (e.g., `"9.92"`), not numbers. Use `parseFloat()` in JS before calling `.toFixed()` or comparisons fail silently.
 - **Fragmentation ratio misleading on small instances**: A 10:1 ratio on 1MB = only 9MB wasted (harmless). Check absolute bytes (`usedMemoryRss - usedMemory > 100MB`) instead of ratio for alerts.
 - **phpredis scan() signature**: Doesn't accept associative array options. Use `$redis->rawCommand('SCAN', $cursor, 'TYPE', 'stream', 'COUNT', '100')` instead.
+- **evicted_keys is cumulative**: Counter since Redis instance start (or CONFIG RESETSTAT). Not useful for real-time alerting - use sessionStorage delta tracking instead.
 
 ### Version String Patterns
 - MySQL: Returns plain version like "8.4.6" (no type indicator)
