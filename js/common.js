@@ -619,12 +619,12 @@ function redisCallback( i, item ) {
         var mwType = ( maintenanceInfo.windowType === 'adhoc' ) ? 'Ad-hoc' : 'Scheduled' ;
         var icon = ( maintenanceInfo.windowType === 'adhoc' ) ? '&#128263;' : '&#128295;' ;
         serverLink += ' <span class="maintenanceIndicator ' + maintenanceInfo.windowType
-            + '" title="' + mwType + ' maintenance">' + icon + '</span>' ;
+            + '" data-tooltip="' + mwType + ' maintenance">' + icon + '</span>' ;
     }
     if ( hostId ) {
         serverLink += getSilenceIcon( hostId, hostname, maintenanceInfo, hostGroups ) ;
         serverLink += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
-            + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
+            + ' data-tooltip="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
     }
 
     // Build overview row
@@ -1241,14 +1241,14 @@ function myCallback( i, item ) {
             if ( mwDesc ) { tooltipText += '&#10;Note: ' + mwDesc ; }
             var icon = ( errorMaintenanceInfo.windowType === 'adhoc' ) ? '&#128263;' : '&#128295;' ;
             errorMaintenanceIndicator = ' <span class="maintenanceIndicator ' + errorMaintenanceInfo.windowType
-                + '" title="' + tooltipText.replace( /"/g, '&quot;' ) + '">' + icon + '</span>' ;
+                + '" data-tooltip="' + tooltipText.replace( /"/g, '&quot;' ) + '">' + icon + '</span>' ;
         }
 
         // Build silence icons for error row
         var errorSilenceIcons = '' ;
         if ( errorHostId ) {
             errorSilenceIcons = getSilenceIcon( errorHostId, errorServer, errorMaintenanceInfo, errorHostGroups )
-                              + ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + errorHostId + '" title="Manage maintenance windows" class="maintenance-link">⚙</a>' ;
+                              + ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + errorHostId + '" data-tooltip="Manage maintenance windows" class="maintenance-link">⚙</a>' ;
         }
 
         var processErrorColspan = ( typeof colCounts !== 'undefined' ) ? ( colCounts.process - 2 ) : 13 ;
@@ -1325,7 +1325,7 @@ function myCallback( i, item ) {
                 }
                 var icon = ( maintenanceInfo.windowType === 'adhoc' ) ? '&#128263;' : '&#128295;' ; // muted speaker / wrench
                 serverLinkAddress += ' <span class="maintenanceIndicator ' + maintenanceInfo.windowType
-                    + '" title="' + tooltipText.replace( /"/g, '&quot;' ) + '">' + icon + '</span>' ;
+                    + '" data-tooltip="' + tooltipText.replace( /"/g, '&quot;' ) + '">' + icon + '</span>' ;
             }
 
             // Add quick management links if hostId is available
@@ -1334,7 +1334,7 @@ function myCallback( i, item ) {
                 serverLinkAddress += getSilenceIcon( hostId, server, maintenanceInfo, hostGroups ) ;
                 // Gear icon - links to manage maintenance windows with host preselected
                 serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
-                    + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
+                    + ' data-tooltip="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
             }
 
             var l0                = ( overviewData[ 'level0' ] > 0 ) ? ' class="level0"' : '' ;
@@ -1430,7 +1430,7 @@ function myCallback( i, item ) {
             if ( hostId ) {
                 serverLinkAddress += getSilenceIcon( hostId, server, maintenanceInfoSlave, hostGroupsSlave ) ;
                 serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
-                    + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
+                    + ' data-tooltip="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
             }
 
             for ( itemNo=0; itemNo<slaveData.length; itemNo++ ) {
@@ -1480,7 +1480,7 @@ function myCallback( i, item ) {
             if ( hostIdProc ) {
                 serverLinkAddress += getSilenceIcon( hostIdProc, server, maintenanceInfoProc, hostGroupsProc ) ;
                 serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostIdProc + '"'
-                    + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
+                    + ' data-tooltip="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
             }
 
             if ( typeof host_count[ server ] === 'undefined' ) {
@@ -2303,11 +2303,11 @@ function getSilenceIcon( hostId, hostname, maintenanceInfo, hostGroups ) {
 
         // Bell icon - click to turn notifications ON
         return ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + escapedHostname + '\'); return false;"'
-             + ' class="silence-link"><span class="silence-icon" title="' + tooltip + '">&#128276;</span></a>' ;
+             + ' class="silence-link"><span class="silence-icon" data-tooltip="' + tooltip + '">&#128276;</span></a>' ;
     } else {
         // Speaker icon - click to turn notifications OFF
         return ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + escapedHostname + '\'); return false;"'
-             + ' class="silence-link"><span class="silence-icon" title="Alerts ON - click to turn OFF">&#128266;</span></a>' ;
+             + ' class="silence-link"><span class="silence-icon" data-tooltip="Alerts ON - click to turn OFF">&#128266;</span></a>' ;
     }
 }
 

@@ -617,17 +617,70 @@ td.blocking {
 }
 
 /* Quick management links (silence/gear icons) - keep these sizes stable */
-.silence-link,
-.maintenance-link {
+.silence-link {
     text-decoration: none;
     margin-left: 0.75rem;
     font-size: 1.25rem;
     opacity: 0.6;
 }
 
+/* CSS tooltip - appears instantly on hover */
+[data-tooltip] {
+    position: relative;
+    cursor: pointer;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.25rem;
+    font-size: 1.7rem;
+    white-space: normal;
+    max-width: 400px;
+    text-align: left;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.1s;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.theme-light [data-tooltip]::after {
+    background-color: #555;
+}
+
+.maintenance-link {
+    text-decoration: none;
+    margin-left: 0.75rem;
+    font-size: 2.5rem;
+    opacity: 0.6;
+}
+
 .silence-link:hover,
 .maintenance-link:hover {
     opacity: 1;
+}
+
+/* Help link (? icons) - clickable but not a real link */
+.help-link {
+    cursor: pointer;
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+.help-link:hover {
+    opacity: 0.8;
 }
 
 /* Silence icon with theme-aware background for visibility on all level colors */

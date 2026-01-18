@@ -81,8 +81,8 @@ $processHeaderFooterCols = <<<HTML
       <th>Friendly<br>Time</th>
       <th>State <a href="https://dev.mysql.com/doc/refman/5.6/en/general-thread-states.html" target="_blank">?</a></th>
       <th>R/O</th>
-      <th>Dupe <a onclick="alert('Possible states are Unique, Similar, Duplicate and Blank. Similar indicates that a query is identical to another query except that the numbers and strings may be different. Duplicate means the entire query is identical to another query.') ; return false;">?</a><br>State</th>
-      <th>Lock <a onclick="alert('Shows if this query is BLOCKED waiting for a lock, or is BLOCKING other queries.') ; return false;">?</a><br>Status</th>
+      <th>Dupe <span class="help-link" data-tooltip="Possible states are Unique, Similar, Duplicate and Blank. Similar indicates that a query is identical to another query except that the numbers and strings may be different. Duplicate means the entire query is identical to another query.">?</span><br>State</th>
+      <th>Lock <span class="help-link" data-tooltip="Shows if this query is BLOCKED waiting for a lock, or is BLOCKING other queries.">?</span><br>Status</th>
       <th>Info</th>
       <th>Actions</th>
     </tr>
@@ -133,8 +133,8 @@ $overviewHeaderFooterCols = <<<HTML
       <th>Version</th>
       <th>Longest<br />Running</th>
       <th>aQPS</th>
-      <th>Running <a onclick="alert('Threads actively executing (includes internal threads, replication, event scheduler)'); return false;">?</a></th>
-      <th>Conn% <a onclick="alert('Client connections as percentage of max_connections'); return false;">?</a></th>
+      <th>Running <span class="help-link" data-tooltip="Threads actively executing (includes internal threads, replication, event scheduler)">?</span></th>
+      <th>Conn% <span class="help-link" data-tooltip="Client connections as percentage of max_connections">?</span></th>
       <th>Uptime</th>
       <th>L0</th>
       <th>L1</th>
@@ -173,16 +173,16 @@ $redisOverviewHeaderFooterCols = <<<HTML
       <th>Server</th>
       <th>Version</th>
       <th>Uptime</th>
-      <th>Memory <a onclick="alert('Used memory / max memory'); return false;">?</a></th>
-      <th>Mem% <a onclick="alert('Memory usage as percentage of maxmemory'); return false;">?</a></th>
+      <th>Memory <span class="help-link" data-tooltip="Used memory / max memory">?</span></th>
+      <th>Mem% <span class="help-link" data-tooltip="Memory usage as percentage of maxmemory">?</span></th>
       <th>Clients</th>
-      <th>Blocked <a onclick="alert('Clients waiting on blocking commands (BLPOP, etc.)'); return false;">?</a></th>
-      <th>Hit% <a onclick="alert('Cache hit ratio: hits / (hits + misses)'); return false;">?</a></th>
-      <th>Evicted <a onclick="alert('Keys evicted due to maxmemory - indicates data loss!'); return false;">?</a></th>
-      <th>Rejected <a onclick="alert('Connections rejected (maxclients exceeded)'); return false;">?</a></th>
-      <th>Frag <a onclick="alert('Memory fragmentation ratio (used_memory_rss / used_memory). >1.5 is concerning.'); return false;">?</a></th>
-      <th>RDB <a onclick="alert('Time since last RDB save / pending changes'); return false;">?</a></th>
-      <th>AOF <a onclick="alert('AOF enabled status'); return false;">?</a></th>
+      <th>Blocked <span class="help-link" data-tooltip="Clients waiting on blocking commands (BLPOP, etc.)">?</span></th>
+      <th>Hit% <span class="help-link" data-tooltip="Cache hit ratio: hits / (hits + misses)">?</span></th>
+      <th>Evicted <span class="help-link" data-tooltip="Keys evicted due to maxmemory - indicates data loss!">?</span></th>
+      <th>Rejected <span class="help-link" data-tooltip="Connections rejected (maxclients exceeded)">?</span></th>
+      <th>Frag <span class="help-link" data-tooltip="Memory fragmentation ratio (used_memory_rss / used_memory). >1.5 is concerning.">?</span></th>
+      <th>RDB <span class="help-link" data-tooltip="Time since last RDB save / pending changes">?</span></th>
+      <th>AOF <span class="help-link" data-tooltip="AOF enabled status">?</span></th>
       <th>Level</th>
     </tr>
 HTML;
@@ -205,7 +205,7 @@ $redisSlowlogHeaderFooterCols = <<<HTML
 <tr class="mytr">
       <th>Server</th>
       <th>Timestamp</th>
-      <th>Duration <a onclick="alert('Command execution time in microseconds'); return false;">?</a></th>
+      <th>Duration <span class="help-link" data-tooltip="Command execution time in microseconds">?</span></th>
       <th>Command</th>
       <th>Level</th>
     </tr>
@@ -231,10 +231,10 @@ $redisClientsHeaderFooterCols = <<<HTML
       <th>Client ID</th>
       <th>Address</th>
       <th>Name</th>
-      <th>Age <a onclick="alert('Connection lifetime'); return false;">?</a></th>
-      <th>Idle <a onclick="alert('Time since last command'); return false;">?</a></th>
+      <th>Age <span class="help-link" data-tooltip="Connection lifetime">?</span></th>
+      <th>Idle <span class="help-link" data-tooltip="Time since last command">?</span></th>
       <th>DB</th>
-      <th>Command <a onclick="alert('Last command executed'); return false;">?</a></th>
+      <th>Command <span class="help-link" data-tooltip="Last command executed">?</span></th>
     </tr>
 HTML;
 $fullRedisClientsHeaderFooter = <<<HTML
@@ -250,9 +250,9 @@ $redisCmdStatsHeaderFooterCols = <<<HTML
 <tr class="mytr">
       <th>Server</th>
       <th>Command</th>
-      <th>Calls <a onclick="alert('Total number of calls'); return false;">?</a></th>
-      <th>Total μs <a onclick="alert('Total microseconds spent on this command'); return false;">?</a></th>
-      <th>Avg μs/call <a onclick="alert('Average microseconds per call'); return false;">?</a></th>
+      <th>Calls <span class="help-link" data-tooltip="Total number of calls">?</span></th>
+      <th>Total μs <span class="help-link" data-tooltip="Total microseconds spent on this command">?</span></th>
+      <th>Avg μs/call <span class="help-link" data-tooltip="Average microseconds per call">?</span></th>
     </tr>
 HTML;
 $fullRedisCmdStatsHeaderFooter = <<<HTML
@@ -267,10 +267,10 @@ $redisMemStatsCols = 6 ;
 $redisMemStatsHeaderFooterCols = <<<HTML
 <tr class="mytr">
       <th>Server</th>
-      <th>Peak Alloc <a onclick="alert('Peak memory allocated'); return false;">?</a></th>
-      <th>Total Alloc <a onclick="alert('Total memory allocated'); return false;">?</a></th>
+      <th>Peak Alloc <span class="help-link" data-tooltip="Peak memory allocated since instance started">?</span></th>
+      <th>Total Alloc <span class="help-link" data-tooltip="Total memory allocated">?</span></th>
       <th>Keys</th>
-      <th>Frag Ratio <a onclick="alert('Memory fragmentation ratio'); return false;">?</a></th>
+      <th>Frag Ratio <span class="help-link" data-tooltip="Memory fragmentation ratio (used_memory_rss / used_memory). >1.5 is concerning.">?</span></th>
       <th>Frag Bytes</th>
     </tr>
 HTML;
@@ -304,7 +304,7 @@ $redisLatencyHistCols = 4 ;
 $redisLatencyHistHeaderFooterCols = <<<HTML
 <tr class="mytr">
       <th>Server</th>
-      <th>Event <a onclick="alert('Latency event type (e.g., command, fast-command, fork)'); return false;">?</a></th>
+      <th>Event <span class="help-link" data-tooltip="Latency event type (e.g., command, fast-command, fork)">?</span></th>
       <th>Time</th>
       <th>Latency (ms)</th>
     </tr>
@@ -323,8 +323,8 @@ $redisPendingHeaderFooterCols = <<<HTML
       <th>Server</th>
       <th>Stream</th>
       <th>Group</th>
-      <th>Pending <a onclick="alert('Number of entries awaiting acknowledgment'); return false;">?</a></th>
-      <th>Lag <a onclick="alert('Entries in stream not yet delivered to group'); return false;">?</a></th>
+      <th>Pending <span class="help-link" data-tooltip="Number of entries awaiting acknowledgment">?</span></th>
+      <th>Lag <span class="help-link" data-tooltip="Entries in stream not yet delivered to group">?</span></th>
       <th>Consumers</th>
       <th>ID Range</th>
     </tr>
@@ -1125,7 +1125,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </form>
         <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
         <br /><br />
-        <div class="mute-status-container"><span id="muteStatus" class="mute-status-label">Alerts: ON</span> <a onclick="alert('Sound Controls Help\\n\\n• Quick mute: Click 30m, 1h, 2h, etc. to mute for that duration.\\n• ∞ button: Mute indefinitely until you click Unmute.\\n• Custom duration: Enter days/hours/minutes and click Set.\\n• Until date/time: Pick a specific date/time to unmute.\\n• Maximum mute: 90 days.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow.'); return false;" class="help-cursor">?</a></div>
+        <div class="mute-status-container"><span id="muteStatus" class="mute-status-label">Alerts: ON</span> <span class="help-link" onclick="alert('Sound Controls Help\\n\\n• Quick mute: Click 30m, 1h, 2h, etc. to mute for that duration.\\n• ∞ button: Mute indefinitely until you click Unmute.\\n• Custom duration: Enter days/hours/minutes and click Set.\\n• Until date/time: Pick a specific date/time to unmute.\\n• Maximum mute: 90 days.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow.'); return false;" class="help-cursor">?</span></div>
         <div id="muteControls">
           <nobr>
             <button onclick="applyQuickMute('30m'); return false;" title="Mute for 30 minutes">30m</button>
