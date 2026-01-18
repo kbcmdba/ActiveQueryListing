@@ -18,6 +18,8 @@ This prevents merge conflicts and ensures we have the latest changes from the re
 
 **Before every commit, ask yourself:** Is there anything learned worth adding to CLAUDE.md? If so, vet with the user whether it should also go into CLAUDE_KNOWLEDGE_SHARED.md.
 
+**After every git pull, check:** Are there new learnings in CLAUDE_KNOWLEDGE_SHARED.md that should be synced to local CLAUDE.md? If so, vet with the user and incorporate them.
+
 ## Project Overview
 
 - **Type**: PHP web application for monitoring database servers (AQL - Active Query Listing)
