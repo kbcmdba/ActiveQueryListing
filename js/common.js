@@ -622,8 +622,7 @@ function redisCallback( i, item ) {
             + '" title="' + mwType + ' maintenance">' + icon + '</span>' ;
     }
     if ( hostId ) {
-        serverLink += ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + hostname.replace(/'/g, "\\'") + '\'); return false;"'
-            + ' title="Silence alerts for this host" class="silence-link">&#128263;</a>' ;
+        serverLink += getSilenceIcon( hostId, hostname, maintenanceInfo, hostGroups ) ;
         serverLink += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
             + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
     }
@@ -1248,7 +1247,7 @@ function myCallback( i, item ) {
         // Build silence icons for error row
         var errorSilenceIcons = '' ;
         if ( errorHostId ) {
-            errorSilenceIcons = ' <a href="#" onclick="openSilenceModal(\'host\', ' + errorHostId + ', \'' + errorServer.replace(/'/g, "\\'") + '\'); return false;" title="Silence this host" class="silence-link">🔇</a>'
+            errorSilenceIcons = getSilenceIcon( errorHostId, errorServer, errorMaintenanceInfo, errorHostGroups )
                               + ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + errorHostId + '" title="Manage maintenance windows" class="maintenance-link">⚙</a>' ;
         }
 
@@ -1332,8 +1331,7 @@ function myCallback( i, item ) {
             // Add quick management links if hostId is available
             if ( hostId ) {
                 // Silence icon - opens modal for quick silencing
-                serverLinkAddress += ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + server.replace(/'/g, "\\'") + '\'); return false;"'
-                    + ' title="Silence alerts for this host" class="silence-link">&#128263;</a>' ;
+                serverLinkAddress += getSilenceIcon( hostId, server, maintenanceInfo, hostGroups ) ;
                 // Gear icon - links to manage maintenance windows with host preselected
                 serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
                     + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
@@ -1427,9 +1425,10 @@ function myCallback( i, item ) {
             var serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
 
             // Add quick management links if hostId is available (same as overview)
+            var maintenanceInfoSlave = item[ 'maintenanceInfo' ] ;
+            var hostGroupsSlave = item[ 'hostGroups' ] || [] ;
             if ( hostId ) {
-                serverLinkAddress += ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + server.replace(/'/g, "\\'") + '\'); return false;"'
-                    + ' title="Silence alerts for this host" class="silence-link">&#128263;</a>' ;
+                serverLinkAddress += getSilenceIcon( hostId, server, maintenanceInfoSlave, hostGroupsSlave ) ;
                 serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostId + '"'
                     + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
             }
@@ -1476,9 +1475,10 @@ function myCallback( i, item ) {
             serverLinkAddress = '<a href="?hosts[]=' + server + debugString + '">' + server + '</a>' ;
 
             // Add quick management links if hostId is available (same as overview)
+            var maintenanceInfoProc = item[ 'maintenanceInfo' ] ;
+            var hostGroupsProc = item[ 'hostGroups' ] || [] ;
             if ( hostIdProc ) {
-                serverLinkAddress += ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostIdProc + ', \'' + server.replace(/'/g, "\\'") + '\'); return false;"'
-                    + ' title="Silence alerts for this host" class="silence-link">&#128263;</a>' ;
+                serverLinkAddress += getSilenceIcon( hostIdProc, server, maintenanceInfoProc, hostGroupsProc ) ;
                 serverLinkAddress += ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + hostIdProc + '"'
                     + ' title="Manage maintenance windows" class="maintenance-link">&#9881;</a>' ;
             }
@@ -2281,6 +2281,34 @@ function isHostGroupLocallySilenced( hostGroups ) {
         }
     }
     return false ;
+}
+
+// Generate silence icon HTML based on muted state
+// Icon shows the ACTION: 🔔 = click to unmute, 🔊 = click to mute
+function getSilenceIcon( hostId, hostname, maintenanceInfo, hostGroups ) {
+    var isMutedServer = maintenanceInfo && maintenanceInfo.active ;
+    var isMutedLocal = isHostLocallySilenced( hostId ) ;
+    var isMutedGroup = isHostGroupLocallySilenced( hostGroups ) ;
+    var isMuted = isMutedServer || isMutedLocal || isMutedGroup ;
+
+    var escapedHostname = hostname.replace( /'/g, "\\'" ) ;
+
+    if ( isMuted ) {
+        // Build tooltip showing why muted
+        var reasons = [] ;
+        if ( isMutedServer ) reasons.push( 'maintenance window' ) ;
+        if ( isMutedLocal ) reasons.push( 'locally silenced' ) ;
+        if ( isMutedGroup ) reasons.push( 'group silenced' ) ;
+        var tooltip = 'Alerts OFF (' + reasons.join( ', ' ) + ') - click to turn ON' ;
+
+        // Bell icon - click to turn notifications ON
+        return ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + escapedHostname + '\'); return false;"'
+             + ' class="silence-link"><span class="silence-icon" title="' + tooltip + '">&#128276;</span></a>' ;
+    } else {
+        // Speaker icon - click to turn notifications OFF
+        return ' <a href="#" onclick="openSilenceModal(\'host\', ' + hostId + ', \'' + escapedHostname + '\'); return false;"'
+             + ' class="silence-link"><span class="silence-icon" title="Alerts ON - click to turn OFF">&#128266;</span></a>' ;
+    }
 }
 
 // Check host health and update recovery tracking
