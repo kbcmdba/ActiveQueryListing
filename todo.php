@@ -48,10 +48,17 @@ namespace com\kbcmdba\aql ;
 //          - Lower Priority:
 //            - Memory by data type: strings vs lists vs hashes vs sets vs zsets
 //            - Cluster topology (if clustered): slots, nodes, state
-// @todo 20-40 Redis Phase 4 - Enterprise Features
+// @todo 20-40 Redis Phase 4 - OSS Advanced Features
 //          - SSL/TLS connection support
-//          - Redis Cluster topology awareness
-//          - Redis Sentinel monitoring
+//          - Redis Cluster topology awareness (CLUSTER INFO, CLUSTER NODES, CLUSTER SLOTS)
+//          - Redis Sentinel monitoring (SENTINEL commands)
+// @todo 20-45 Redis Phase 5 - Redis Enterprise (RLEC) Support
+//          - Add RedisEnterprise as separate db_type (different monitoring approach)
+//          - REST API integration for cluster-level metrics
+//          - Multi-database per cluster awareness
+//          - Proxy layer authentication handling
+//          - Enterprise-specific metrics (Active-Active replication, Redis on Flash stats)
+//          - Admin console API for node/shard health
 // @todo 23 Refactor AJAXgetaql.php to use DBType handler dispatch pattern
 //          - handleMySQLHost() and handleRedisHost() now implemented
 //          - Future: Use dispatch array: $handlers[$dbType]($hostname, $hostId, ...)
