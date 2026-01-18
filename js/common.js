@@ -579,8 +579,9 @@ function redisCallback( i, item ) {
 
     // Handle error response
     if ( typeof item[ 'error_output' ] !== 'undefined' ) {
+        var redisOverviewErrorColspan = ( typeof colCounts !== 'undefined' ) ? ( colCounts.redisOverview - 1 ) : 13 ;
         var errorRow = '<tr class="level9"><td>' + hostname + '</td>'
-                     + '<td colspan="13" class="errorNotice">' + item[ 'error_output' ] + '</td></tr>' ;
+                     + '<td colspan="' + redisOverviewErrorColspan + '" class="errorNotice">' + item[ 'error_output' ] + '</td></tr>' ;
         $( errorRow ).appendTo( '#fullredisoverviewtbodyid' ) ;
         $( errorRow ).prependTo( '#nwredisoverviewtbodyid' ) ;
         trackHostByDbType( 'Redis' ) ;
@@ -1251,15 +1252,17 @@ function myCallback( i, item ) {
                               + ' <a href="manageData.php?data=MaintenanceWindows&preselect=host&preselectId=' + errorHostId + '" title="Manage maintenance windows" class="maintenance-link">⚙</a>' ;
         }
 
+        var processErrorColspan = ( typeof colCounts !== 'undefined' ) ? ( colCounts.process - 2 ) : 13 ;
         var myRow = "<tr data-hostname=\"" + errorServer + "\"><td class=\"errorNotice\">" + errorServer + errorMaintenanceIndicator + errorSilenceIcons
-                  + "</td><td class=\"errorNotice\">9</td><td colspan=\"13\" class=\"errorNotice\">" + item[ 'error_output' ]
+                  + "</td><td class=\"errorNotice\">9</td><td colspan=\"" + processErrorColspan + "\" class=\"errorNotice\">" + item[ 'error_output' ]
                   + "</td></tr>" ;
         $(myRow).prependTo( "#nwprocesstbodyid" ) ;
         $(myRow).prependTo( "#fullprocesstbodyid" ) ;
 
         // Add error row to Status Overview tables too
+        var overviewErrorColspan = ( typeof colCounts !== 'undefined' ) ? ( colCounts.overview - 1 ) : 21 ;
         var overviewErrorRow = "<tr data-hostname=\"" + errorServer + "\"><td class=\"errorNotice\">" + errorServer + errorMaintenanceIndicator + errorSilenceIcons
-                  + "</td><td colspan=\"20\" class=\"errorNotice\">" + item[ 'error_output' ]
+                  + "</td><td colspan=\"" + overviewErrorColspan + "\" class=\"errorNotice\">" + item[ 'error_output' ]
                   + "</td></tr>" ;
         $(overviewErrorRow).prependTo( "#nwoverviewtbodyid" ) ;
         $(overviewErrorRow).prependTo( "#fulloverviewtbodyid" ) ;

@@ -688,6 +688,13 @@ var jiraConfig = {$jiraConfigJson};
 var redisEnabled = $redisEnabledJs ;
 var speechAlertsEnabled = $speechAlertsEnabledJs ;
 
+// Table column counts for dynamic colspan calculation
+var colCounts = {
+    overview: $overviewCols,
+    process: $processCols,
+    redisOverview: $redisOverviewCols
+};
+
 // Debug logging: enable with ?refresh_debug=1 in URL
 var REFRESH_DEBUG = new URLSearchParams(window.location.search).get('refresh_debug') === '1';
 var refreshLog = function() { if (REFRESH_DEBUG) console.log.apply(console, ['[refresh]'].concat(Array.prototype.slice.call(arguments))); };
