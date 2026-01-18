@@ -110,5 +110,9 @@ namespace com\kbcmdba\aql ;
 //          - When condition clears (host returns to level 0-2), automatically remove silence
 //          - Works for both local (browser) and global (database) silencing
 //          - May need grace period to avoid flapping (e.g., must be healthy for N minutes)
+// @todo 98 Group Mute/Unmute locally
+//          - Allow muting/unmuting all hosts in a group via localStorage
+//          - Add group-level silence icon/link in UI
+//          - Leverage existing hostGroupMap for group membership
 // @todo 99 Implement Host/Group Limiter
 //          - There's a "Add Group Selection" button on the main index that *should* select all hosts/ports associated with the group (additive, not exclusive).
