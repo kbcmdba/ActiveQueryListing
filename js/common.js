@@ -177,6 +177,17 @@ function toggleTheme() {
 }
 
 /**
+ * Reset session - clears sessionStorage and reloads page
+ * Clears per-tab data like Redis evicted baselines
+ */
+function resetSession() {
+    if ( confirm( 'Reset session data for this tab?\n\nThis will clear:\n• Redis evicted key baselines\n• Other per-tab session data\n\nPage will reload.' ) ) {
+        sessionStorage.clear() ;
+        window.location.reload() ;
+    }
+}
+
+/**
  * Get chart colors based on current theme
  * @returns {object} Chart color configuration
  */
