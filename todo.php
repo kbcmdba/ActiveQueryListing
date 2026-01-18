@@ -52,6 +52,12 @@ namespace com\kbcmdba\aql ;
 //          - SSL/TLS connection support
 //          - Redis Cluster topology awareness (CLUSTER INFO, CLUSTER NODES, CLUSTER SLOTS)
 //          - Redis Sentinel monitoring (SENTINEL commands)
+// @todo 20-43 Revisit Redis alert thresholds after production testing
+//          - Current thresholds set without real-world validation
+//          - Level 4: evicted>0, rejected>0, mem%>95, replication broken
+//          - Level 3: frag>100MB, blocked>5, mem%>80
+//          - Level 2: hit%<90 (>1000 req), repl lag>10s
+//          - May need per-host thresholds (see @todo 40)
 // @todo 20-45 Redis Phase 5 - Redis Enterprise (RLEC) Support
 //          - Add RedisEnterprise as separate db_type (different monitoring approach)
 //          - REST API integration for cluster-level metrics

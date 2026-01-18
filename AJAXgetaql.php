@@ -542,9 +542,7 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         // Level 9: Connection error (handled in catch)
 
         // Level 4: Critical - data loss or service unavailable
-        if ( $redisOverviewData['evictedKeys'] > 0 ) {
-            $level = max( $level, 4 ) ; // Data loss!
-        }
+        // Note: evictedKeys handled in JS via sessionStorage delta tracking
         if ( $redisOverviewData['rejectedConnections'] > 0 ) {
             $level = max( $level, 4 ) ; // Can't accept connections
         }

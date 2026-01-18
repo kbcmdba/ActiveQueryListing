@@ -592,6 +592,24 @@ function redisCallback( i, item ) {
     if ( typeof redisOverview === 'undefined' ) return ;
 
     var level = redisOverview[ 'level' ] || 0 ;
+
+    // Track evicted keys delta via sessionStorage (cumulative counter since Redis start)
+    // Only alert if evictions happened during THIS browser session
+    var evictedKeys = redisOverview[ 'evictedKeys' ] || 0 ;
+    var evictedBaseline = parseInt( sessionStorage.getItem( 'redis_evicted_' + hostId ) ) || 0 ;
+    var evictedDelta = 0 ;
+
+    if ( evictedBaseline === 0 && evictedKeys > 0 ) {
+        // First time seeing this host with evictions - store as baseline (historical)
+        sessionStorage.setItem( 'redis_evicted_' + hostId, evictedKeys ) ;
+    } else if ( evictedKeys > evictedBaseline ) {
+        // Evictions happened during this session!
+        evictedDelta = evictedKeys - evictedBaseline ;
+        level = Math.max( level, 4 ) ;
+        // Update baseline so we track cumulative session evictions
+        sessionStorage.setItem( 'redis_evicted_' + hostId, evictedKeys ) ;
+    }
+
     var hasIssues = ( level >= 2 ) ;
 
     // Track stats for scoreboard
@@ -632,7 +650,7 @@ function redisCallback( i, item ) {
     var memPctClass = redisOverview[ 'memoryPct' ] > 80 ? ' class="level3"' : '' ;
     var blockedClass = redisOverview[ 'blockedClients' ] > 0 ? ' class="level2"' : '' ;
     var hitClass = redisOverview[ 'hitRatio' ] < 90 ? ' class="level2"' : '' ;
-    var evictedClass = redisOverview[ 'evictedKeys' ] > 0 ? ' class="level4"' : '' ;
+    var evictedClass = evictedDelta > 0 ? ' class="level4"' : '' ;
     var rejectedClass = redisOverview[ 'rejectedConnections' ] > 0 ? ' class="level4"' : '' ;
     var fragClass = redisOverview[ 'fragmentationRatio' ] > 1.5 ? ' class="level3"' : '' ;
 
