@@ -177,12 +177,14 @@ function toggleTheme() {
 }
 
 /**
- * Reset session - clears sessionStorage and reloads page
+ * Reset session - clears sessionStorage, theme cookie, and reloads page
  * Clears per-tab data like Redis evicted baselines
  */
 function resetSession() {
-    if ( confirm( 'Reset session data for this tab?\n\nThis will clear:\n• Redis evicted key baselines\n• Other per-tab session data\n\nPage will reload.' ) ) {
+    if ( confirm( 'Reset session data for this tab?\n\nThis will clear:\n• Redis evicted key baselines\n• Theme preference (reverts to dark mode)\n• Other per-tab session data\n\nPage will reload.' ) ) {
         sessionStorage.clear() ;
+        // Clear theme cookie (set expired) - must match path used in setThemeCookie
+        document.cookie = 'aql_theme=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax' ;
         window.location.reload() ;
     }
 }
