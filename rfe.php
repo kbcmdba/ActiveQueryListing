@@ -477,6 +477,13 @@ namespace com\kbcmdba\aql ;
 //          - Per-user preference: "My priority: Redis > MS-SQL > MySQL"
 //          - Option to collapse/hide sections not relevant to user
 //          - Responsive: remember different layouts for different screen sizes
+//
+// @rfe 706 Per-DBType debug mode with selective alerting
+//          - Debug one DBType while getting real alerts for others
+//          - Use case: developing Redis support while monitoring MySQL in production
+//          - Options: ?debug=Redis&alerts=MySQL (debug Redis, alert on MySQL only)
+//          - Or: ?debug=Redis&mute=Redis (debug Redis, silence Redis alerts)
+//          - Allows focused development without missing production issues
 
 // ----------------------------------------------------------------------------
 // SECURITY & ACCESS CONTROL
