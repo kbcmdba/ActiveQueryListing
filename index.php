@@ -1101,6 +1101,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateMuteUI, 60000); // Update every minute
 });
 </script>
+<noscript>
+<div style="background-color: #8b0000; color: white; padding: 20px; text-align: center; font-size: 1.5rem; border: 3px solid #ff4500;">
+    <strong>⚠️ JavaScript Required</strong><br>
+    Active Query Listing requires JavaScript to function. Please enable JavaScript in your browser settings and reload this page.
+</div>
+</noscript>
 <a id="top"></a>
 <a id="graphs"></a>
 <audio id="klaxon" src="Images/honk-alarm-repeat-loop-101015.mp3" preload="auto"></audio>
