@@ -162,6 +162,16 @@ Migrations in `deployDDL.php` follow this pattern:
 - **Use `<span>` not `<a>` for non-link clickables**: Anchor tags without `href` can cause unexpected navigation in Chrome. Use `<span class="help-link">` with `cursor: pointer` styling instead.
 - **sessionStorage for per-session delta tracking**: Use `sessionStorage` to track baselines for cumulative counters. Each tab gets independent tracking, cleared on tab close.
 - **noscript inline styles**: Use inline styles in `<noscript>` blocks since CSS variables and external stylesheets may not be available.
+- **$.when() blocks on ALL promises**: If one AJAX request hangs, the entire `.then()` callback waits. For multi-host monitoring, use individual AJAX calls with immediate callbacks instead.
+- **Progressive loading pattern**: Fire all AJAX requests independently, process each response in `.done()`, track completion with a counter, run finalization when all complete (success OR failure via `.always()`).
+- **Track pending requests by name**: Use an object like `pendingHosts[hostname] = true`, delete on completion, display `Object.keys(pendingHosts)` to show what's still loading.
+
+### MySQL/PHP Timeout Patterns
+- **Connection timeout**: `MYSQLI_OPT_CONNECT_TIMEOUT` - time to establish connection (default 4 sec)
+- **Read timeout**: `MYSQLI_OPT_READ_TIMEOUT` - time for query execution (set to 8 sec)
+- **PHP execution limit**: `set_time_limit(10)` as safety net for entire script
+- **"MySQL server has gone away"**: This is what mysqli returns when read timeout expires - expected behavior, not a bug
+- **Timeout triggers .fail()**: jQuery AJAX `.fail()` handler fires on timeout, so handle errors there (show L9, display error message)
 
 ### Redis/phpredis Patterns
 - `$redis->info()` returns basic sections but NOT commandstats - use `$redis->info('commandstats')` separately
