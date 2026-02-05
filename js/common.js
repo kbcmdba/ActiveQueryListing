@@ -337,8 +337,14 @@ function trackMySQLAggregates( overviewData ) {
     var stats = dbTypeStats[ 'MySQL' ] ;
     var lr = overviewData[ 'longest_running' ] || 0 ;
     if ( lr > stats.longestRunning ) stats.longestRunning = lr ;
-    stats.blocking += overviewData[ 'blocking' ] || 0 ;
-    stats.blocked += overviewData[ 'blocked' ] || 0 ;
+    var blockingCount = overviewData[ 'blocking' ] || 0 ;
+    var blockedCount = overviewData[ 'blocked' ] || 0 ;
+    stats.blocking += blockingCount ;
+    stats.blocked += blockedCount ;
+    // Debug logging for blocking detection
+    if ( debugScoreboard === '1' && ( blockingCount > 0 || blockedCount > 0 ) ) {
+        console.log( '[scoreboard] Blocking detected - blocking:', blockingCount, 'blocked:', blockedCount, 'totals:', stats.blocking, stats.blocked ) ;
+    }
 }
 
 /**

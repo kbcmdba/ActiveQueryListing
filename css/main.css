@@ -1313,8 +1313,8 @@ td.blocking {
 }
 
 .dbtype-blocked.has-blocked {
-    background-color: #1e90ff;
-    color: white;
+    background-color: hotpink;
+    color: black;
     animation: dbtype-pulse 1.5s infinite;
 }
 
@@ -1433,8 +1433,8 @@ td.blocking {
 }
 
 .scoreboard-blocked.has-blocked {
-    background-color: #1e90ff;
-    color: white;
+    background-color: hotpink;
+    color: black;
     animation: scoreboard-pulse 1.5s infinite;
 }
 
@@ -1510,8 +1510,8 @@ td.blocking {
 }
 
 .theme-light .scoreboard-blocked.has-blocked {
-    background-color: #1e90ff;
-    color: white;
+    background-color: hotpink;
+    color: black;
 }
 
 .theme-light .dbtype-blocking.has-blocking {
@@ -1520,8 +1520,8 @@ td.blocking {
 }
 
 .theme-light .dbtype-blocked.has-blocked {
-    background-color: #1e90ff;
-    color: white;
+    background-color: hotpink;
+    color: black;
 }
 
 /* ========== Drill-down Modal Styles ========== */
@@ -1703,7 +1703,7 @@ td.blocking {
     }
 
     .scoreboard-blocking.has-blocking { background-color: #9400d3 !important; color: white !important; }
-    .scoreboard-blocked.has-blocked { background-color: #1e90ff !important; color: white !important; }
+    .scoreboard-blocked.has-blocked { background-color: hotpink !important; color: black !important; }
 
     .dbtype-blocking,
     .dbtype-blocked {
@@ -1712,7 +1712,7 @@ td.blocking {
     }
 
     .dbtype-blocking.has-blocking { background-color: #9400d3 !important; color: white !important; }
-    .dbtype-blocked.has-blocked { background-color: #1e90ff !important; color: white !important; }
+    .dbtype-blocked.has-blocked { background-color: hotpink !important; color: black !important; }
 
     /* DBType Overview boxes print with borders */
     .dbtype-overview-table {
