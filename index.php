@@ -473,6 +473,8 @@ if ( $debugParam === "1" || $debugParam === "AQL" ) {
 }
 // Legacy $debug for backward compat with existing code
 $debug = $debugAQL ;
+// Scoreboard debug - separate from DBType debug
+$debugScoreboard = Tools::param('debugScoreboard') === '1' ;
 $defaultRefresh = $config->getDefaultRefresh() ;
 $minRefresh = $config->getMinRefresh() ;
 $reloadSeconds = Tools::param('refresh', $defaultRefresh) ;
@@ -813,6 +815,7 @@ JS
     $now          = Tools::currentTimestamp();
     $aqlVersion   = Config::VERSION ;
     $debugAQLChecked = ( $debugAQL ) ? 'checked="checked"' : '' ;
+    $debugScoreboardChecked = ( $debugScoreboard ) ? 'checked="checked"' : '' ;
     // Generate per-type debug checkboxes HTML (uses JS to build comma-separated debug param)
     $debugTypeCheckboxes = '' ;
     foreach ( $dbTypesInUse as $dbType ) {
@@ -827,7 +830,7 @@ JS
         $debugParamValue = implode( ',', $debugTypes ) ;
     }
     // Expand debug options if any are checked
-    $debugOptionsDisplay = ( $debugAQL || ! empty( $debugTypes ) ) ? 'block' : 'none' ;
+    $debugOptionsDisplay = ( $debugAQL || ! empty( $debugTypes ) || $debugScoreboard ) ? 'block' : 'none' ;
     $muteButtonText = ( $muted ) ? 'Unmute Alerts' : 'Mute Alerts' ;
     $muteToggleValue = ( $muted ) ? '0' : '1' ;
     $cb = function ($fn) { return $fn; };
@@ -1125,6 +1128,8 @@ document.addEventListener('DOMContentLoaded', function() {
           <div id="debugOptions" style="display: $debugOptionsDisplay; margin: 5px 0; padding: 5px; border: 1px solid var(--border-light); border-radius: 4px;">
             <input type="checkbox" id="debugAQLCheckbox" $debugAQLChecked onchange="updateDebugParam()"/> AQL (all)<br />
             $debugTypeCheckboxes
+            <hr style="margin: 5px 0; border-color: var(--border-light);" />
+            <input type="checkbox" id="debugScoreboardCheckbox" name="debugScoreboard" value="1" $debugScoreboardChecked /> Scoreboard<br />
           </div>
           <input type="hidden" name="debug" id="debugParam" value="$debugParamValue" />
           <input type="submit" value="Update" />
