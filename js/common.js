@@ -950,6 +950,10 @@ function redisCallback( i, item ) {
             $( noBufRow ).appendTo( '#redisdebugbufferstbodyid' ) ;
         }
     }
+
+    // Update scoreboards progressively as each host's data arrives
+    updateDbTypeOverview() ;
+    updateScoreboard() ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1486,15 +1490,19 @@ function myCallback( i, item ) {
                           + "</td><td" + sqeClass + ">" + slaveData[ itemNo ][ 'Last_SQL_Error']
                           + "</td></tr>" ;
                 $(myRow).appendTo( "#fullslavetbodyid" ) ;
-                // Track slave issues for scoreboard
-                var hasSlaveIssue = ( 0 < slaveData[ itemNo ][ 'Seconds_Behind_Master' ] )
-                  || ( 'Yes' !== slaveData[ itemNo ][ 'Slave_IO_Running' ] )
+                // Track slave issues for scoreboard - differentiate lag vs broken
+                var hasSlaveLag = ( 0 < slaveData[ itemNo ][ 'Seconds_Behind_Master' ] ) ;
+                var hasSlaveBroken = ( 'Yes' !== slaveData[ itemNo ][ 'Slave_IO_Running' ] )
                   || ( 'Yes' !== slaveData[ itemNo ][ 'Slave_SQL_Running' ] )
                   || ( '' !== slaveData[ itemNo ][ 'Last_IO_Error' ] )
                   || ( '' !== slaveData[ itemNo ][ 'Last_SQL_Error' ] ) ;
-                if ( hasSlaveIssue ) {
+                if ( hasSlaveBroken ) {
                     $(myRow).appendTo( '#nwslavetbodyid' ) ;
-                    // Track as level 4 (critical) for scoreboard - replication issues are serious
+                    // Broken replication = L9 (error)
+                    trackLevelByDbType( 'MySQL', 9, 1, server ) ;
+                } else if ( hasSlaveLag ) {
+                    $(myRow).appendTo( '#nwslavetbodyid' ) ;
+                    // Lagging replication = L4 (critical but still running)
                     trackLevelByDbType( 'MySQL', 4, 1, server ) ;
                 }
           }
@@ -1624,6 +1632,10 @@ function myCallback( i, item ) {
             }
         }
     }
+
+    // Update scoreboards progressively as each host's data arrives
+    updateDbTypeOverview() ;
+    updateScoreboard() ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

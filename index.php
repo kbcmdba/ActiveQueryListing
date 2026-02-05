@@ -483,9 +483,7 @@ if ( $reloadSeconds < $minRefresh ) {
 }
 
 $js = [ 'Blocks' => 0
-      , 'WhenBlock' => ''
-      , 'ThenParamBlock' => ''
-      , 'ThenCodeBlock' => ''
+      , 'AjaxCalls' => ''
       ] ;
 try {
     $config = new Config();
@@ -591,9 +589,8 @@ try {
             processHost($js, $row[0], $baseUrl, $row[1], $row[2], $row[3], $row[4]);
         }
     }
-    $whenBlock = $js['WhenBlock'];
-    $thenParamBlock = $js['ThenParamBlock'];
-    $thenCodeBlock = $js['ThenCodeBlock'];
+    $ajaxCalls = $js['AjaxCalls'];
+    $totalRequests = $js['Blocks'];
     $jiraConfigJson = json_encode([
         'enabled' => $config->getJiraEnabled(),
         'baseUrl' => $config->getIssueTrackerBaseUrl(),
@@ -727,9 +724,56 @@ function updateDebugParam() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Track AJAX completion - each request calls onAjaxComplete when done (success or failure)
+var totalRequests = $totalRequests ;
+var completedRequests = 0 ;
+var pendingHosts = {} ;
+
+function getPendingHostsList() {
+    return Object.keys( pendingHosts ).join( ', ' ) ;
+}
+
+function onAjaxComplete() {
+    completedRequests++ ;
+    // Update progress indicator - show count and pending hosts
+    var pending = Object.keys( pendingHosts ) ;
+    if ( pending.length > 0 && pending.length <= 5 ) {
+        \$('#ajaxProgress').html( completedRequests + '/' + totalRequests + '<br><small>Waiting: ' + pending.join( ', ' ) + '</small>' ) ;
+    } else if ( pending.length > 5 ) {
+        \$('#ajaxProgress').html( completedRequests + '/' + totalRequests + '<br><small>Waiting: ' + pending.length + ' hosts</small>' ) ;
+    } else {
+        \$('#ajaxProgress').text( completedRequests + '/' + totalRequests ) ;
+    }
+    if ( completedRequests >= totalRequests ) {
+        finalizeLoad() ;
+    }
+}
+
+function finalizeLoad() {
+    // Remove "Data loading" placeholders
+    \$("#nwSlavefigment").remove() ;
+    \$("#nwOverviewfigment").remove() ;
+    \$("#nwProcessfigment").remove() ;
+    \$("#fullSlavefigment").remove() ;
+    \$("#fullOverviewfigment").remove() ;
+    \$("#fullProcessfigment").remove() ;
+$redisFigmentRemoveJs
+$redisDebugFigmentRemoveJs
+    \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ;
+    initTableSorting();
+    displayCharts() ;
+    updateDbTypeOverview() ;
+    updateScoreboard() ;
+    updateLocalSilencesUI() ;
+    scrollToHashIfPresent() ;
+    \$('#ajaxProgress').text( 'done' ) ;
+}
+
 function loadPage() {
     resetDbTypeStats() ;
-    \$("#nwslavetbodyid").html( '<tr id="nwSlavefigment"><td colspan="$slaveCols"><center>Data loading</center></td></tr>' ) ;
+    completedRequests = 0 ;
+    pendingHosts = {} ;
+    \$("#nwslavetbodyid").html( '<tr id="nwSlavefigment"><td colspan="$slaveCols"><center>Data loading <span id=\"ajaxProgress\">0/$totalRequests</span></center></td></tr>' ) ;
     \$("#nwoverviewtbodyid").html( '<tr id="nwOverviewfigment"><td colspan="$overviewCols"><center>Data loading</center></td></tr>' ) ;
     \$("#nwprocesstbodyid").html( '<tr id="nwProcessfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
     \$("#fullslavetbodyid").html( '<tr id="fullSlavefigment"><td colspan="$slaveCols"><center>Data loading</center></td></tr>' ) ;
@@ -737,24 +781,9 @@ function loadPage() {
     \$("#fullprocesstbodyid").html( '<tr id="fullProcessfigment"><td colspan="$processCols"><center>Data loading</center></td></tr>' ) ;
 $redisTableInitJs
 $redisDebugTableInitJs
-    \$.when($whenBlock).then(
-        function ($thenParamBlock ) { $thenCodeBlock
-            \$("#nwSlavefigment").remove() ;
-            \$("#nwOverviewfigment").remove() ;
-            \$("#nwProcessfigment").remove() ;
-            \$("#fullSlavefigment").remove() ;
-            \$("#fullOverviewfigment").remove() ;
-            \$("#fullProcessfigment").remove() ;
-$redisFigmentRemoveJs
-$redisDebugFigmentRemoveJs
-            \$("#fullProcessTable").tablesorter( {sortList: [[1, 1], [7, 1]]} ) ;
-            initTableSorting();
-            displayCharts() ;
-            updateDbTypeOverview() ;
-            updateScoreboard() ;
-            scrollToHashIfPresent() ;
-        }
-    );
+    // Fire all AJAX requests - each processes its data immediately on success
+    // Failed requests show error and still count toward completion
+$ajaxCalls
     \$('#nwprocesstbodyid').on('click', '.morelink', flipFlop) ;
     \$('#fullprocesstbodyid').on('click', '.morelink', flipFlop) ;
     timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;

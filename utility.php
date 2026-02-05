@@ -73,12 +73,32 @@ function processHost(&$js, $hostname, $baseUrl, $alertCritSecs, $alertWarnSecs, 
 {
     $debug = ( Tools::param('debug')==='1' ) ? '&debug=1' : '' ;
     $debugLocks = ( Tools::param('debugLocks')==='1' ) ? '&debugLocks=1' : '' ;
-    $prefix = (0 !== $js['Blocks']) ? "\n          ," : '' ;
     $blockNum = $js['Blocks'] ;
     $js['Blocks'] ++ ;
-    $js['WhenBlock'] .= "$prefix\$.getJSON( \"$baseUrl?hostname=$hostname&alertCritSecs=$alertCritSecs&alertWarnSecs=$alertWarnSecs&alertInfoSecs=$alertInfoSecs&alertLowSecs=$alertLowSecs$debug$debugLocks\")" ;
-    $js['ThenParamBlock'] .= "$prefix res$blockNum" ;
-    $js['ThenCodeBlock'] .= "\n            myCallback( $blockNum, res$blockNum ) ;" ;
+    $url = "$baseUrl?hostname=$hostname&alertCritSecs=$alertCritSecs&alertWarnSecs=$alertWarnSecs&alertInfoSecs=$alertInfoSecs&alertLowSecs=$alertLowSecs$debug$debugLocks" ;
+    // Build individual AJAX call with immediate callback (no waiting for others)
+    $js['AjaxCalls'] .= <<<JSAJAX
+    pendingHosts[ '$hostname' ] = true ;
+    \$.getJSON( "$url" )
+        .done( function( data ) {
+            delete pendingHosts[ '$hostname' ] ;
+            myCallback( $blockNum, data ) ;
+        } )
+        .fail( function( jqXHR, textStatus, errorThrown ) {
+            delete pendingHosts[ '$hostname' ] ;
+            console.error( 'AJAX failed for $hostname:', textStatus, errorThrown ) ;
+            // Show error in tables so user knows this host failed
+            var errorRow = '<tr class="errorNotice"><td>$hostname</td><td>9</td><td colspan="12">Connection failed: ' + textStatus + '</td></tr>' ;
+            \$( errorRow ).prependTo( '#nwprocesstbodyid' ) ;
+            \$( errorRow ).prependTo( '#fullprocesstbodyid' ) ;
+            trackHostByDbType( 'MySQL' ) ;
+            trackLevelByDbType( 'MySQL', 9, 1, '$hostname' ) ;
+            updateDbTypeOverview() ;
+            updateScoreboard() ;
+        } )
+        .always( onAjaxComplete ) ;
+
+JSAJAX;
 }
 
 /**
