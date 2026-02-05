@@ -31,6 +31,9 @@ use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\MaintenanceWindow ;
 use com\kbcmdba\aql\Libs\Tools ;
 
+// Ensure AJAX response completes within 10 seconds
+set_time_limit( 10 ) ;
+
 header('Content-type: application/json') ;
 header('Access-Control-Allow-Origin: *') ;
 header('Expires: Thu, 01 Mar 2018 00:00:00 GMT') ;

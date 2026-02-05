@@ -32,6 +32,7 @@ use com\kbcmdba\aql\Libs\Exceptions\DaoException ;
 class DBConnection
 {
     const CONNECT_TIMEOUT_SECONDS = 4 ;
+    const READ_TIMEOUT_SECONDS = 8 ;  // Query execution timeout
 
     private $dbh;
     private $oConfig;
@@ -97,6 +98,9 @@ class DBConnection
                 }
                 if (! $mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, self::CONNECT_TIMEOUT_SECONDS)) {
                     throw new DaoException('Failed setting connection timeout.');
+                }
+                if (! $mysqli->options(MYSQLI_OPT_READ_TIMEOUT, self::READ_TIMEOUT_SECONDS)) {
+                    throw new DaoException('Failed setting read timeout.');
                 }
                 try {
                     set_error_handler("\\com\\kbcmdba\\aql\\Libs\\DBConnection::myErrorHandler");
