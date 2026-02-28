@@ -1614,6 +1614,7 @@ HTML
       <th>Server Breakdown</th>
     </tr>
   </thead>
+  <tfoot id="rendertimestfootid"></tfoot>
   <tbody id="rendertimestbodyid">
     <tr><td colspan="6"><center>Data loading</center></td></tr>
   </tbody>

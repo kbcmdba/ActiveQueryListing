@@ -585,7 +585,7 @@ function renderTimeClass( ms ) {
 }
 
 /**
- * Format render time phase breakdown as a tooltip string
+ * Format render time phase breakdown as a compact inline string
  * @param {object} rtd - renderTimeData object from server
  * @return {string} Formatted breakdown
  */
@@ -601,6 +601,34 @@ function renderTimeBreakdown( rtd ) {
         parts.unshift( 'dispatch: ' + rtd.dispatch + 'ms' ) ;
     }
     return parts.join( ', ' ) ;
+}
+
+/**
+ * Format render time phase breakdown for alert dialog (one phase per line)
+ * @param {string} hostname - Host identifier
+ * @param {object} rtd - renderTimeData object from server
+ * @param {number|null} serverMs - Total server time
+ * @param {number|null} networkMs - Network time
+ * @param {number|null} totalMs - Total round-trip time
+ */
+function showRenderTimeDetail( hostname, rtd, serverMs, networkMs, totalMs ) {
+    var lines = [ 'Server Breakdown for ' + hostname, '' ] ;
+    if ( rtd ) {
+        if ( rtd.dispatch > 0 ) {
+            lines.push( 'Dispatch:        ' + rtd.dispatch + ' ms' ) ;
+        }
+        for ( var key in rtd ) {
+            if ( rtd.hasOwnProperty( key ) && key !== 'total' && key !== 'dispatch' ) {
+                var padded = ( key + ':' ).padEnd( 17 ) ;
+                lines.push( padded + rtd[ key ] + ' ms' ) ;
+            }
+        }
+        lines.push( '' ) ;
+    }
+    lines.push( 'Server Total:    ' + ( serverMs !== null ? serverMs + ' ms' : 'N/A' ) ) ;
+    lines.push( 'Network:         ' + ( networkMs !== null ? networkMs + ' ms' : 'N/A' ) ) ;
+    lines.push( 'Round-trip:      ' + ( totalMs !== null ? totalMs + ' ms' : 'N/A' ) ) ;
+    alert( lines.join( '\n' ) ) ;
 }
 
 /**
@@ -637,17 +665,29 @@ function displayRenderTimes() {
         var totalClass  = renderTimeClass( t.total ) ;
         var serverClass = renderTimeClass( t.server ) ;
 
-        // Build phase breakdown tooltip
+        // Build phase breakdown
         var breakdown = renderTimeBreakdown( t.renderTimeData ) ;
-        var breakdownAttr = breakdown ? ' data-tooltip="' + breakdown.replace( /"/g, '&quot;' ) + '"' : '' ;
+        var breakdownCell ;
+        if ( breakdown ) {
+            var clickArgs = "'" + hostname.replace( /'/g, "\\'" ) + "'" ;
+            breakdownCell = '<td class="render-time-breakdown"><span class="help-link" '
+                + 'onclick="showRenderTimeDetail( ' + clickArgs + ', '
+                + 'ajaxRenderTimes[' + clickArgs + '].renderTimeData, '
+                + 'ajaxRenderTimes[' + clickArgs + '].server, '
+                + 'ajaxRenderTimes[' + clickArgs + '].network, '
+                + 'ajaxRenderTimes[' + clickArgs + '].total ); return false;">'
+                + breakdown + '</span></td>' ;
+        } else {
+            breakdownCell = '<td class="render-time-breakdown">-</td>' ;
+        }
 
         var row = '<tr class="' + rowClass + '">'
             + '<td>' + hostname + '</td>'
             + '<td>' + dbType + '</td>'
-            + '<td class="' + serverClass + ' text-right"' + breakdownAttr + '>' + serverMs + '</td>'
+            + '<td class="' + serverClass + ' text-right">' + serverMs + '</td>'
             + '<td class="text-right">' + networkMs + '</td>'
             + '<td class="' + totalClass + ' text-right">' + totalMs + '</td>'
-            + '<td class="render-time-breakdown">' + ( breakdown || '-' ) + '</td>'
+            + breakdownCell
             + '</tr>' ;
         tbody.append( row ) ;
 
@@ -680,7 +720,7 @@ function displayRenderTimes() {
         + '<td class="text-right"><strong>' + avgTotal + '</strong></td>'
         + '<td>min: ' + Math.round( totalMin ) + ' / max: ' + Math.round( totalMax ) + '</td>'
         + '</tr>' ;
-    tbody.append( summaryRow ) ;
+    $( '#rendertimestfootid' ).html( summaryRow ) ;
 
     // Enable tablesorter
     $( '#renderTimesTable' ).tablesorter( { sortList: [[4, 1]] } ) ;
