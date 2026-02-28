@@ -37,6 +37,35 @@ namespace com\kbcmdba\aql ;
 // ============================================================================
 
 // ----------------------------------------------------------------------------
+// VERSION ROADMAP
+// ----------------------------------------------------------------------------
+// @rfe 001 v3 - Complete Redis, Polish PHP Codebase
+//          - Finish Redis monitoring (todo 20-xx series)
+//          - Enhance UI/UX (Settings dropdown, navigation, render times)
+//          - Stabilize and polish for production use
+//          - Stack: PHP + jQuery (current)
+//
+// @rfe 002 v3.x - Expand DB Platform Support
+//          - Add monitoring for platforms beyond MySQL/Redis
+//          - Candidates: MS-SQL, PostgreSQL, Oracle, Oracle RAC, MongoDB,
+//            Cassandra, and others (not committed yet)
+//          - Each new platform informs patterns and abstractions for v4
+//          - Platform selection depends on cost, access, and production relevance
+//
+// @rfe 003 v4 - Rewrite with TDD/BDD
+//          - Full rewrite, potentially in Node.js
+//          - Before starting: catalog all features, decisions, and lessons from v2-v3
+//          - TDD/BDD methodology from day one
+//          - Not the final version - foundation for continued evolution
+//
+// @rfe 004 Server-side data gathering (deferred to v3.9x or v4.9x)
+//          - Central poller replaces per-browser AJAX polling
+//          - Enables historical data: seconds behind master graphs,
+//            logged-in user trends, performance trending over time
+//          - Reduces load on monitored servers (1 poller vs N browsers)
+//          - See @rfe 010 for architectural details
+
+// ----------------------------------------------------------------------------
 // ARCHITECTURE
 // ----------------------------------------------------------------------------
 // @rfe 010 Server-based headless polling
