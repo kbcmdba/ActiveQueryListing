@@ -41,6 +41,8 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0') ;
 header('Cache-Control: post-check=0, pre-check=0', false) ;
 header('Pragma: no-cache') ;
 
+$startTime = microtime( true ) ;
+
 $overviewData = [
     'aQPS'            => -1
   , 'blank'           => 0
@@ -348,7 +350,10 @@ function getHostIdFromHostname( $hostnamePort ) {
  * @param array|null $maintenanceInfo Active maintenance window info
  * @param Config $config AQL configuration object
  */
-function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false ) {
+function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0 ) {
+    if ( $startTime <= 0 ) { $startTime = microtime( true ) ; }
+    $renderTimeData = [ 'dispatch' => $dispatchMs ] ;
+
     $redisOverviewData = [
         'hostname'           => $hostname,
         'hostId'             => $hostId,
@@ -406,6 +411,7 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         }
 
         // Connect to Redis
+        $phaseStart = microtime( true ) ;
         $redis = new \Redis() ;
         $timeout = $config->getRedisConnectTimeout() ;
         if ( !@$redis->connect( $redisHost, $redisPort, $timeout ) ) {
@@ -435,7 +441,10 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             $redis->select( $redisDb ) ;
         }
 
+        $renderTimeData['connect'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
         // Get INFO (all sections)
+        $phaseStart = microtime( true ) ;
         $infoRaw = $redis->info() ;
         if ( $infoRaw === false ) {
             throw new \Exception( 'Failed to get Redis INFO' ) ;
@@ -505,7 +514,10 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             $redisOverviewData['maxClients'] = 10000 ; // Default
         }
 
+        $renderTimeData['info'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
         // Parse commandstats from INFO commandstats section (not included in default INFO)
+        $phaseStart = microtime( true ) ;
         try {
             $cmdStatsRaw = $redis->info( 'commandstats' ) ;
             if ( is_array( $cmdStatsRaw ) ) {
@@ -538,6 +550,8 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         // Sort by calls descending, keep top 10
         usort( $commandStats, function( $a, $b ) { return $b['calls'] - $a['calls'] ; } ) ;
         $commandStats = array_slice( $commandStats, 0, 10 ) ;
+
+        $renderTimeData['commandStats'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
 
         // Calculate alert level based on metrics
         $level = 0 ;
@@ -585,6 +599,7 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         $redisOverviewData['level'] = $level ;
 
         // Get SLOWLOG
+        $phaseStart = microtime( true ) ;
         try {
             $slowlogRaw = $redis->slowlog( 'get', 10 ) ;
             if ( is_array( $slowlogRaw ) ) {
@@ -620,7 +635,10 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             // SLOWLOG may not be available - continue without it
         }
 
+        $renderTimeData['slowlog'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
         // Get CLIENT LIST for connection details
+        $phaseStart = microtime( true ) ;
         try {
             $clientListRaw = $redis->client( 'list' ) ;
             if ( is_array( $clientListRaw ) ) {
@@ -647,7 +665,10 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             // CLIENT LIST may not be available - continue without it
         }
 
+        $renderTimeData['clients'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
         // Phase 3: MEMORY STATS
+        $phaseStart = microtime( true ) ;
         try {
             $memRaw = $redis->rawCommand( 'MEMORY', 'STATS' ) ;
             if ( is_array( $memRaw ) ) {
@@ -675,7 +696,10 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             // MEMORY DOCTOR may not be available (requires Redis 4.0+)
         }
 
+        $renderTimeData['memoryStats'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
         // Phase 3: LATENCY LATEST
+        $phaseStart = microtime( true ) ;
         try {
             $latRaw = $redis->rawCommand( 'LATENCY', 'LATEST' ) ;
             if ( is_array( $latRaw ) ) {
@@ -727,7 +751,10 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             }
         }
 
+        $renderTimeData['latency'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
         // Phase 3: PUBSUB stats
+        $phaseStart = microtime( true ) ;
         try {
             $channels = $redis->pubsub( 'CHANNELS' ) ;
             $pubsubData['channels'] = is_array( $channels ) ? $channels : [] ;
@@ -825,6 +852,8 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             error_log( "AQL Redis XPENDING failed for $hostname: " . $e->getMessage() ) ;
         }
 
+        $renderTimeData['pubsubStreams'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
         // Debug Mode: Additional diagnostics when $debug is true
         if ( $debug ) {
             // High Value: Keyspace breakdown - keys per DB, TTL info, expired count
@@ -909,6 +938,7 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
         $redis->close() ;
 
         // Output successful response
+        $renderTimeData['total'] = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
         echo json_encode( [
             'hostname'          => $hostname,
             'hostId'            => $hostId,
@@ -930,11 +960,13 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'maintenanceInfo'   => $maintenanceInfo,
             // Debug mode data (only populated when debug=Redis)
             'debugData'         => $debugData,
+            'renderTimeData'    => $renderTimeData,
         ] ) . "\n" ;
 
     } catch ( \Exception $e ) {
         // Connection or other error
         $redisOverviewData['level'] = 9 ;
+        $renderTimeData['total'] = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
         echo json_encode( [
             'hostname'          => $hostname,
             'hostId'            => $hostId,
@@ -957,6 +989,7 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             'maintenanceInfo'   => $maintenanceInfo,
             // Debug mode data (empty on error)
             'debugData'         => [],
+            'renderTimeData'    => $renderTimeData,
         ] ) . "\n" ;
     }
 }
@@ -1044,11 +1077,14 @@ if ( $debugParam === '1' || $debugParam === 'AQL' ) {
 // Determine if debug is enabled for this specific db_type
 $debugThisType = $debugAQL || in_array( $dbType, $debugTypes ) ;
 
+// Pre-handler dispatch time
+$dispatchMs = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
+
 // Dispatch to appropriate handler based on db_type
 if ( $dbType === 'Redis' ) {
-    handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType ) ;
+    handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs ) ;
 } else {
-    handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType ) ;
+    handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs ) ;
 }
 exit( 0 ) ;
 
@@ -1061,7 +1097,10 @@ exit( 0 ) ;
  * @param array|null $maintenanceInfo Active maintenance window info
  * @param Config $config AQL configuration object
  */
-function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false ) {
+function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0 ) {
+    if ( $startTime <= 0 ) { $startTime = microtime( true ) ; }
+    $renderTimeData = [ 'dispatch' => $dispatchMs ] ;
+
     // Initialize variables that were previously global
     $overviewData = [
         'aQPS'            => -1
@@ -1101,8 +1140,10 @@ try {
     $alertWarnSecs = Tools::param('alertWarnSecs') ;
     $alertInfoSecs = Tools::param('alertInfoSecs') ;
     $alertLowSecs  = Tools::param('alertLowSecs') ;
+    $phaseStart    = microtime( true ) ;
     $dbc           = new DBConnection('process', $hostname) ;
     $dbh           = $dbc->getConnection() ;
+    $renderTimeData['connect'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
     $outputList    = [] ;
     $notInCommand  = "( 'Binlog Dump'"
                    . ", 'Binlog Dump GTID'"
@@ -1135,6 +1176,7 @@ SELECT Q / U AS aQPS, VERSION(), U, TR, TC, MC
        ( SELECT variable_value AS TC FROM $globalStatusDb.global_status WHERE variable_name = 'Threads_connected' ) AS D,
        ( SELECT variable_value AS MC FROM $globalStatusDb.global_variables WHERE variable_name = 'max_connections' ) AS E
 SQL;
+    $phaseStart = microtime( true ) ;
     $aResult    = $dbh->query( $aQuery ) ;
     if ( $aResult === false ) {
         throw new \ErrorException( "Error running query: $aQuery (" . $dbh->error . ")\n" ) ;
@@ -1147,6 +1189,7 @@ SQL;
     $overviewData[ 'threadsConnected' ] = (int) $row[ 4 ] ;
     $overviewData[ 'maxConnections' ] = (int) $row[ 5 ] ;
     $aResult->close() ;
+    $renderTimeData['globalStatus'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
     $showSlaveStatement = $config->getShowSlaveStatement() ;
     $version = $overviewData[ 'version' ] ;
     $replica_labels = [ 'Connection_name' => 'Connection_name'
@@ -1188,6 +1231,7 @@ SQL;
 
     // Lock detection - build map of blocked/blocking threads
     // Each query is wrapped in its own try/catch so one failure doesn't block others
+    $phaseStart = microtime( true ) ;
     $lockWaitData = [] ;
     $tableLockDebug = null ;
 
@@ -1401,7 +1445,10 @@ SQL;
         $tableLockDebug = [ 'exception' => $e->getMessage() ] ;
     }
 
+    $renderTimeData['lockDetection'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
     // Build list of blocking thread IDs to include even if they'd normally be filtered out
+    $phaseStart = microtime( true ) ;
     $blockingThreadIds = [] ;
     foreach ( $lockWaitData as $threadId => $info ) {
         if ( !empty( $info['isBlocking'] ) ) {
@@ -1534,8 +1581,10 @@ SQL;
         ] ;
     }
     $processResult->close() ;
+    $renderTimeData['processlist'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
 
     // 4. For table-level lock waiters without identified blockers, try to find potential blockers
+    $phaseStart = microtime( true ) ;
     // Collect all tables being waited on for a secondary query
     $waitingTables = [] ;
     $waitingDatabases = [] ;
@@ -1876,6 +1925,9 @@ SQL;
         }
     }
 
+    $renderTimeData['lockResolution'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
+    $phaseStart = microtime( true ) ;
     $slaveResult = $dbh->query( $showSlaveStatement ) ;
     if ( $slaveResult === false ) {
         throw new \ErrorException( "Error running query: $processQuery (" . $dbh->error . ")\n" ) ;
@@ -1888,14 +1940,17 @@ SQL;
         $slaveData[] = $thisResult ;
     }
     $slaveResult->close() ;
+    $renderTimeData['replication'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
 }
 catch (\Exception $e) {
+    $renderTimeData['total'] = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
     echo json_encode([
         'hostname' => $hostname,
         'hostId' => $hostId,
         'hostGroups' => $hostGroups,
         'error_output' => $e->getMessage(),
-        'maintenanceInfo' => $maintenanceInfo
+        'maintenanceInfo' => $maintenanceInfo,
+        'renderTimeData' => $renderTimeData,
     ]) ;
     exit(1) ;
 }
@@ -1943,5 +1998,7 @@ if ( $debugLocks ) {
     $output['debugBlockingCache'] = readBlockingCache( $hostname ) ;
     $output['debugBlockingCacheType'] = getBlockingCacheType() ;
 }
+$renderTimeData['total'] = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
+$output['renderTimeData'] = $renderTimeData ;
 echo json_encode( $output ) . "\n" ;
 }

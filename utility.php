@@ -79,13 +79,35 @@ function processHost(&$js, $hostname, $baseUrl, $alertCritSecs, $alertWarnSecs, 
     // Build individual AJAX call with immediate callback (no waiting for others)
     $js['AjaxCalls'] .= <<<JSAJAX
     pendingHosts[ '$hostname' ] = true ;
+    var ajaxStart_{$blockNum} = Date.now() ;
     \$.getJSON( "$url" )
         .done( function( data ) {
             delete pendingHosts[ '$hostname' ] ;
+            var totalMs = Date.now() - ajaxStart_{$blockNum} ;
+            var serverMs = ( data && data.renderTimeData && data.renderTimeData.total ) ? data.renderTimeData.total : null ;
+            var networkMs = ( serverMs !== null ) ? Math.round( Math.max( 0, totalMs - serverMs ) ) : null ;
+            ajaxRenderTimes[ '$hostname' ] = {
+                total: totalMs,
+                server: serverMs,
+                network: networkMs,
+                dbType: ( data && data.dbType ) ? data.dbType : 'MySQL',
+                renderTimeData: ( data && data.renderTimeData ) ? data.renderTimeData : null,
+                error: false
+            } ;
             myCallback( $blockNum, data ) ;
         } )
         .fail( function( jqXHR, textStatus, errorThrown ) {
             delete pendingHosts[ '$hostname' ] ;
+            var totalMs = Date.now() - ajaxStart_{$blockNum} ;
+            ajaxRenderTimes[ '$hostname' ] = {
+                total: totalMs,
+                server: null,
+                network: null,
+                dbType: 'Unknown',
+                renderTimeData: null,
+                error: true,
+                errorText: textStatus
+            } ;
             console.error( 'AJAX failed for $hostname:', textStatus, errorThrown ) ;
             // Show error in tables so user knows this host failed
             var errorRow = '<tr class="errorNotice"><td>$hostname</td><td>9</td><td colspan="12">Connection failed: ' + textStatus + '</td></tr>' ;

@@ -120,6 +120,26 @@ namespace com\kbcmdba\aql ;
 //          - Currently countdown starts at page load
 //          - When AJAX is slow, page refreshes before users can evaluate data
 //          - Move startAutorefresh() call to end of loadPage() after all data rendered
+// @todo 72 AJAX Render Times enhancements (parent - see subtasks below)
+// @todo 72-10 Store render times in Redis for historical ranking
+//          - Must be gated by user configuration (opt-in, not automatic)
+//          - Store per-host render time data in Redis sorted sets
+//          - Allow ranking by slowest hosts over time
+// @todo 72-15 Per-phase server-side timing breakdown display
+//          - Clickable/expandable detail per host showing phase timings
+//          - MySQL phases: connect, globalStatus, lockDetection, processlist, replication
+//          - Redis phases: connect, info, commandStats, slowlog, clients, memoryStats, latency, streams
+//          - Helps identify which specific operation is causing slowness
+// @todo 72-20 Configurable section position
+//          - Config option to place render times first, middle, or last on page
+//          - User preference stored in config or cookie
+// @todo 72-30 Per-host minimum render time threshold
+//          - Add column to aql_db.host for render_time_threshold_ms
+//          - Only display hosts in render times table if they exceed threshold
+//          - Reduces noise when most hosts are fast
+// @todo 72-40 Dynamic positioning based on overall render performance
+//          - When render times are high, move section higher on page for visibility
+//          - When render times are normal, keep at default position
 // @todo 98 Group Mute/Unmute locally
 //          - Allow muting/unmuting all hosts in a group via localStorage
 //          - Add group-level silence icon/link in UI
