@@ -470,6 +470,18 @@ namespace com\kbcmdba\aql ;
 //          - Idempotent upgrades
 
 // ----------------------------------------------------------------------------
+// UI/UX ENHANCEMENTS (NEAR-TERM)
+// ----------------------------------------------------------------------------
+// @rfe 699 Status Overview per host AND user
+//          - Expand Status Overview to show per-user breakdown within each host
+//          - Columns: Host, User, Thread Count, Longest Running, Level counts,
+//            RO/RW counts, Duplicate/Similar/Unique counts
+//          - Makes it easy to spot which user is causing load on a specific host
+//          - Complements @todo 50 (user stats across all hosts) and
+//            @todo 55 (source host stats) - this is the host+user intersection
+//          - NEAR-TERM: high value for day-to-day DBA monitoring
+//
+// ----------------------------------------------------------------------------
 // UI/UX ENHANCEMENTS
 // ----------------------------------------------------------------------------
 // @rfe 700 Mobile-responsive design
