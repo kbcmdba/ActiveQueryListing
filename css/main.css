@@ -1657,6 +1657,10 @@ td.diag-text {
     text-overflow: ellipsis;
 }
 
+.render-time-breakdown .help-link {
+    font-size: inherit;
+}
+
 /* ========== Drill-down Modal Styles ========== */
 #drilldownModal .modal-content {
     background-color: var(--bg-body);

@@ -612,7 +612,7 @@ function renderTimeBreakdown( rtd ) {
  * @param {number|null} totalMs - Total round-trip time
  */
 function showRenderTimeDetail( hostname, rtd, serverMs, networkMs, totalMs ) {
-    var lines = [ 'Server Breakdown for ' + hostname, '' ] ;
+    var lines = [ 'Server Detail for ' + hostname, '' ] ;
     if ( rtd ) {
         if ( rtd.dispatch > 0 ) {
             lines.push( 'Dispatch:        ' + rtd.dispatch + ' ms' ) ;

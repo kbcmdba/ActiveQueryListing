@@ -1611,7 +1611,7 @@ HTML
       <th>Server (ms)</th>
       <th>Network (ms)</th>
       <th>Total (ms)</th>
-      <th>Server Breakdown</th>
+      <th>Server Detail</th>
     </tr>
   </thead>
   <tfoot id="rendertimestfootid"></tfoot>

@@ -140,6 +140,10 @@ namespace com\kbcmdba\aql ;
 // @todo 72-40 Dynamic positioning based on overall render performance
 //          - When render times are high, move section higher on page for visibility
 //          - When render times are normal, keep at default position
+// @todo 72-50 Render times exportable report
+//          - Downloadable/printable report with all render time data plus server breakdown
+//          - CSV or HTML format with per-phase timing columns
+//          - Useful for capacity planning and performance trending
 // @todo 98 Group Mute/Unmute locally
 //          - Allow muting/unmuting all hosts in a group via localStorage
 //          - Add group-level silence icon/link in UI
