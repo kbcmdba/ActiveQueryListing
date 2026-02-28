@@ -372,13 +372,26 @@ HTML
             // Config not available, just show MySQL
         }
 
-        // Build Redis menu items if enabled
-        $redisMenuItems = '' ;
+        // Build Redis submenu items if enabled
+        $nwRedisItems = '' ;
+        $fullRedisItems = '' ;
         if ( $redisEnabled ) {
-            $redisMenuItems = <<<HTML
-          <li class="divider"></li>
-          <li><a href="index.php#nwRedisOverview">Noteworthy Redis Overview</a></li>
-          <li><a href="index.php#fullRedisOverview">Full Redis Overview</a></li>
+            $nwRedisItems = <<<HTML
+              <li class="divider"></li>
+              <li><a href="index.php#nwRedisOverview">Redis Overview</a></li>
+              <li><a href="index.php#nwRedisSlowlog">Redis Slowlog</a></li>
+HTML;
+            $fullRedisItems = <<<HTML
+              <li class="divider"></li>
+              <li><a href="index.php#fullRedisOverview">Redis Overview</a></li>
+              <li><a href="index.php#fullRedisSlowlog">Redis Slowlog</a></li>
+              <li><a href="index.php#fullRedisClients">Redis Clients</a></li>
+              <li><a href="index.php#fullRedisCmdStats">Redis Command Stats</a></li>
+              <li><a href="index.php#fullRedisMemStats">Redis Memory Stats</a></li>
+              <li><a href="index.php#fullRedisStreams">Redis Streams</a></li>
+              <li><a href="index.php#fullRedisLatencyHist">Redis Latency History</a></li>
+              <li><a href="index.php#fullRedisPending">Redis Stream Pending</a></li>
+              <li><a href="index.php#fullRedisDiag">Redis Diagnostics</a></li>
 HTML;
         }
 
@@ -416,14 +429,28 @@ HTML;
           <li><a href="index.php">Active Query Listing</a></li>
           <li class="divider"></li>
           <li><a href="index.php#graphs">Top / Graphs</a></li>
-          <li><a href="index.php#nwSlaveStatus">Noteworthy Slave Status</a></li>
-          <li><a href="index.php#nwStatusOverview">Noteworthy Status Overview</a></li>
-          <li><a href="index.php#nwProcessListing">Noteworthy Process Listing</a></li>
-          <li><a href="index.php#fullSlaveStatus">Full Slave Status</a></li>
-          <li><a href="index.php#fullStatusOverview">Full Status Overview</a></li>
-          <li><a href="index.php#fullProcessListing">Full Process Listing</a></li>
+          <li><a href="index.php#dbTypeOverviewHeader">Scoreboards</a></li>
+          <li class="divider"></li>
+          <li class="dropdown-submenu">
+            <a href="#">Noteworthy <span class="caret-right"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="index.php#nwSlaveStatus">Slave Status</a></li>
+              <li><a href="index.php#nwStatusOverview">Status Overview</a></li>
+              <li><a href="index.php#nwProcessListing">Process Listing</a></li>
+$nwRedisItems            </ul>
+          </li>
+          <li class="dropdown-submenu">
+            <a href="#">Full <span class="caret-right"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="index.php#fullSlaveStatus">Slave Status</a></li>
+              <li><a href="index.php#fullStatusOverview">Status Overview</a></li>
+              <li><a href="index.php#fullProcessListing">Process Listing</a></li>
+$fullRedisItems            </ul>
+          </li>
+          <li class="divider"></li>
+          <li><a href="index.php#renderTimes">AJAX Render Times</a></li>
           <li><a href="index.php#versionSummary">Version Summary</a></li>
-$redisMenuItems        </ul>
+        </ul>
       </li>
       <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">History <span class="caret"></span></a>
@@ -448,9 +475,14 @@ $redisMenuItems        </ul>
           <li><a href="verifyAQLConfiguration.php">Verify Configuration</a></li>
         </ul>
       </li>
-      <li class="dropdown">
+      <li class="dropdown" id="settingsDropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Settings <span class="caret"></span></a>
-        <ul class="dropdown-menu">
+        <ul class="dropdown-menu settings-dropdown-menu">
+          <li><a href="#" id="pauseRefreshBtn" onclick="toggleAutoRefresh(); return false;" title="Pause or resume automatic page refresh">⏸ Pause Auto-Refresh</a></li>
+          <li id="settingsRefreshItem" class="settings-form-item" style="display:none;" onclick="event.stopPropagation()"></li>
+          <li class="divider"></li>
+          <li id="settingsDebugItem" class="settings-form-item" style="display:none;" onclick="event.stopPropagation()"></li>
+          <li class="divider"></li>
           <li><a href="#" id="themeToggleBtn" onclick="toggleTheme(); return false;" title="Switch to Light Mode"><span id="themeIcon">☀️</span> <span id="themeLabel">Light Mode</span></a></li>
           <li class="divider"></li>
           <li><a href="#" onclick="resetSession(); return false;" title="Clear session data and reload">🔄 Reset Session</a></li>

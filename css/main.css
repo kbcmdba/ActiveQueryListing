@@ -567,6 +567,77 @@ td.blocking {
     background-color: var(--border-dark);
 }
 
+/* Dropdown submenus (flyout) */
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu > .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -1px;
+    display: none;
+}
+
+.dropdown-submenu:hover > .dropdown-menu {
+    display: block;
+}
+
+.dropdown-submenu > a::after {
+    content: " \25B8";
+    float: right;
+}
+
+.caret-right {
+    display: none;
+}
+
+/* Settings dropdown form controls */
+.settings-dropdown-menu {
+    min-width: 260px;
+}
+
+.settings-form-item {
+    padding: 0;
+}
+
+.settings-control-group {
+    padding: 6px 16px;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.settings-control-group label {
+    font-weight: normal;
+    margin-bottom: 0;
+    color: var(--text-secondary);
+}
+
+.settings-control-group .settings-sublabel {
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.settings-control-group input[type="text"] {
+    width: 3rem;
+    padding: 2px 4px;
+    background: var(--input-bg);
+    color: var(--input-text);
+    border: 1px solid var(--border-medium);
+    border-radius: 3px;
+    text-align: center;
+}
+
+.settings-control-group input[type="checkbox"] {
+    margin-right: 4px;
+}
+
+.settings-control-group hr {
+    margin: 5px 0;
+    border-color: var(--border-light);
+}
+
 /* Theme Toggle in Settings Menu - shows preview of target theme */
 #themeToggleBtn {
     cursor: pointer;
@@ -1046,14 +1117,11 @@ td.blocking {
 }
 
 /* Diagnostic text (LATENCY DOCTOR / MEMORY DOCTOR output) */
-.diag-text pre {
-    margin: 0;
-    padding: 0.5rem;
+td.diag-text {
     white-space: pre-wrap;
     word-wrap: break-word;
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
     font-size: 0.85rem;
-    background: var(--bg-tertiary);
-    border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
 }
@@ -1524,6 +1592,71 @@ td.blocking {
     color: black;
 }
 
+/* ========== AJAX Render Times ========== */
+.render-times-tip {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.85rem;
+    margin: 0.25rem 0 0.5rem 0;
+}
+
+#renderTimesDetails summary {
+    cursor: pointer;
+    user-select: none;
+}
+
+#renderTimesDetails summary h2 {
+    margin: 0;
+}
+
+.render-time-fast {
+    color: #66bb6a;
+}
+
+.render-time-moderate {
+    color: #ffd700;
+}
+
+.render-time-slow {
+    color: #ff9800;
+}
+
+.render-time-critical {
+    color: #ff5252;
+    font-weight: bold;
+}
+
+.theme-light .render-time-fast {
+    color: #006400;
+}
+
+.theme-light .render-time-moderate {
+    color: #b8860b;
+}
+
+.theme-light .render-time-slow {
+    color: #e65100;
+}
+
+.theme-light .render-time-critical {
+    color: #b71c1c;
+    font-weight: bold;
+}
+
+.render-time-summary td {
+    background-color: var(--bg-tertiary);
+    border-top: 0.125rem solid var(--border-dark);
+}
+
+.render-time-breakdown {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    max-width: 25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* ========== Drill-down Modal Styles ========== */
 #drilldownModal .modal-content {
     background-color: var(--bg-body);
@@ -1747,7 +1880,6 @@ td.blocking {
     .dbtype-level.level9 { background-color: #DC143C !important; color: white !important; }
 
     /* Hide interactive elements when printing */
-    #toggleButton,
     #muteControls,
     #unmuteBtnContainer,
     #localSilencesContainer,

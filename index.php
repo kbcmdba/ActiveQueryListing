@@ -682,6 +682,7 @@ JSREDIS;
 <script>
 
 var timeoutId = null;
+var autoRefreshPaused = false ;
 var reloadSeconds = $reloadSeconds * 1000 ;
 var jiraConfig = {$jiraConfigJson};
 var redisEnabled = $redisEnabledJs ;
@@ -700,6 +701,7 @@ var refreshLog = function() { if (REFRESH_DEBUG) console.log.apply(console, ['[r
 
 // Reset the refresh timer when user interacts with form controls
 function resetRefreshTimer() {
+    if ( autoRefreshPaused ) return ;
     if (timeoutId !== null) {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(function() { window.location.reload(1); }, reloadSeconds);
@@ -707,19 +709,24 @@ function resetRefreshTimer() {
     }
 }
 
-// Build comma-separated debug param from checkboxes
-function updateDebugParam() {
-    var parts = [] ;
-    if ( \$('#debugAQLCheckbox').is(':checked') ) {
-        parts.push('AQL') ;
-        // Uncheck individual types when AQL is checked
-        \$('.debug-type-cb').prop('checked', false) ;
+// Toggle automatic page refresh on/off
+function toggleAutoRefresh() {
+    autoRefreshPaused = !autoRefreshPaused ;
+    var btn = \$('#pauseRefreshBtn') ;
+    if ( autoRefreshPaused ) {
+        if ( timeoutId !== null ) {
+            clearTimeout( timeoutId ) ;
+            timeoutId = null ;
+        }
+        btn.html( '▶ Resume Auto-Refresh' ) ;
+        btn.attr( 'title', 'Resume automatic page refresh' ) ;
+        refreshLog( 'Auto-refresh paused' ) ;
     } else {
-        \$('.debug-type-cb:checked').each(function() {
-            parts.push( \$(this).data('type') ) ;
-        }) ;
+        timeoutId = setTimeout( function() { window.location.reload( 1 ) ; }, reloadSeconds ) ;
+        btn.html( '⏸ Pause Auto-Refresh' ) ;
+        btn.attr( 'title', 'Pause automatic page refresh' ) ;
+        refreshLog( 'Auto-refresh resumed, next refresh in', reloadSeconds / 1000, 'seconds' ) ;
     }
-    \$('#debugParam').val( parts.join(',') ) ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -765,12 +772,14 @@ $redisDebugFigmentRemoveJs
     updateDbTypeOverview() ;
     updateScoreboard() ;
     updateLocalSilencesUI() ;
+    displayRenderTimes() ;
     scrollToHashIfPresent() ;
     \$('#ajaxProgress').text( 'done' ) ;
 }
 
 function loadPage() {
     resetDbTypeStats() ;
+    ajaxRenderTimes = {} ;
     completedRequests = 0 ;
     pendingHosts = {} ;
     \$("#nwslavetbodyid").html( '<tr id="nwSlavefigment"><td colspan="$slaveCols"><center>Data loading <span id=\"ajaxProgress\">0/$totalRequests</span></center></td></tr>' ) ;
@@ -786,10 +795,87 @@ $redisDebugTableInitJs
 $ajaxCalls
     \$('#nwprocesstbodyid').on('click', '.morelink', flipFlop) ;
     \$('#fullprocesstbodyid').on('click', '.morelink', flipFlop) ;
-    timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
+    if ( !autoRefreshPaused ) {
+        timeoutId = setTimeout( function() { window.location.reload( 1 ) ; }, reloadSeconds ) ;
+    }
 }
 
 \$(document).ready( loadPage ) ;
+
+// Populate Settings dropdown with page controls (content defined in body HTML as hidden divs)
+\$(document).ready(function() {
+    // Move hidden content into Settings dropdown placeholders
+    \$('#settingsRefreshItem').html( \$('#settingsRefreshContent').html() ).show() ;
+    \$('#settingsDebugItem').html( \$('#settingsDebugContent').html() ).show() ;
+    // Remove the hidden source divs
+    \$('#settingsRefreshContent, #settingsDebugContent').remove() ;
+    // Sync settings to host form when any setting changes
+    \$(document).on('change input', '#settingsRefreshSeconds, #settingsDebugScoreboard, .settings-debug-type-cb', syncSettingsToHostForm) ;
+}) ;
+
+// Apply settings from the navbar dropdown
+function applySettings() {
+    var params = [] ;
+    // Carry forward selected hosts
+    \$('#hostList option:selected').each(function() {
+        params.push( 'hosts[]=' + encodeURIComponent( \$(this).val() ) ) ;
+    }) ;
+    // Refresh seconds
+    var refresh = \$('#settingsRefreshSeconds').val() ;
+    if ( refresh ) {
+        params.push( 'refresh=' + encodeURIComponent( refresh ) ) ;
+    }
+    // Debug param
+    var debugParts = [] ;
+    if ( \$('#settingsDebugAQL').is(':checked') ) {
+        debugParts.push('AQL') ;
+    } else {
+        \$('.settings-debug-type-cb:checked').each(function() {
+            debugParts.push( \$(this).data('type') ) ;
+        }) ;
+    }
+    if ( debugParts.length > 0 ) {
+        params.push( 'debug=' + encodeURIComponent( debugParts.join(',') ) ) ;
+    }
+    // Scoreboard debug
+    if ( \$('#settingsDebugScoreboard').is(':checked') ) {
+        params.push( 'debugScoreboard=1' ) ;
+    }
+    var url = window.location.pathname ;
+    if ( params.length > 0 ) {
+        url += '?' + params.join('&') ;
+    }
+    window.location = url ;
+}
+
+// Build debug param from Settings dropdown checkboxes and sync to host form
+function updateSettingsDebugParam() {
+    if ( \$('#settingsDebugAQL').is(':checked') ) {
+        \$('.settings-debug-type-cb').prop('checked', false) ;
+    }
+    syncSettingsToHostForm() ;
+}
+
+// Keep the host form's hidden fields in sync with Settings dropdown values
+function syncSettingsToHostForm() {
+    // Refresh seconds
+    var refresh = \$('#settingsRefreshSeconds').val() ;
+    if ( refresh ) {
+        \$('#hostFormRefresh').val( refresh ) ;
+    }
+    // Debug param
+    var debugParts = [] ;
+    if ( \$('#settingsDebugAQL').is(':checked') ) {
+        debugParts.push('AQL') ;
+    } else {
+        \$('.settings-debug-type-cb:checked').each(function() {
+            debugParts.push( \$(this).data('type') ) ;
+        }) ;
+    }
+    \$('#hostFormDebug').val( debugParts.join(',') ) ;
+    // Scoreboard
+    \$('#hostFormDebugScoreboard').val( \$('#settingsDebugScoreboard').is(':checked') ? '1' : '0' ) ;
+}
 
 // Reset refresh timer when user interacts with form controls
 \$(document).ready(function() {
@@ -845,11 +931,12 @@ JS
     $aqlVersion   = Config::VERSION ;
     $debugAQLChecked = ( $debugAQL ) ? 'checked="checked"' : '' ;
     $debugScoreboardChecked = ( $debugScoreboard ) ? 'checked="checked"' : '' ;
-    // Generate per-type debug checkboxes HTML (uses JS to build comma-separated debug param)
-    $debugTypeCheckboxes = '' ;
+    $debugScoreboardValue = ( $debugScoreboard ) ? '1' : '0' ;
+    // Generate per-type debug checkboxes for Settings dropdown
+    $settingsDebugTypeCheckboxes = '' ;
     foreach ( $dbTypesInUse as $dbType ) {
         $checked = in_array( $dbType, $debugTypes ) && ! $debugAQL ? 'checked="checked"' : '' ;
-        $debugTypeCheckboxes .= '<input type="checkbox" class="debug-type-cb" data-type="' . htmlspecialchars( $dbType ) . '" ' . $checked . ' onchange="updateDebugParam()"/> ' . htmlspecialchars( $dbType ) . '<br />' ;
+        $settingsDebugTypeCheckboxes .= '<input type="checkbox" class="settings-debug-type-cb" data-type="' . htmlspecialchars( $dbType ) . '" ' . $checked . ' onchange="updateSettingsDebugParam()"/> ' . htmlspecialchars( $dbType ) . '<br />' ;
     }
     // Build initial debug param value for hidden input
     $debugParamValue = '' ;
@@ -858,8 +945,6 @@ JS
     } elseif ( ! empty( $debugTypes ) ) {
         $debugParamValue = implode( ',', $debugTypes ) ;
     }
-    // Expand debug options if any are checked
-    $debugOptionsDisplay = ( $debugAQL || ! empty( $debugTypes ) || $debugScoreboard ) ? 'block' : 'none' ;
     $muteButtonText = ( $muted ) ? 'Unmute Alerts' : 'Mute Alerts' ;
     $muteToggleValue = ( $muted ) ? '0' : '1' ;
     $cb = function ($fn) { return $fn; };
@@ -1152,19 +1237,11 @@ document.addEventListener('DOMContentLoaded', function() {
           <select id="hostList" name="hosts[]" multiple="multiple" size=10>
             $allHostsList
           </select><br />
-          Refresh every <input type="text" name="refresh" value="$reloadSeconds" size="3" /> seconds<br />
-          <a href="#" onclick="$('#debugOptions').toggle(); return false;" class="debug-toggle">Debug Options ▼</a>
-          <div id="debugOptions" style="display: $debugOptionsDisplay; margin: 5px 0; padding: 5px; border: 1px solid var(--border-light); border-radius: 4px;">
-            <input type="checkbox" id="debugAQLCheckbox" $debugAQLChecked onchange="updateDebugParam()"/> AQL (all)<br />
-            $debugTypeCheckboxes
-            <hr style="margin: 5px 0; border-color: var(--border-light);" />
-            <input type="checkbox" id="debugScoreboardCheckbox" name="debugScoreboard" value="1" $debugScoreboardChecked /> Scoreboard<br />
-          </div>
-          <input type="hidden" name="debug" id="debugParam" value="$debugParamValue" />
+          <input type="hidden" name="refresh" id="hostFormRefresh" value="$reloadSeconds" />
+          <input type="hidden" name="debug" id="hostFormDebug" value="$debugParamValue" />
+          <input type="hidden" name="debugScoreboard" id="hostFormDebugScoreboard" value="$debugScoreboardValue" />
           <input type="submit" value="Update" />
         </form>
-        <button id="toggleButton" onclick="togglePageRefresh(); return false;">Turn Automatic Refresh Off</button>
-        <br /><br />
         <div class="mute-status-container"><span id="muteStatus" class="mute-status-label">Alerts: ON</span> <span class="help-link" onclick="alert('Sound Controls Help\\n\\n• Quick mute: Click 30m, 1h, 2h, etc. to mute for that duration.\\n• ∞ button: Mute indefinitely until you click Unmute.\\n• Custom duration: Enter days/hours/minutes and click Set.\\n• Until date/time: Pick a specific date/time to unmute.\\n• Maximum mute: 90 days.\\n\\n• Chrome users: If sound does not play, click the lock icon in the address bar, go to Site Settings, and set Sound to Allow.'); return false;" class="help-cursor">?</span></div>
         <div id="muteControls">
           <nobr>
@@ -1221,6 +1298,26 @@ document.addEventListener('DOMContentLoaded', function() {
     <td class="headerTableTd"><div id="pieChartByReadWrite" class="chartImage"></div></td>
   </tr>
 </table>
+
+<!-- Hidden templates for Settings dropdown population (moved into navbar via JS) -->
+<div id="settingsRefreshContent" style="display:none;">
+  <div class="settings-control-group">
+    <div>Refresh every</div>
+    <input type="text" id="settingsRefreshSeconds" value="$reloadSeconds" size="3" class="settings-input" /> seconds
+  </div>
+</div>
+<div id="settingsDebugContent" style="display:none;">
+  <div class="settings-control-group">
+    <div class="settings-sublabel">Debug Options</div>
+    <input type="checkbox" id="settingsDebugAQL" $debugAQLChecked onchange="updateSettingsDebugParam()"/> AQL (all)<br />
+    $settingsDebugTypeCheckboxes
+    <hr style="margin: 5px 0; border-color: var(--border-light);" />
+    <input type="checkbox" id="settingsDebugScoreboard" $debugScoreboardChecked /> Scoreboard<br />
+    <div style="margin-top: 8px;">
+      <button class="btn btn-xs btn-primary" onclick="applySettings(); return false;">Apply</button>
+    </div>
+  </div>
+</div>
 
 <div class="container">
   <!-- Modal -->
@@ -1495,6 +1592,38 @@ HTML
         ) ;
     }
 
+    // AJAX Render Times section
+    $page->appendBody(
+        <<<HTML
+
+<p />
+
+<a id="renderTimes"></a>
+<details id="renderTimesDetails" open>
+  <summary><h2 style="display:inline">AJAX Render Times</h2></summary>
+  <p class="render-times-tip">Tip: Turn off automatic refresh to focus on load times.</p>
+  <table border=1 cellspacing=0 cellpadding=2 id="renderTimesTable" class="tablesorter aql-listing">
+  <thead>
+    <tr><th colspan="6">AJAX Render Times</th></tr>
+    <tr>
+      <th>Hostname</th>
+      <th>DB Type</th>
+      <th>Server (ms)</th>
+      <th>Network (ms)</th>
+      <th>Total (ms)</th>
+      <th>Server Breakdown</th>
+    </tr>
+  </thead>
+  <tbody id="rendertimestbodyid">
+    <tr><td colspan="6"><center>Data loading</center></td></tr>
+  </tbody>
+  </table>
+</details>
+
+HTML
+    ) ;
+
+    // Version Summary section
     $page->appendBody(
         <<<HTML
 

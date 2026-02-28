@@ -40,6 +40,9 @@ function isDebugType( dbType ) {
     return debugAQL || debugTypes.indexOf( dbType ) >= 0 ;
 }
 
+// AJAX render time tracking - populated by utility.php processHost() callbacks
+var ajaxRenderTimes = {} ;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Utility Functions
 
@@ -565,6 +568,124 @@ function scrollToHost( hostname ) {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// AJAX Render Times Display
+
+/**
+ * Get CSS class for render time based on milliseconds
+ * @param {number} ms - Time in milliseconds
+ * @return {string} CSS class name
+ */
+function renderTimeClass( ms ) {
+    if ( ms === null || isNaN( ms ) ) return '' ;
+    if ( ms >= 5000 ) return 'render-time-critical' ;
+    if ( ms >= 2000 ) return 'render-time-slow' ;
+    if ( ms >= 500 )  return 'render-time-moderate' ;
+    return 'render-time-fast' ;
+}
+
+/**
+ * Format render time phase breakdown as a tooltip string
+ * @param {object} rtd - renderTimeData object from server
+ * @return {string} Formatted breakdown
+ */
+function renderTimeBreakdown( rtd ) {
+    if ( !rtd ) return '' ;
+    var parts = [] ;
+    for ( var key in rtd ) {
+        if ( rtd.hasOwnProperty( key ) && key !== 'total' && key !== 'dispatch' ) {
+            parts.push( key + ': ' + rtd[ key ] + 'ms' ) ;
+        }
+    }
+    if ( rtd.dispatch > 0 ) {
+        parts.unshift( 'dispatch: ' + rtd.dispatch + 'ms' ) ;
+    }
+    return parts.join( ', ' ) ;
+}
+
+/**
+ * Display AJAX render times table sorted by total time descending
+ * Called from finalizeLoad() after all AJAX requests complete
+ */
+function displayRenderTimes() {
+    var tbody = $( '#rendertimestbodyid' ) ;
+    tbody.empty() ;
+
+    // Sort by total time descending
+    var hosts = Object.keys( ajaxRenderTimes ) ;
+    hosts.sort( function( a, b ) {
+        return ( ajaxRenderTimes[ b ].total || 0 ) - ( ajaxRenderTimes[ a ].total || 0 ) ;
+    } ) ;
+
+    if ( hosts.length === 0 ) {
+        tbody.append( '<tr><td colspan="6"><center>No data</center></td></tr>' ) ;
+        return ;
+    }
+
+    // Track stats for summary
+    var totalSum = 0, serverSum = 0, networkSum = 0 ;
+    var totalMin = Infinity, totalMax = 0 ;
+    var countWithServer = 0 ;
+
+    hosts.forEach( function( hostname ) {
+        var t = ajaxRenderTimes[ hostname ] ;
+        var totalMs  = t.total  !== null ? t.total  : '-' ;
+        var serverMs = t.server !== null ? t.server : '-' ;
+        var networkMs = t.network !== null ? t.network : '-' ;
+        var dbType = t.dbType || 'Unknown' ;
+        var rowClass = t.error ? 'errorNotice' : '' ;
+        var totalClass  = renderTimeClass( t.total ) ;
+        var serverClass = renderTimeClass( t.server ) ;
+
+        // Build phase breakdown tooltip
+        var breakdown = renderTimeBreakdown( t.renderTimeData ) ;
+        var breakdownAttr = breakdown ? ' data-tooltip="' + breakdown.replace( /"/g, '&quot;' ) + '"' : '' ;
+
+        var row = '<tr class="' + rowClass + '">'
+            + '<td>' + hostname + '</td>'
+            + '<td>' + dbType + '</td>'
+            + '<td class="' + serverClass + ' text-right"' + breakdownAttr + '>' + serverMs + '</td>'
+            + '<td class="text-right">' + networkMs + '</td>'
+            + '<td class="' + totalClass + ' text-right">' + totalMs + '</td>'
+            + '<td class="render-time-breakdown">' + ( breakdown || '-' ) + '</td>'
+            + '</tr>' ;
+        tbody.append( row ) ;
+
+        // Accumulate stats
+        if ( t.total !== null ) {
+            totalSum += t.total ;
+            if ( t.total < totalMin ) totalMin = t.total ;
+            if ( t.total > totalMax ) totalMax = t.total ;
+        }
+        if ( t.server !== null ) {
+            serverSum += t.server ;
+            countWithServer++ ;
+        }
+        if ( t.network !== null ) {
+            networkSum += t.network ;
+        }
+    } ) ;
+
+    // Summary row
+    var count = hosts.length ;
+    var avgTotal = count > 0 ? Math.round( totalSum / count ) : 0 ;
+    var avgServer = countWithServer > 0 ? Math.round( serverSum / countWithServer ) : '-' ;
+    var avgNetwork = countWithServer > 0 ? Math.round( networkSum / countWithServer ) : '-' ;
+    if ( totalMin === Infinity ) totalMin = 0 ;
+
+    var summaryRow = '<tr class="render-time-summary">'
+        + '<td colspan="2"><strong>Summary</strong> (' + count + ' hosts)</td>'
+        + '<td class="text-right"><strong>' + avgServer + '</strong></td>'
+        + '<td class="text-right"><strong>' + avgNetwork + '</strong></td>'
+        + '<td class="text-right"><strong>' + avgTotal + '</strong></td>'
+        + '<td>min: ' + Math.round( totalMin ) + ' / max: ' + Math.round( totalMax ) + '</td>'
+        + '</tr>' ;
+    tbody.append( summaryRow ) ;
+
+    // Enable tablesorter
+    $( '#renderTimesTable' ).tablesorter( { sortList: [[4, 1]] } ) ;
+}
+
 /**
  * Handle Redis host data from AJAX response
  * @param {number} i - Index
@@ -847,7 +968,7 @@ function redisCallback( i, item ) {
         var diagRow = '<tr class="' + latDocLevel + '">'
             + '<td>' + hostname + '</td>'
             + '<td>Latency</td>'
-            + '<td class="diag-text"><pre>' + escapeHtml( latencyDoctor ) + '</pre></td>'
+            + '<td class="diag-text">' + escapeHtml( latencyDoctor ) + '</td>'
             + '</tr>' ;
         $( diagRow ).appendTo( '#fullredisdiagtbodyid' ) ;
     }
@@ -856,7 +977,7 @@ function redisCallback( i, item ) {
         var memDiagRow = '<tr class="' + memDocLevel + '">'
             + '<td>' + hostname + '</td>'
             + '<td>Memory</td>'
-            + '<td class="diag-text"><pre>' + escapeHtml( memoryDoctor ) + '</pre></td>'
+            + '<td class="diag-text">' + escapeHtml( memoryDoctor ) + '</td>'
             + '</tr>' ;
         $( memDiagRow ).appendTo( '#fullredisdiagtbodyid' ) ;
     }
@@ -1753,20 +1874,6 @@ function fileIssue( hostname, ro, fromHost, user, db, time, safeUrl, blockingCou
     }
 
     window.open(jiraUrl, '_blank');
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-function togglePageRefresh() {
-    if ( timeoutId > 0 ) {
-        clearTimeout( timeoutId ) ;
-        timeoutId = null ;
-        document.getElementById("toggleButton").innerHTML = "Turn Automatic Refresh On" ;
-    }
-    else {
-        timeoutId = setTimeout( function() { window.location.reload( 1 ); }, reloadSeconds ) ;
-        document.getElementById("toggleButton").innerHTML = "Turn Automatic Refresh Off" ;
-    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
