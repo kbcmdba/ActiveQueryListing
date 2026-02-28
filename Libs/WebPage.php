@@ -486,6 +486,8 @@ $fullRedisItems            </ul>
           <li><a href="#" id="themeToggleBtn" onclick="toggleTheme(); return false;" title="Switch to Light Mode"><span id="themeIcon">☀️</span> <span id="themeLabel">Light Mode</span></a></li>
           <li class="divider"></li>
           <li><a href="#" onclick="resetSession(); return false;" title="Clear session data and reload">🔄 Reset Session</a></li>
+          <li class="divider"></li>
+          <li><a href="#" id="pauseRefreshBtn" onclick="toggleAutoRefresh(); return false;" title="Pause or resume automatic page refresh">⏸ Pause Auto-Refresh</a></li>
         </ul>
       </li>
     </ul>
