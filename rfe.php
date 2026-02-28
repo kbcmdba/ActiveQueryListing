@@ -107,6 +107,13 @@ namespace com\kbcmdba\aql ;
 //          - Automatic failover: surviving pollers pick up orphaned hosts
 //          - Scales horizontally as monitored host count grows
 //          - Relates to @rfe 602 (High availability)
+//
+// @rfe 013 Datacenter-local data collectors
+//          - Deploy collectors in each datacenter/region
+//          - Reduces cross-datacenter network traffic for polling
+//          - Collectors gather data locally, report back to central AQL server
+//          - Lower latency = more accurate timing measurements
+//          - Relates to @rfe 010 (server polling) and @rfe 012 (multi-server)
 
 // ----------------------------------------------------------------------------
 // HISTORICAL DATA & TRENDING
