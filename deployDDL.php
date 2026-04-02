@@ -503,7 +503,7 @@ if ( tableExists( $dbh, 'blocking_history' ) && ! columnExists( $dbh, 'blocking_
 // Migration 003: Add RDS and Aurora to db_type ENUM
 // ---------------------------------------------------------------------------
 
-$currentEnumSql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'aql_db' AND TABLE_NAME = 'host' AND COLUMN_NAME = 'db_type'" ;
+$currentEnumSql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = $config->getDbName() AND TABLE_NAME = 'host' AND COLUMN_NAME = 'db_type'" ;
 $enumResult = $dbh->query( $currentEnumSql ) ;
 $needsEnumUpdate = true ;
 if ( $enumResult && $row = $enumResult->fetch_row() ) {

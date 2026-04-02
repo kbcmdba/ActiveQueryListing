@@ -257,7 +257,7 @@ function hashQueryString( $str ) {
 /**
  * Log a blocking query to the blocking_history table
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for deduplication by query_hash
- * @param int $hostId Host ID from aql_db.host table
+ * @param int $hostId Host ID from host table
  * @param string $user MySQL user executing the blocking query
  * @param string $sourceHost Source host/IP of the connection
  * @param string $dbName Database name (may be null)
@@ -277,7 +277,7 @@ function logBlockingQuery( $hostId, $user, $sourceHost, $dbName, $queryText, $bl
         $queryHash = hashQueryString( $normalizedQuery ) ;
 
         // INSERT or UPDATE - increment counts if exists, track max block time
-        $sql = "INSERT INTO aql_db.blocking_history
+        $sql = "INSERT INTO blocking_history
                 (host_id, query_hash, user, source_host, db_name, query_text, blocked_count, total_blocked, max_block_secs)
                 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
                 ON DUPLICATE KEY UPDATE
@@ -303,7 +303,7 @@ function purgeOldBlockingHistory() {
     try {
         $dbc = new DBConnection() ;
         $dbh = $dbc->getConnection() ;
-        $dbh->query( "DELETE FROM aql_db.blocking_history WHERE last_seen < DATE_SUB(NOW(), INTERVAL 90 DAY)" ) ;
+        $dbh->query( "DELETE FROM blocking_history WHERE last_seen < DATE_SUB(NOW(), INTERVAL 90 DAY)" ) ;
     } catch ( \Exception $e ) {
         error_log( "AQL blocking_history purge failed: " . $e->getMessage() ) ;
     }
@@ -325,7 +325,7 @@ function getHostIdFromHostname( $hostnamePort ) {
         $port = isset( $parts[1] ) ? (int) $parts[1] : 3306 ;
         $dbc = new DBConnection() ;
         $dbh = $dbc->getConnection() ;
-        $stmt = $dbh->prepare( "SELECT host_id FROM aql_db.host WHERE hostname = ? AND port_number = ?" ) ;
+        $stmt = $dbh->prepare( "SELECT host_id FROM host WHERE hostname = ? AND port_number = ?" ) ;
         $stmt->bind_param( 'si', $hostname, $port ) ;
         $stmt->execute() ;
         $result = $stmt->get_result() ;
@@ -345,7 +345,7 @@ function getHostIdFromHostname( $hostnamePort ) {
  * Gathers metrics from Redis INFO, CLIENT LIST, and SLOWLOG commands
  *
  * @param string $hostname Host:port string
- * @param int|null $hostId Host ID from aql_db.host
+ * @param int|null $hostId Host ID from host
  * @param array $hostGroups Groups this host belongs to
  * @param array|null $maintenanceInfo Active maintenance window info
  * @param Config $config AQL configuration object
@@ -1006,7 +1006,7 @@ try {
     $lookupPort = isset( $parts[1] ) ? (int) $parts[1] : 3306 ;
     $lookupDbc = new DBConnection() ;
     $lookupDbh = $lookupDbc->getConnection() ;
-    $lookupStmt = $lookupDbh->prepare( "SELECT host_id, db_type FROM aql_db.host WHERE hostname = ? AND port_number = ?" ) ;
+    $lookupStmt = $lookupDbh->prepare( "SELECT host_id, db_type FROM host WHERE hostname = ? AND port_number = ?" ) ;
     $lookupStmt->bind_param( 'si', $lookupHostname, $lookupPort ) ;
     $lookupStmt->execute() ;
     $lookupResult = $lookupStmt->get_result() ;
@@ -1027,8 +1027,8 @@ if ( $hostId !== null ) {
         $grpDbc = new DBConnection() ;
         $grpDbh = $grpDbc->getConnection() ;
         $grpSql = "SELECT hgm.host_group_id, hg.tag
-                   FROM aql_db.host_group_map hgm
-                   JOIN aql_db.host_group hg ON hg.host_group_id = hgm.host_group_id
+                   FROM host_group_map hgm
+                   JOIN host_group hg ON hg.host_group_id = hgm.host_group_id
                    WHERE hgm.host_id = ?" ;
         $grpStmt = $grpDbh->prepare( $grpSql ) ;
         if ( $grpStmt ) {
@@ -1092,7 +1092,7 @@ exit( 0 ) ;
  * Handle MySQL/MariaDB/InnoDBCluster host monitoring
  *
  * @param string $hostname Host:port string
- * @param int|null $hostId Host ID from aql_db.host
+ * @param int|null $hostId Host ID from host
  * @param array $hostGroups Groups this host belongs to
  * @param array|null $maintenanceInfo Active maintenance window info
  * @param Config $config AQL configuration object

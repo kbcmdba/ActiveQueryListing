@@ -661,7 +661,7 @@ class Config
     public function getDbTypes( $dbh ) {
         $dbTypes = [] ;
         $sql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS "
-             . "WHERE TABLE_SCHEMA = 'aql_db' AND TABLE_NAME = 'host' AND COLUMN_NAME = 'db_type'" ;
+             . "WHERE TABLE_SCHEMA = '" . $this->dbName . "' AND TABLE_NAME = 'host' AND COLUMN_NAME = 'db_type'" ;
         $result = $dbh->query( $sql ) ;
         if ( $result && $row = $result->fetch_row() ) {
             // Parse enum('val1','val2',...) into array
@@ -766,7 +766,7 @@ class Config
      */
     public function getDbTypesInUse( $dbh ) {
         $inUse = [] ;
-        $sql = "SELECT DISTINCT db_type FROM aql_db.host "
+        $sql = "SELECT DISTINCT db_type FROM `" . $this->dbName . "`.host "
              . "WHERE should_monitor = 1 AND decommissioned = 0 ORDER BY db_type" ;
         $result = $dbh->query( $sql ) ;
         if ( $result ) {

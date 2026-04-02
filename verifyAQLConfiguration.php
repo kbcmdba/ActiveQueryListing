@@ -101,7 +101,7 @@ $allParams = [
     'dbName' => [
         'required' => true,
         'description' => 'AQL database name',
-        'example' => 'aql_db',
+        'example' => 'aql_db (or your configured dbName)',
         'validate' => 'notEmpty'
     ],
     'baseUrl' => [

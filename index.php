@@ -512,7 +512,7 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
      , h.alert_warn_secs
      , h.alert_info_secs
      , h.alert_low_secs
-  FROM aql_db.host AS h
+  FROM host AS h
  WHERE h.decommissioned = 0
    AND h.should_monitor = 1
    AND h.db_type IN ( $dbTypeList )
@@ -528,7 +528,7 @@ SELECT CONCAT( h.hostname, ':', h.port_number )
      , h.alert_warn_secs
      , h.alert_info_secs
      , h.alert_low_secs
-  FROM aql_db.host AS h
+  FROM host AS h
  WHERE h.decommissioned = 0
    AND CONCAT( h.hostname, ':', h.port_number ) IN ( $in )
    AND h.db_type IN ( 'MySQL', 'MariaDB', 'InnoDBCluster' )
@@ -954,7 +954,7 @@ JS
     try {
         $groupDbc = new DBConnection() ;
         $groupDbh = $groupDbc->getConnection() ;
-        $groupResult = $groupDbh->query( "SELECT host_group_id, tag, short_description FROM aql_db.host_group ORDER BY tag" ) ;
+        $groupResult = $groupDbh->query( "SELECT host_group_id, tag, short_description FROM host_group ORDER BY tag" ) ;
         if ( $groupResult !== false ) {
             while ( $row = $groupResult->fetch_assoc() ) {
                 $groupOptionsHtml .= "              <option value=\"" . intval( $row['host_group_id'] ) . "\">" . htmlspecialchars( $row['tag'] . ' - ' . $row['short_description'] ) . "</option>\n" ;

@@ -59,7 +59,7 @@ $body .= "<ul>\n" ;
 $body .= "<li><a href=\"?test=config_validate\">Validate Configuration</a> - Check aql_config.xml parameters and connectivity</li>\n" ;
 $body .= "<li><a href=\"?test=smoke_test\">Application Smoke Test</a> - Verify main pages load without errors</li>\n" ;
 $body .= "<li><a href=\"?test=db_user_verify\">Database User Verification</a> - Verify both app and test user connectivity on config server and all monitored hosts</li>\n" ;
-$body .= "<li><a href=\"?test=schema_verify\">Schema Verification</a> - Verify aql_db tables and structure (read-only check)</li>\n" ;
+$body .= "<li><a href=\"?test=schema_verify\">Schema Verification</a> - Verify AQL database tables and structure (read-only check)</li>\n" ;
 $body .= "<li><a href=\"?test=deploy_ddl_verify\">Deploy DDL Verification</a> - Verify deployDDL.php runs without errors (idempotent check)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_setup\">Setup Blocking Test</a> - Create test table in dedicated test database (safe for production servers)</li>\n" ;
 $body .= "<li><a href=\"?test=blocking_js\">Test Blocking JavaScript</a> - Verify JS modifications for blocking count</li>\n" ;
@@ -629,7 +629,7 @@ function copyToClipboard(preId, btnId) {
 
 if ( $test === 'schema_verify' ) {
     $body .= "<h3>Schema Verification</h3>\n" ;
-    $body .= "<p><em>Read-only check of aql_db database structure</em></p>\n" ;
+    $body .= "<p><em>Read-only check of AQL database structure</em></p>\n" ;
 
     $passIcon = "<span class='test-success'>&#10004;</span>" ;
     $failIcon = "<span class='test-error'>&#10008;</span>" ;

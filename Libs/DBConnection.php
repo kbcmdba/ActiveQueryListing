@@ -163,7 +163,7 @@ class DBConnection
                 throw new DaoException('Connection class not implemented: ' . $connClass);
                 // https://www.php.net/manual/en/function.sqlsrv-connect.php
                 $serverName = $oConfig->getDbHost() . "\\" . $oConfig->getDbInstanceName;
-                $connectionInfo = array("Database" => "aql_db", "UID" => $oConfig->getDbUser(), "PWD" => $oConfig->getDbPassword());
+                $connectionInfo = array("Database" => $oConfig->getDbName(), "UID" => $oConfig->getDbUser(), "PWD" => $oConfig->getDbPassword());
                 $this->dbh = sqlsrv_connect($serverName, $connectionInfo);
                 if (! $this->dbh) {
                     throw new DaoException('Connection to $serverName could not be established. ' . sqlsrv_errors());

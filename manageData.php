@@ -391,7 +391,7 @@ SELECT host_id
      , alert_info_secs
      , alert_low_secs
      , db_type
-  FROM aql_db.host
+  FROM host
  ORDER BY decommissioned DESC, hostname ASC, port_number ASC
  
 SQL;
@@ -688,7 +688,7 @@ SELECT hg.host_group_id
 SQL;
         $hostsQuery = <<<SQL
 SELECT host_id, CONCAT( hostname, ':', port_number )
-  FROM aql_db.host
+  FROM host
  WHERE decommissioned = 0
  ORDER BY hostname, port_number
 

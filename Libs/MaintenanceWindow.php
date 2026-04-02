@@ -37,7 +37,7 @@ class MaintenanceWindow
     /**
      * Check if a host is in an active maintenance window (direct mapping)
      *
-     * @param int $hostId Host ID from aql_db.host table
+     * @param int $hostId Host ID from host table
      * @param \mysqli $dbh Database connection
      * @return array|null Maintenance info array or null if not in maintenance
      */
@@ -58,8 +58,8 @@ class MaintenanceWindow
                      , mw.description
                      , 'host' AS target_type
                      , NULL AS group_name
-                  FROM aql_db.maintenance_window mw
-                  JOIN aql_db.maintenance_window_host_map mwhm ON mwhm.window_id = mw.window_id
+                  FROM maintenance_window mw
+                  JOIN maintenance_window_host_map mwhm ON mwhm.window_id = mw.window_id
                  WHERE mwhm.host_id = ?" ;
 
         $stmt = $dbh->prepare( $sql ) ;
@@ -84,7 +84,7 @@ class MaintenanceWindow
     /**
      * Check if a host is in maintenance via group membership
      *
-     * @param int $hostId Host ID from aql_db.host table
+     * @param int $hostId Host ID from host table
      * @param \mysqli $dbh Database connection
      * @return array|null Maintenance info array or null if not in maintenance
      */
@@ -105,10 +105,10 @@ class MaintenanceWindow
                      , mw.description
                      , 'group' AS target_type
                      , hg.tag AS group_name
-                  FROM aql_db.maintenance_window mw
-                  JOIN aql_db.maintenance_window_host_group_map mwgm ON mwgm.window_id = mw.window_id
-                  JOIN aql_db.host_group hg ON hg.host_group_id = mwgm.host_group_id
-                  JOIN aql_db.host_group_map hgmap ON hgmap.host_group_id = hg.host_group_id
+                  FROM maintenance_window mw
+                  JOIN maintenance_window_host_group_map mwgm ON mwgm.window_id = mw.window_id
+                  JOIN host_group hg ON hg.host_group_id = mwgm.host_group_id
+                  JOIN host_group_map hgmap ON hgmap.host_group_id = hg.host_group_id
                  WHERE hgmap.host_id = ?" ;
 
         $stmt = $dbh->prepare( $sql ) ;
@@ -148,7 +148,7 @@ class MaintenanceWindow
         $silenceUntil = date( 'Y-m-d H:i:s', time() + ( $durationMinutes * 60 ) ) ;
 
         // Insert the maintenance window
-        $sql = "INSERT INTO aql_db.maintenance_window
+        $sql = "INSERT INTO maintenance_window
                 (window_type, silence_until, description, created_by)
                 VALUES ('adhoc', ?, ?, ?)" ;
 
@@ -168,9 +168,9 @@ class MaintenanceWindow
 
         // Map to host or group
         if ( $targetType === 'host' ) {
-            $mapSql = "INSERT INTO aql_db.maintenance_window_host_map (window_id, host_id) VALUES (?, ?)" ;
+            $mapSql = "INSERT INTO maintenance_window_host_map (window_id, host_id) VALUES (?, ?)" ;
         } else {
-            $mapSql = "INSERT INTO aql_db.maintenance_window_host_group_map (window_id, host_group_id) VALUES (?, ?)" ;
+            $mapSql = "INSERT INTO maintenance_window_host_group_map (window_id, host_group_id) VALUES (?, ?)" ;
         }
 
         $mapStmt = $dbh->prepare( $mapSql ) ;

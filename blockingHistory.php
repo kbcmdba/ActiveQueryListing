@@ -59,7 +59,7 @@ try {
 
     // Build host dropdown
     $hostOptions = "<option value=\"\">-- All Hosts --</option>\n" ;
-    $hostQuery = "SELECT host_id, hostname, port_number FROM aql_db.host ORDER BY hostname, port_number" ;
+    $hostQuery = "SELECT host_id, hostname, port_number FROM host ORDER BY hostname, port_number" ;
     $hostResult = $dbh->query( $hostQuery ) ;
     if ( $hostResult !== false ) {
         while ( $row = $hostResult->fetch_assoc() ) {
@@ -73,7 +73,7 @@ try {
 
     // Build user list for fuzzy autocomplete
     $userList = [] ;
-    $userQuery = "SELECT DISTINCT user FROM aql_db.blocking_history ORDER BY user" ;
+    $userQuery = "SELECT DISTINCT user FROM blocking_history ORDER BY user" ;
     $userResult = $dbh->query( $userQuery ) ;
     if ( $userResult !== false ) {
         while ( $row = $userResult->fetch_assoc() ) {
@@ -85,7 +85,7 @@ try {
     // Build query list for fuzzy autocomplete (top 100 most frequent, truncated)
     $queryList = [] ;
     $queryListQuery = "SELECT DISTINCT LEFT(query_text, 80) AS query_preview
-                         FROM aql_db.blocking_history
+                         FROM blocking_history
                         ORDER BY blocked_count DESC
                         LIMIT 100" ;
     $queryListResult = $dbh->query( $queryListQuery ) ;
@@ -98,7 +98,7 @@ try {
 
     // Get total count of entries
     $totalCount = 0 ;
-    $countResult = $dbh->query( "SELECT COUNT(*) AS cnt FROM aql_db.blocking_history" ) ;
+    $countResult = $dbh->query( "SELECT COUNT(*) AS cnt FROM blocking_history" ) ;
     if ( $countResult !== false ) {
         $countRow = $countResult->fetch_assoc() ;
         $totalCount = intval( $countRow['cnt'] ) ;
@@ -155,8 +155,8 @@ try {
                  , bh.query_text
                  , bh.first_seen
                  , bh.last_seen
-              FROM aql_db.blocking_history bh
-              JOIN aql_db.host h ON h.host_id = bh.host_id
+              FROM blocking_history bh
+              JOIN host h ON h.host_id = bh.host_id
              WHERE 1=1" ;
     $params = [] ;
     $types = '' ;
