@@ -130,7 +130,8 @@ class DBConnection
                     );
                 }
                 $this->dbh->query("SET @@SESSION.SQL_MODE = 'ALLOW_INVALID_DATES'");
-                if (! $mysqli->select_db($oConfig->getDbName())) {
+                $dbNameToSelect = $oConfig->getDbName() ;
+                if (( $dbNameToSelect !== null ) && ( $dbNameToSelect !== '' ) && ! $mysqli->select_db($dbNameToSelect)) {
                     if ($createDb) {
                         $this->createdDb = true;
                         $this->dbh->query("CREATE DATABASE IF NOT EXISTS " . $oConfig->getDbName());
