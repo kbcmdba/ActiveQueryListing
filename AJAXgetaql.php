@@ -1141,7 +1141,9 @@ try {
     $alertInfoSecs = Tools::param('alertInfoSecs') ;
     $alertLowSecs  = Tools::param('alertLowSecs') ;
     $phaseStart    = microtime( true ) ;
-    $dbc           = new DBConnection('process', $hostname) ;
+    $monUser = $config->getConfigValue('mysqlUsername', $config->getDbUser()) ;
+    $monPass = $config->getConfigValue('mysqlPassword', $config->getDbPass()) ;
+    $dbc           = new DBConnection('process', $hostname, null, null, $monUser, $monPass) ;
     $dbh           = $dbc->getConnection() ;
     $renderTimeData['connect'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
     $outputList    = [] ;

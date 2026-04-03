@@ -720,7 +720,7 @@ class Config
      * @param mixed $default Default value
      * @return mixed
      */
-    private function getConfigValue( $key, $default = null ) {
+    public function getConfigValue( $key, $default = null ) {
         // Access the raw config values array
         static $cfgValues = null ;
         if ( $cfgValues === null ) {
