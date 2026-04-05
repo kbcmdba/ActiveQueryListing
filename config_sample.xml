@@ -16,10 +16,15 @@
     <param name="jiraEnabled">false</param>
     <!-- Database Type Monitoring - enable each type you want to monitor -->
     <!-- mysqlEnabled is REQUIRED - AQL's backend database is MySQL -->
-    <!-- Other types can have optional username/password: {type}Username, {type}Password -->
+    <!-- Each type has {type}Username and {type}Password for monitoring credentials -->
+    <!-- MySQL credentials fall back to dbUser/dbPass if not set -->
     <param name="mysqlEnabled">true</param>
+    <param name="mysqlUsername">aql_app</param>
+    <param name="mysqlPassword">SomethingComplicated</param>
     <param name="innodbclusterEnabled">false</param>
     <param name="redisEnabled">false</param>
+    <!-- <param name="redisUsername"></param> -->
+    <!-- <param name="redisPassword"></param> -->
     <param name="mssqlEnabled">false</param>
     <param name="oracledbEnabled">false</param>
     <param name="cassandraEnabled">false</param>
@@ -28,6 +33,8 @@
     <param name="rdsEnabled">false</param>
     <param name="auroraEnabled">false</param>
     <param name="postgresqlEnabled">false</param>
+    <!-- <param name="postgresqlUsername">aql_mon</param> -->
+    <!-- <param name="postgresqlPassword">SomethingComplicated</param> -->
     <!-- Environment definitions and default - comma-separated list of valid environments -->
     <!-- deployDDL.php seeds the environment table from this list -->
     <param name="environments">dev,test,qa,pilot,staging,production</param>
