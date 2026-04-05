@@ -27,6 +27,11 @@
     <param name="mongodbEnabled">false</param>
     <param name="rdsEnabled">false</param>
     <param name="auroraEnabled">false</param>
+    <param name="postgresqlEnabled">false</param>
+    <!-- Environment definitions and default - comma-separated list of valid environments -->
+    <!-- deployDDL.php seeds the environment table from this list -->
+    <param name="environments">dev,test,qa,pilot,staging,production</param>
+    <param name="defaultEnvironment">production</param>
     <!-- Jira project ID (numeric) - find via REST API or project settings -->
     <param name="jiraProjectId"></param>
     <!-- Jira issue type ID (numeric) - find via /rest/api/3/issuetype -->
@@ -42,6 +47,12 @@
     <param name="showSlaveStatement">show all slaves status</param>
     <!-- Sample LDAP/AD config - check with your AD admin for the correct values for your company -->
     <param name="doLDAPAuthentication">true</param>
+    <!-- Local admin password - ONLY used when doLDAPAuthentication is false -->
+    <!-- Ignored entirely when LDAP is enabled. These are mutually exclusive: -->
+    <!--   LDAP on  = authenticate via Active Directory (adminPassword ignored) -->
+    <!--   LDAP off = authenticate via this password (any username accepted) -->
+    <!-- Username is tracked in session for audit purposes either way -->
+    <param name="adminPassword">changeme</param>
     <param name="ldapHost">ldaps://ad.mycompany.com/</param>
     <param name="ldapDomainName">DC=mycompany,DC=com</param>
     <param name="ldapUserGroup">Admins</param>

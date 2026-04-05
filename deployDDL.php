@@ -133,7 +133,7 @@ if ( ! tableExists( $dbh, 'host' ) ) {
          , hostname          VARCHAR( 64 ) NOT NULL
          , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
          , description       TEXT NULL DEFAULT NULL
-         , db_type           ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'OracleDB', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'
+         , db_type           ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'OracleDB', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora', 'PostgreSQL') NOT NULL DEFAULT 'MySQL'
          , db_version        VARCHAR( 30 ) NOT NULL DEFAULT ''
          , should_monitor    BOOLEAN NOT NULL DEFAULT 1
          , should_backup     BOOLEAN NOT NULL DEFAULT 1
@@ -602,6 +602,112 @@ if ( $needsOracleRename && tableExists( $dbh, 'host' ) ) {
         $body .= "<tr><td>Oracle hosts</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
         $errors[] = "Failed to rename Oracle hosts: " . $dbh->error ;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Migration 006: Add PostgreSQL to db_type ENUM
+// ---------------------------------------------------------------------------
+
+$needsPostgresql = true ;
+$currentEnumSql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '" . $config->getDbName() . "' AND TABLE_NAME = 'host' AND COLUMN_NAME = 'db_type'" ;
+$enumResult = $dbh->query( $currentEnumSql ) ;
+if ( $enumResult && $row = $enumResult->fetch_row() ) {
+    if ( strpos( $row[0], 'PostgreSQL' ) !== false ) {
+        $needsPostgresql = false ;
+    }
+}
+if ( $needsPostgresql ) {
+    $sql = "ALTER TABLE host MODIFY COLUMN db_type ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'OracleDB', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora', 'PostgreSQL') NOT NULL DEFAULT 'MySQL'" ;
+    if ( $dbh->query( $sql ) ) {
+        $body .= "<tr><td>db_type ENUM</td><td>UPDATED</td><td>Added PostgreSQL type</td></tr>\n" ;
+        $results[] = "Added PostgreSQL to db_type ENUM" ;
+    } else {
+        $body .= "<tr><td>db_type ENUM</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to add PostgreSQL to db_type ENUM: " . $dbh->error ;
+    }
+} else {
+    $body .= "<tr><td>db_type ENUM (PostgreSQL)</td><td>OK</td><td>-</td></tr>\n" ;
+}
+
+// ---------------------------------------------------------------------------
+// Migration 007: Create environment table and add FK to host
+// ---------------------------------------------------------------------------
+
+// 7a: Create environment table
+if ( ! tableExists( $dbh, 'environment' ) ) {
+    $sql = "CREATE TABLE environment (
+               environment_id    TINYINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+             , name              VARCHAR( 30 ) NOT NULL
+             , sort_order        SMALLINT NOT NULL DEFAULT 0
+             , created           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+             , updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                   ON UPDATE CURRENT_TIMESTAMP
+             , UNIQUE ux_name ( name )
+             ) ENGINE=InnoDB COMMENT='Environment definitions'" ;
+    if ( $dbh->query( $sql ) ) {
+        $body .= "<tr><td>environment table</td><td>CREATED</td><td>-</td></tr>\n" ;
+        $results[] = "Created environment table" ;
+    } else {
+        $body .= "<tr><td>environment table</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to create environment table: " . $dbh->error ;
+    }
+} else {
+    $body .= "<tr><td>environment table</td><td>OK</td><td>-</td></tr>\n" ;
+}
+
+// 7b: Seed environment table from config
+if ( tableExists( $dbh, 'environment' ) ) {
+    $envList = $config->getConfigValue( 'environments', 'dev,test,qa,pilot,staging,production' ) ;
+    $envNames = array_map( 'trim', explode( ',', $envList ) ) ;
+    $envNames = array_filter( $envNames, function( $v ) { return $v !== '' ; } ) ;
+    $sortOrder = 10 ;
+    $seeded = 0 ;
+    foreach ( $envNames as $envName ) {
+        $safeName = $dbh->real_escape_string( $envName ) ;
+        $sql = "INSERT IGNORE INTO environment (name, sort_order) VALUES ('$safeName', $sortOrder)" ;
+        if ( $dbh->query( $sql ) && $dbh->affected_rows > 0 ) {
+            $seeded++ ;
+        }
+        $sortOrder += 10 ;
+    }
+    if ( $seeded > 0 ) {
+        $body .= "<tr><td>environment seed</td><td>SEEDED</td><td>Added $seeded environment(s)</td></tr>\n" ;
+        $results[] = "Seeded $seeded environment(s) from config" ;
+    } else {
+        $body .= "<tr><td>environment seed</td><td>OK</td><td>-</td></tr>\n" ;
+    }
+}
+
+// 7c: Add environment_id FK column to host table
+if ( tableExists( $dbh, 'host' ) && ! columnExists( $dbh, 'host', 'environment_id' ) ) {
+    $sql = "ALTER TABLE host ADD COLUMN environment_id TINYINT UNSIGNED NULL DEFAULT NULL AFTER db_type" ;
+    if ( $dbh->query( $sql ) ) {
+        $body .= "<tr><td>host.environment_id column</td><td>ADDED</td><td>-</td></tr>\n" ;
+        $results[] = "Added environment_id column to host table" ;
+        // Add FK constraint
+        $sql = "ALTER TABLE host ADD KEY idx_environment (environment_id), "
+             . "ADD CONSTRAINT fk_host_environment FOREIGN KEY (environment_id) REFERENCES environment(environment_id) ON DELETE SET NULL ON UPDATE CASCADE" ;
+        if ( $dbh->query( $sql ) ) {
+            $body .= "<tr><td>host.environment_id FK</td><td>ADDED</td><td>-</td></tr>\n" ;
+            $results[] = "Added environment FK constraint" ;
+        } else {
+            $body .= "<tr><td>host.environment_id FK</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+            $errors[] = "Failed to add environment FK: " . $dbh->error ;
+        }
+        // Set existing hosts to the default environment
+        $defaultEnv = $config->getConfigValue( 'defaultEnvironment', 'production' ) ;
+        $safeDefault = $dbh->real_escape_string( $defaultEnv ) ;
+        $sql = "UPDATE host SET environment_id = (SELECT environment_id FROM environment WHERE name = '$safeDefault') WHERE environment_id IS NULL" ;
+        if ( $dbh->query( $sql ) && $dbh->affected_rows > 0 ) {
+            $body .= "<tr><td>host.environment_id backfill</td><td>UPDATED</td><td>Set " . $dbh->affected_rows . " host(s) to '$safeDefault'</td></tr>\n" ;
+            $results[] = "Set existing hosts to default environment: $safeDefault" ;
+        }
+    } else {
+        $body .= "<tr><td>host.environment_id column</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to add environment_id column: " . $dbh->error ;
+    }
+} else if ( tableExists( $dbh, 'host' ) ) {
+    $body .= "<tr><td>host.environment_id column</td><td>OK</td><td>-</td></tr>\n" ;
 }
 
 $body .= "</tbody>\n</table>\n" ;

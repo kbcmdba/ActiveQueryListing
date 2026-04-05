@@ -163,11 +163,7 @@ namespace com\kbcmdba\aql ;
 // ----------------------------------------------------------------------------
 // ADDITIONAL DATABASE SUPPORT
 // ----------------------------------------------------------------------------
-// @rfe 300 PostgreSQL support
-//          - Use pg_stat_activity for process listing
-//          - pg_locks for blocking detection
-//          - pg_stat_statements for query statistics
-//          - Replication status via pg_stat_replication
+// @rfe 300 PostgreSQL support - MOVED TO @todo 22
 //
 // @rfe 301 MongoDB support
 //          - Use currentOp() for active operations

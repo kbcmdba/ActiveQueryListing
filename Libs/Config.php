@@ -94,6 +94,7 @@ class Config
     private $redisPassword = null;
     private $redisConnectTimeout = null;
     private $redisDatabase = null;
+    private $postgresqlEnabled = null;
     private $enableSpeechAlerts = null;
 
     /**
@@ -167,6 +168,7 @@ class Config
             'redisPassword' => '',
             'redisConnectTimeout' => 2,
             'redisDatabase' => 0,
+            'postgresqlEnabled' => 'false',
             'enableSpeechAlerts' => 'true',
             'mysqlEnabled' => 'true'
         ] ;
@@ -207,6 +209,10 @@ class Config
             'redisPassword'            => [ 'isRequired' => 0, 'value' => 0 ],
             'redisConnectTimeout'      => [ 'isRequired' => 0, 'value' => 0 ],
             'redisDatabase'            => [ 'isRequired' => 0, 'value' => 0 ],
+            'postgresqlEnabled'        => [ 'isRequired' => 0, 'value' => 0 ],
+            'environments'             => [ 'isRequired' => 0, 'value' => 0 ],
+            'defaultEnvironment'       => [ 'isRequired' => 0, 'value' => 0 ],
+            'adminPassword'            => [ 'isRequired' => 0, 'value' => 0 ],
             'enableSpeechAlerts'       => [ 'isRequired' => 0, 'value' => 0 ],
             // mysqlEnabled is required - AQL's backend database is MySQL
             'mysqlEnabled'             => [ 'isRequired' => 1, 'value' => 0 ]
@@ -297,6 +303,7 @@ class Config
         $this->redisPassword = $cfgValues[ 'redisPassword' ] ?? '' ;
         $this->redisConnectTimeout = $cfgValues[ 'redisConnectTimeout' ] ?? 2 ;
         $this->redisDatabase = $cfgValues[ 'redisDatabase' ] ?? 0 ;
+        $this->postgresqlEnabled = $cfgValues[ 'postgresqlEnabled' ] ?? 'false' ;
         $this->enableSpeechAlerts = $cfgValues[ 'enableSpeechAlerts' ] ?? 'true' ;
     }
 
@@ -605,6 +612,15 @@ class Config
      */
     public function getRedisEnabled() {
         return ( 'true' === $this->redisEnabled ) ;
+    }
+
+    /**
+     * Check if PostgreSQL monitoring is enabled
+     *
+     * @return bool
+     */
+    public function getPostgresqlEnabled() {
+        return ( 'true' === $this->postgresqlEnabled ) ;
     }
 
     /**

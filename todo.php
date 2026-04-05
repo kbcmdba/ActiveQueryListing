@@ -65,10 +65,55 @@ namespace com\kbcmdba\aql ;
 //          - Proxy layer authentication handling
 //          - Enterprise-specific metrics (Active-Active replication, Redis on Flash stats)
 //          - Admin console API for node/shard health
+// @todo 22 Add PostgreSQL monitoring support (see subtasks 22-10 through 22-50)
+// @todo 22-10 PostgreSQL Phase 1 - Basic connectivity and processlist
+//          - Install php-pgsql extension
+//          - Add 'PostgreSQL' to db_type ENUM (deployDDL.php migration)
+//          - Add postgresqlEnabled/Username/Password config params
+//          - Create handlePostgreSQLHost() with pg_stat_activity processlist
+//          - Wire up AJAX dispatch and JS frontend (dbTypeStats)
+//          - Filter out AQL's own monitoring session unless debug=PostgreSQL
+//          - Output same JSON shape as handleMySQLHost() (result[], overviewData, slaveData)
+// @todo 22-20 PostgreSQL Phase 2 - Lock detection
+//          - Query pg_locks joined with pg_stat_activity for blocking detection
+//          - Map to same blockInfo structure as MySQL (isBlocked, isBlocking, etc.)
+//          - Blocking cache integration (Redis/file fallback)
+// @todo 22-30 PostgreSQL Phase 3 - Replication monitoring
+//          - pg_stat_replication for primary servers
+//          - pg_stat_wal_receiver for replica servers
+//          - Map to slaveData[] format compatible with MySQL replication display
+// @todo 22-40 PostgreSQL Phase 4 - Global status and overview
+//          - pg_stat_database for QPS, transactions, tuple counts
+//          - pg_settings for max_connections
+//          - Version detection via version()
+//          - Uptime via pg_postmaster_start_time()
+// @todo 22-50 PostgreSQL Phase 5 - Debug mode diagnostics
+//          - pg_stat_statements for query statistics (requires extension)
+//          - pg_stat_bgwriter for checkpoint/buffer stats
+//          - pg_stat_user_tables for table-level I/O stats
+//          - Vacuum/autovacuum status
+// @todo 22-55 Add environment column to host table
+//          - ENUM: dev, qa, pilot, staging, production (or similar)
+//          - Add deployDDL.php migration to add column
+//          - Update manageData.php to allow setting environment per host
+//          - Update setup_db.sql for fresh installs
+// @todo 22-56 Add environment CRUD to manageData.php
+//          - Add "Environments" data type to manageData.php
+//          - Allow add/edit/remove of environment names and sort order
+//          - Validate no hosts reference env before allowing delete
+// @todo 22-60 Scoreboard rows per dbType + environment combination
+//          - e.g., "MySQL Prod", "MySQL Dev", "PG Prod", "Redis Staging"
+//          - Requires environment column (22-55)
+//          - Build scoreboardItems dynamically from distinct dbType+environment pairs
+//          - Track stats per combination in dbTypeStats
+// @todo 22-65 Scoreboard filter - configurable dbType/environment visibility
+//          - Config or UI toggle to hide specific dbType+environment combos
+//          - e.g., "ignore all Dev environments" for production-focused monitoring
+//          - Could be per-user preference (localStorage) or global config
 // @todo 23 Refactor AJAXgetaql.php to use DBType handler dispatch pattern
-//          - handleMySQLHost() and handleRedisHost() now implemented
+//          - handleMySQLHost(), handleRedisHost(), and handlePostgreSQLHost() now implemented
 //          - Future: Use dispatch array: $handlers[$dbType]($hostname, $hostId, ...)
-//          - Future: Split into separate files (AJAXgetmysqlDB.php, AJAXgetredisDB.php)
+//          - Future: Split into separate files (AJAXgetmysqlDB.php, AJAXgetredisDB.php, AJAXgetpgsqlDB.php)
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs

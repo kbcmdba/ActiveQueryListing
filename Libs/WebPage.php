@@ -367,6 +367,13 @@ HTML
                     'section' => 'nwRedisOverview'
                 ] ;
             }
+            if ( $config->getPostgresqlEnabled() ) {
+                $scoreboardItems[] = [
+                    'id' => 'PostgreSQL',
+                    'label' => 'PG',
+                    'section' => 'nwStatusOverview'
+                ] ;
+            }
             // Future: Add other DBTypes here (MongoDB, MS-SQL, etc.)
         } catch ( \Exception $e ) {
             // Config not available, just show MySQL

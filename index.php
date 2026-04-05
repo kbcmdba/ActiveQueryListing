@@ -448,6 +448,7 @@ $muted = Tools::param('mute') === "1" ;
 $page = new WebPage('Active Queries List');
 $config = new Config();
 $redisEnabled = $config->getRedisEnabled() ;
+$postgresqlEnabled = $config->getPostgresqlEnabled() ;
 
 // Get DB types in use for per-type debug checkboxes
 $cfgDbc = new DBConnection() ;
@@ -1522,6 +1523,28 @@ HTML
         <span class="dbtype-blocking" id="dbTypeRedisBlocking" title="Blocking">-</span>
         <span class="dbtype-blocked" id="dbTypeRedisBlocked" title="Blocked">-</span>
         <span class="dbtype-total" id="dbTypeRedisTotal">- Total</span>
+      </div>
+    </td>
+HTML
+        ) ;
+    }
+
+    // Add PostgreSQL box if PostgreSQL monitoring is enabled
+    if ( $postgresqlEnabled ) {
+        $page->appendBody(
+            <<<HTML
+    <td id="dbTypePostgreSQL" class="dbtype-box" onclick="scrollToSection('nwStatusOverview')" title="PostgreSQL: Loading...">
+      <div class="dbtype-levels">
+        <span class="dbtype-label">PostgreSQL</span>
+        <span class="dbtype-level level9" id="dbTypePostgreSQLL9" onclick="showLevelDrilldown('PostgreSQL', 9); event.stopPropagation();">-</span>
+        <span class="dbtype-level level4" id="dbTypePostgreSQLL4" onclick="showLevelDrilldown('PostgreSQL', 4); event.stopPropagation();">-</span>
+        <span class="dbtype-level level3" id="dbTypePostgreSQLL3" onclick="showLevelDrilldown('PostgreSQL', 3); event.stopPropagation();">-</span>
+        <span class="dbtype-level level2" id="dbTypePostgreSQLL2" onclick="showLevelDrilldown('PostgreSQL', 2); event.stopPropagation();">-</span>
+        <span class="dbtype-level level1" id="dbTypePostgreSQLL1" onclick="showLevelDrilldown('PostgreSQL', 1); event.stopPropagation();">-</span>
+        <span class="dbtype-level level0" id="dbTypePostgreSQLL0" onclick="showLevelDrilldown('PostgreSQL', 0); event.stopPropagation();">-</span>
+        <span class="dbtype-blocking" id="dbTypePostgreSQLBlocking" title="Blocking">-</span>
+        <span class="dbtype-blocked" id="dbTypePostgreSQLBlocked" title="Blocked">-</span>
+        <span class="dbtype-total" id="dbTypePostgreSQLTotal">- Total</span>
       </div>
     </td>
 HTML

@@ -712,7 +712,26 @@ $ldapEnabled = isFeatureEnabled( 'doLDAPAuthentication', $configValues ) ;
         </table>
 <?php else : ?>
         <p><em>Set <code>doLDAPAuthentication</code> to <code>true</code> to enable LDAP authentication.</em></p>
-<?php endif ; ?>
+<?php
+    // Check local auth config when LDAP is disabled
+    $adminPass = $configValues['adminPassword'] ?? '' ;
+    if ( empty( $adminPass ) ) {
+        $warnings++ ;
+        echo "<p>$warnIcon <strong>adminPassword</strong> is not set. You will not be able to log in to manageData.php.</p>\n" ;
+    } elseif ( $adminPass === 'changeme' ) {
+        $warnings++ ;
+        echo "<p>$warnIcon <strong>adminPassword</strong> is still set to the default. Please change it.</p>\n" ;
+    } else {
+        echo "<p>$passIcon <strong>adminPassword</strong> is configured for local authentication.</p>\n" ;
+    }
+?>
+<?php endif ;
+    // Warn if LDAP is on but adminPassword is also set — they're mutually exclusive
+    if ( $ldapEnabled && ! empty( $configValues['adminPassword'] ?? '' ) ) {
+        $warnings++ ;
+        echo "<p>$warnIcon <strong>adminPassword</strong> is set but LDAP is enabled. The adminPassword is ignored when LDAP is on. Remove it to avoid confusion.</p>\n" ;
+    }
+?>
     </div>
 
 <?php

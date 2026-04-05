@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS host (
      , hostname          VARCHAR( 64 ) NOT NULL
      , port_number       SMALLINT UNSIGNED NOT NULL DEFAULT 3306
      , description       TEXT NULL DEFAULT NULL
-     , db_type           ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'OracleDB', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora') NOT NULL DEFAULT 'MySQL'
+     , db_type           ENUM('MySQL', 'InnoDBCluster', 'MS-SQL', 'Redis', 'OracleDB', 'Cassandra', 'DataStax', 'MongoDB', 'RDS', 'Aurora', 'PostgreSQL') NOT NULL DEFAULT 'MySQL'
+     , environment_id    TINYINT UNSIGNED NULL DEFAULT NULL
      , db_version        VARCHAR( 30 ) NOT NULL DEFAULT ''
      , should_monitor    BOOLEAN NOT NULL DEFAULT 1
      , should_backup     BOOLEAN NOT NULL DEFAULT 1
@@ -53,6 +54,9 @@ CREATE TABLE IF NOT EXISTS host (
      , UNIQUE udx_hostname_port_number ( hostname, port_number )
      , KEY idx_should_monitor ( should_monitor, decommissioned )
      , KEY idx_decommissioned ( decommissioned )
+     , KEY idx_environment ( environment_id )
+     , FOREIGN KEY fk_host_environment ( environment_id ) REFERENCES environment( environment_id )
+                   ON DELETE SET NULL ON UPDATE CASCADE
      ) ENGINE=InnoDB ;
 
 INSERT host
@@ -134,6 +138,19 @@ VALUES ( 1                 -- id
     ON DUPLICATE KEY
 UPDATE updated = CURRENT_TIMESTAMP
      ;
+
+CREATE TABLE IF NOT EXISTS environment (
+       environment_id    TINYINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+     , name              VARCHAR( 30 ) NOT NULL
+     , sort_order        SMALLINT NOT NULL DEFAULT 0
+     , created           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+     , updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           ON UPDATE CURRENT_TIMESTAMP
+     , UNIQUE ux_name ( name )
+     ) ENGINE=InnoDB COMMENT='Environment definitions - seeded from config environments param by deployDDL.php' ;
+
+-- NOTE: No INSERT here. deployDDL.php seeds this table from the
+-- "environments" config parameter (e.g., "dev,test,qa,production").
 
 CREATE TABLE IF NOT EXISTS host_group (
        host_group_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY

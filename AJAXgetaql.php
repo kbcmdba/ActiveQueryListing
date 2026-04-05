@@ -1083,10 +1083,269 @@ $dispatchMs = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
 // Dispatch to appropriate handler based on db_type
 if ( $dbType === 'Redis' ) {
     handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs ) ;
+} elseif ( $dbType === 'PostgreSQL' ) {
+    handlePostgreSQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs ) ;
 } else {
     handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs ) ;
 }
 exit( 0 ) ;
+
+/**
+ * Handle PostgreSQL host monitoring
+ *
+ * @param string $hostname Host:port string
+ * @param int|null $hostId Host ID from host table
+ * @param array $hostGroups Groups this host belongs to
+ * @param array|null $maintenanceInfo Active maintenance window info
+ * @param Config $config AQL configuration object
+ * @param bool $debug Show debug info (debug=PostgreSQL)
+ * @param float $startTime Microtime start for render timing
+ * @param float $dispatchMs Pre-handler dispatch time in ms
+ */
+function handlePostgreSQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0 ) {
+    if ( $startTime <= 0 ) { $startTime = microtime( true ) ; }
+    $renderTimeData = [ 'dispatch' => $dispatchMs ] ;
+
+    $overviewData = [
+        'aQPS'            => -1
+      , 'blank'           => 0
+      , 'blocked'         => 0
+      , 'blocking'        => 0
+      , 'duplicate'       => 0
+      , 'level0'          => 0
+      , 'level1'          => 0
+      , 'level2'          => 0
+      , 'level3'          => 0
+      , 'level4'          => 0
+      , 'level9'          => 0
+      , 'longest_running' => -1
+      , 'maxConnections'  => 0
+      , 'ro'              => 0
+      , 'rw'              => 0
+      , 'similar'         => 0
+      , 'threads'         => 0
+      , 'threadsConnected' => 0
+      , 'threadsRunning'  => 0
+      , 'time'            => 0
+      , 'unique'          => 0
+      , 'uptime'          => 0
+      , 'version'         => ''
+    ] ;
+    $queries = [] ;
+    $safeQueries = [] ;
+    $slaveData = [] ;
+    $longestRunning = -1 ;
+
+try {
+    $alertCritSecs = Tools::param('alertCritSecs') ;
+    $alertWarnSecs = Tools::param('alertWarnSecs') ;
+    $alertInfoSecs = Tools::param('alertInfoSecs') ;
+    $alertLowSecs  = Tools::param('alertLowSecs') ;
+
+    // Parse hostname and port
+    $parts = explode( ':', $hostname ) ;
+    $pgHost = $parts[0] ;
+    $pgPort = isset( $parts[1] ) ? (int) $parts[1] : 5432 ;
+
+    // Get credentials - fall back to config values
+    $monUser = $config->getConfigValue( 'postgresqlUsername', 'postgres' ) ;
+    $monPass = $config->getConfigValue( 'postgresqlPassword', '' ) ;
+
+    // Connect via pg_connect
+    $phaseStart = microtime( true ) ;
+    $connStr = "host=$pgHost port=$pgPort user=$monUser dbname=postgres connect_timeout=4" ;
+    if ( ! empty( $monPass ) ) {
+        $connStr .= " password=$monPass" ;
+    }
+    $pgConn = @pg_connect( $connStr ) ;
+    if ( $pgConn === false ) {
+        throw new \ErrorException( "Failed to connect to PostgreSQL at $hostname" ) ;
+    }
+    $renderTimeData['connect'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
+    // Global status: version, uptime, connections, transactions/sec
+    $phaseStart = microtime( true ) ;
+    $statusQuery = <<<SQL
+SELECT version(),
+       EXTRACT(EPOCH FROM (now() - pg_postmaster_start_time()))::bigint AS uptime,
+       (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') AS max_connections,
+       (SELECT count(*) FROM pg_stat_activity) AS connected,
+       (SELECT count(*) FROM pg_stat_activity WHERE state = 'active') AS active,
+       (SELECT xact_commit + xact_rollback FROM pg_stat_database WHERE datname = current_database()) AS total_xacts
+SQL;
+    $statusResult = pg_query( $pgConn, $statusQuery ) ;
+    if ( $statusResult === false ) {
+        throw new \ErrorException( "Error querying PostgreSQL status: " . pg_last_error( $pgConn ) ) ;
+    }
+    $row = pg_fetch_row( $statusResult ) ;
+    // version() returns "PostgreSQL 16.2 on x86_64..." - extract just the version part
+    $fullVersion = $row[0] ;
+    if ( preg_match( '/PostgreSQL\s+([\d.]+)/', $fullVersion, $m ) ) {
+        $overviewData['version'] = 'PG ' . $m[1] ;
+    } else {
+        $overviewData['version'] = $fullVersion ;
+    }
+    $uptime                           = (int) $row[1] ;
+    $overviewData['uptime']           = $uptime ;
+    $overviewData['maxConnections']   = (int) $row[2] ;
+    $overviewData['threadsConnected'] = (int) $row[3] ;
+    $overviewData['threadsRunning']   = (int) $row[4] ;
+    $totalXacts                       = (float) $row[5] ;
+    $overviewData['aQPS']             = ( $uptime > 0 ) ? round( $totalXacts / $uptime, 1 ) : 0 ;
+    pg_free_result( $statusResult ) ;
+    $renderTimeData['globalStatus'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
+    // Processlist via pg_stat_activity
+    $phaseStart = microtime( true ) ;
+    $outputList = [] ;
+
+    // Filter out our own backend process unless debug is on
+    $debugFilter = $debug ? '' : 'AND pid != pg_backend_pid()' ;
+    // In non-debug mode, filter out idle connections (equivalent to MySQL filtering out Sleep)
+    $idleFilter = $debug ? '' : "AND state NOT IN ('idle', 'disabled', '')" ;
+
+    $processQuery = <<<SQL
+SELECT pid,
+       usename,
+       client_addr::text || ':' || coalesce(client_port::text, '?') AS client,
+       datname,
+       CASE
+           WHEN state = 'active' THEN 'Query'
+           WHEN state = 'idle' THEN 'Sleep'
+           WHEN state = 'idle in transaction' THEN 'Idle in Transaction'
+           WHEN state = 'idle in transaction (aborted)' THEN 'Idle in Transaction (Aborted)'
+           WHEN state = 'fastpath function call' THEN 'Fastpath'
+           WHEN state = 'disabled' THEN 'Disabled'
+           ELSE coalesce(state, 'Unknown')
+       END AS command,
+       EXTRACT(EPOCH FROM (now() - COALESCE(query_start, xact_start, backend_start)))::int AS runtime_secs,
+       wait_event_type || ':' || wait_event AS wait_state,
+       query,
+       CASE WHEN pg_is_in_recovery() THEN 1 ELSE 0 END AS read_only
+  FROM pg_stat_activity
+ WHERE backend_type = 'client backend'
+       $debugFilter
+       $idleFilter
+ ORDER BY EXTRACT(EPOCH FROM (now() - COALESCE(query_start, xact_start, backend_start))) DESC NULLS LAST
+SQL;
+
+    $processResult = pg_query( $pgConn, $processQuery ) ;
+    if ( $processResult === false ) {
+        throw new \ErrorException( "Error querying pg_stat_activity: " . pg_last_error( $pgConn ) ) ;
+    }
+
+    while ( $row = pg_fetch_row( $processResult ) ) {
+        $overviewData['threads'] ++ ;
+        $dupeState    = '' ;
+        $pid          = (int) $row[0] ;
+        $uid          = $row[1] ?? '' ;
+        $host         = $row[2] ?? '' ;
+        $db           = $row[3] ?? '' ;
+        $command      = $row[4] ?? '' ;
+        $time         = (int) ( $row[5] ?? 0 ) ;
+        $friendlyTime = Tools::friendlyTime( $time ) ;
+        $state        = $row[6] ?? '' ;
+        $info         = $row[7] ?? '' ;
+        $readOnly     = (int) $row[8] ;
+
+        $safeInfo = Tools::makeQuotedStringPIISafe( $info ) ;
+        if ( ! empty( $info ) ) {
+            if ( ( $command === 'Query' ) && ( $longestRunning < $time ) ) {
+                $longestRunning = $time ;
+            }
+            if ( isset( $queries[ $info ] ) ) {
+                $dupeState = 'Duplicate' ;
+                $overviewData['duplicate'] ++ ;
+            } elseif ( isset( $safeQueries[ $safeInfo ] ) ) {
+                $dupeState = 'Similar' ;
+                $overviewData['similar'] ++ ;
+            } else {
+                $dupeState = 'Unique' ;
+                $overviewData['unique'] ++ ;
+            }
+        } else {
+            $dupeState = 'Blank' ;
+            $overviewData['blank'] ++ ;
+        }
+        $queries[ $info ] = 1 ;
+        $safeQueries[ $safeInfo ] = 1 ;
+        $safeUrl = urlencode( $safeInfo ) ;
+        $overviewData['time'] += $time ;
+        $overviewData[ ( $readOnly ) ? 'ro' : 'rw' ] ++ ;
+
+        switch ( true ) {
+            case $time >= $alertCritSecs:
+                $level = 4 ;
+                break ;
+            case $time >= $alertWarnSecs:
+                $level = 3 ;
+                break ;
+            case $time >= $alertInfoSecs:
+                $level = 2 ;
+                break ;
+            case $time <= $alertLowSecs:
+                $level = 0 ;
+                break ;
+            default:
+                $level = 1 ;
+        }
+
+        $overviewData[ "level$level" ] ++ ;
+        $safeInfoJS   = urlencode( $safeInfo ) ;
+        $outputList[] = [
+            'level'        => $level
+          , 'time'         => $time
+          , 'friendlyTime' => $friendlyTime
+          , 'server'       => $hostname
+          , 'id'           => $pid
+          , 'user'         => $uid
+          , 'host'         => $host
+          , 'db'           => $db
+          , 'command'      => $command
+          , 'state'        => $state
+          , 'dupeState'    => $dupeState
+          , 'info'         => htmlspecialchars( $safeInfo )
+          , 'actions'      => "<button type=\"button\" onclick=\"killProcOnHost( '$hostname', $pid, '$uid', '$host', '$db', '$command', $time, '$state', '$safeInfoJS' ) ; return false ;\">Kill Thread</button>"
+          , 'readOnly'     => $readOnly
+          , 'blockInfo'    => null
+        ] ;
+    }
+    pg_free_result( $processResult ) ;
+    $renderTimeData['processlist'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
+
+    // Replication placeholder (Phase 3)
+    $renderTimeData['replication'] = 0 ;
+
+    pg_close( $pgConn ) ;
+}
+catch ( \Exception $e ) {
+    $renderTimeData['total'] = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
+    echo json_encode( [
+        'hostname'        => $hostname,
+        'hostId'          => $hostId,
+        'hostGroups'      => $hostGroups,
+        'error_output'    => $e->getMessage(),
+        'maintenanceInfo' => $maintenanceInfo,
+        'renderTimeData'  => $renderTimeData,
+    ] ) ;
+    exit( 1 ) ;
+}
+
+$overviewData['longest_running'] = $longestRunning ;
+
+$output = [ 'hostname'        => $hostname
+           , 'hostId'          => $hostId
+           , 'hostGroups'      => $hostGroups
+           , 'dbType'          => 'PostgreSQL'
+           , 'result'          => $outputList
+           , 'overviewData'    => $overviewData
+           , 'slaveData'       => $slaveData
+           , 'maintenanceInfo' => $maintenanceInfo
+           ] ;
+$renderTimeData['total'] = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
+$output['renderTimeData'] = $renderTimeData ;
+echo json_encode( $output ) . "\n" ;
+}
 
 /**
  * Handle MySQL/MariaDB/InnoDBCluster host monitoring

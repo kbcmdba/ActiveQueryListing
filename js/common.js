@@ -247,6 +247,16 @@ var dbTypeStats = {
         evicted: 0,
         rejected: 0,
         blockedClients: 0
+    },
+    'PostgreSQL': {
+        hostCount: 0,
+        levels: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 9: 0 },
+        levelHosts: { 0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 9: {} },
+        worstLevel: 0,
+        // PostgreSQL-specific aggregates (same as MySQL for relational DBs)
+        longestRunning: 0,
+        blocking: 0,
+        blocked: 0
     }
 } ;
 
@@ -261,7 +271,7 @@ function resetDbTypeStats() {
             dbTypeStats[ dbType ].levels = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 9: 0 } ;
             dbTypeStats[ dbType ].levelHosts = { 0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 9: {} } ;
             // Reset type-specific fields
-            if ( dbType === 'MySQL' ) {
+            if ( dbType === 'MySQL' || dbType === 'PostgreSQL' ) {
                 dbTypeStats[ dbType ].longestRunning = 0 ;
                 dbTypeStats[ dbType ].blocking = 0 ;
                 dbTypeStats[ dbType ].blocked = 0 ;
@@ -333,11 +343,14 @@ function trackHostByDbType( dbType ) {
 }
 
 /**
- * Track MySQL-specific aggregates
+ * Track relational DB aggregates (MySQL, PostgreSQL)
  * @param {object} overviewData - The overviewData from AJAX response
+ * @param {string} dbType - 'MySQL' or 'PostgreSQL' (default: 'MySQL')
  */
-function trackMySQLAggregates( overviewData ) {
-    var stats = dbTypeStats[ 'MySQL' ] ;
+function trackMySQLAggregates( overviewData, dbType ) {
+    dbType = dbType || 'MySQL' ;
+    var stats = dbTypeStats[ dbType ] ;
+    if ( !stats ) return ;
     var lr = overviewData[ 'longest_running' ] || 0 ;
     if ( lr > stats.longestRunning ) stats.longestRunning = lr ;
     var blockingCount = overviewData[ 'blocking' ] || 0 ;
@@ -1388,9 +1401,10 @@ function myCallback( i, item ) {
     var myUrl             = '' ;
     var overviewData      = item[ 'overviewData' ] ;
     var slaveData         = item[ 'slaveData' ] ;
+    var itemDbType        = item[ 'dbType' ] || 'MySQL' ;
 
     // Dispatch to Redis handler if this is Redis data
-    if ( item[ 'dbType' ] === 'Redis' ) {
+    if ( itemDbType === 'Redis' ) {
         redisCallback( i, item ) ;
         return ;
     }
@@ -1468,11 +1482,9 @@ function myCallback( i, item ) {
         $(overviewErrorRow).prependTo( "#nwoverviewtbodyid" ) ;
         $(overviewErrorRow).prependTo( "#fulloverviewtbodyid" ) ;
 
-        // Track MySQL error for DBType scoreboard (skip if this is Redis data)
-        if ( item[ 'dbType' ] !== 'Redis' ) {
-            trackHostByDbType( 'MySQL' ) ;
-            trackLevelByDbType( 'MySQL', 9, 1, errorServer ) ;
-        }
+        // Track error for DBType scoreboard
+        trackHostByDbType( itemDbType ) ;
+        trackLevelByDbType( itemDbType, 9, 1, errorServer ) ;
     } else {
         if ( typeof overviewData !== 'undefined' ) {
             var server            = item[ 'hostname' ] ;
@@ -1556,7 +1568,8 @@ function myCallback( i, item ) {
             var connPct = ( overviewData[ 'maxConnections' ] > 0 )
                         ? Math.round( overviewData[ 'threadsConnected' ] / overviewData[ 'maxConnections' ] * 100 )
                         : 0 ;
-            // Add DB type prefix if version doesn't already contain one (MariaDB includes it, MySQL doesn't)
+            // Add DB type prefix if version doesn't already contain one
+            // MariaDB includes "MariaDB" in version, PG handler prefixes "PG", MySQL is bare numbers
             var displayVersion = overviewData[ 'version' ] ;
             if ( displayVersion && !/[a-zA-Z]/.test( displayVersion ) ) {
                 displayVersion = 'MySQL ' + displayVersion ;
@@ -1596,10 +1609,11 @@ function myCallback( i, item ) {
                 $(myRow).appendTo( '#nwoverviewtbodyid' ) ;
             }
 
-            // Track version data for version summary table (prefix with "MySQL " for consistency)
+            // Track version data for version summary table
             var version = overviewData[ 'version' ] ;
             if ( version ) {
-                var versionKey = 'MySQL ' + version ;
+                // displayVersion already has type prefix (e.g., "MySQL 8.4.6", "PG 16.2", "MariaDB 10.5.18")
+                var versionKey = displayVersion ;
                 if ( typeof versionData[ versionKey ] === 'undefined' ) {
                     versionData[ versionKey ] = { count: 0, hosts: [] } ;
                 }
@@ -1611,15 +1625,17 @@ function myCallback( i, item ) {
                 updateVersionSummary() ;
             }
 
-            // Track MySQL host for DBType scoreboard
-            trackHostByDbType( 'MySQL' ) ;
-            trackLevelByDbType( 'MySQL', 0, overviewData[ 'level0' ] || 0, server ) ;
-            trackLevelByDbType( 'MySQL', 1, overviewData[ 'level1' ] || 0, server ) ;
-            trackLevelByDbType( 'MySQL', 2, overviewData[ 'level2' ] || 0, server ) ;
-            trackLevelByDbType( 'MySQL', 3, overviewData[ 'level3' ] || 0, server ) ;
-            trackLevelByDbType( 'MySQL', 4, overviewData[ 'level4' ] || 0, server ) ;
-            trackLevelByDbType( 'MySQL', 9, overviewData[ 'level9' ] || 0, server ) ;
-            trackMySQLAggregates( overviewData ) ;
+            // Track host for DBType scoreboard
+            trackHostByDbType( itemDbType ) ;
+            trackLevelByDbType( itemDbType, 0, overviewData[ 'level0' ] || 0, server ) ;
+            trackLevelByDbType( itemDbType, 1, overviewData[ 'level1' ] || 0, server ) ;
+            trackLevelByDbType( itemDbType, 2, overviewData[ 'level2' ] || 0, server ) ;
+            trackLevelByDbType( itemDbType, 3, overviewData[ 'level3' ] || 0, server ) ;
+            trackLevelByDbType( itemDbType, 4, overviewData[ 'level4' ] || 0, server ) ;
+            trackLevelByDbType( itemDbType, 9, overviewData[ 'level9' ] || 0, server ) ;
+            if ( itemDbType === 'MySQL' || itemDbType === 'PostgreSQL' ) {
+                trackMySQLAggregates( overviewData, itemDbType ) ;
+            }
         }
         if ( ( typeof slaveData !== 'undefined' ) && ( typeof slaveData[ 0 ] !== 'undefined' ) ) {
             var server            = item[ 'hostname' ] ;
@@ -2122,12 +2138,15 @@ function fillHostForm( host_id
                      , alert_warn_secs
                      , alert_info_secs
                      , alert_low_secs
-                     , db_type ) {
+                     , db_type
+                     , environment_id ) {
     document.getElementById( 'hostId' ).value = host_id ;
     document.getElementById( 'hostName' ).value = hostname ;
     document.getElementById( 'portNumber' ).value = port_number ;
     document.getElementById( 'description' ).value = description ;
     document.getElementById( 'dbType' ).value = db_type ;
+    var envEl = document.getElementById( 'environmentId' ) ;
+    if ( envEl ) { envEl.value = environment_id || '' ; }
     document.getElementById( 'shouldMonitor' ).value = should_monitor ;
     document.getElementById( 'shouldBackup' ).value = should_backup ;
     document.getElementById( 'shouldSchemaspy' ).value = should_schemaspy ;

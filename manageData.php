@@ -260,6 +260,8 @@ switch ( Tools::param( 'data' ) ) {
         $alertInfoSecs = Tools::param( 'alertInfoSecs' ) ;
         $alertLowSecs = Tools::param( 'alertLowSecs' ) ;
         $dbType = Tools::param( 'dbType' ) ;
+        $environmentId = Tools::param( 'environmentId' ) ;
+        if ( $environmentId === '' || $environmentId === null ) { $environmentId = null ; }
 
         if (  ( ( 'Update' === $action ) || ( 'Delete' === $action ) )
              && ! Tools::isNumeric( $hostId )
@@ -298,8 +300,11 @@ switch ( Tools::param( 'data' ) ) {
                 break;
             case 'Add':
                 $body .= 'Add - ' ;
-                // Verify host permissions before adding
-                $permCheck = verifyHostPermissions( $hostName, $portNumber ) ;
+                // Verify host permissions before adding (MySQL-family only)
+                $mysqlTypes = [ 'MySQL', 'InnoDBCluster', 'RDS', 'Aurora' ] ;
+                $permCheck = in_array( $dbType, $mysqlTypes )
+                           ? verifyHostPermissions( $hostName, $portNumber )
+                           : [ 'success' => true, 'errors' => [], 'warnings' => [] ] ;
                 if ( ! $permCheck['success'] ) {
                     $config = new Config() ;
                     $dbUser = $config->getDbUser() ;
@@ -333,13 +338,15 @@ switch ( Tools::param( 'data' ) ) {
                      . ', should_schemaspy = ?, revenue_impacting = ?, decommissioned = ?'
                      . ', alert_crit_secs = ?, alert_warn_secs = ?'
                      . ', alert_info_secs = ?, alert_low_secs = ?, db_type = ?'
+                     . ', environment_id = ?'
                      . ', created = NOW(), updated = NOW(), last_audited = NOW()'
                      ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sisiiiiiiiiiis'
+                $stmt->bind_param( 'sisiiiiiiiiisi'
                                  , $hostName, $portNumber, $description, $shouldMonitor
                                  , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
                                  , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs, $dbType
+                                 , $environmentId
                                  ) ;
                 $body .= ( $stmt->execute() ) ? "<span class='msg-success'>Success.</span><br />\n" : "Failed.<br />\n" ;
             break ;
@@ -351,15 +358,16 @@ switch ( Tools::param( 'data' ) ) {
                      . ', revenue_impacting = ?, decommissioned = ?'
                      . ', alert_crit_secs = ?, alert_warn_secs = ?'
                      . ', alert_info_secs = ?, alert_low_secs = ?, db_type = ?'
+                     . ', environment_id = ?'
                      . ', updated = NOW(), last_audited = NOW()'
                      . ' WHERE host_id = ?'
                      ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sisiiiiiiiiisi'
+                $stmt->bind_param( 'sisiiiiiiiiisii'
                                  , $hostName, $portNumber, $description, $shouldMonitor
                                  , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
                                  , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs, $dbType
-                                 , $hostId
+                                 , $environmentId, $hostId
                                  ) ;
                 $body .= ( $stmt->execute() ) ? "Success.<br />\n" : "Failed.<br />\n" ;
                 break ;
@@ -391,6 +399,7 @@ SELECT host_id
      , alert_info_secs
      , alert_low_secs
      , db_type
+     , environment_id
   FROM host
  ORDER BY decommissioned DESC, hostname ASC, port_number ASC
  
@@ -401,6 +410,23 @@ SQL;
             $selected = ( $type === 'MySQL' ) ? ' selected="selected"' : '' ;
             $dbTypeOptions .= '<option value="' . htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' ) . '"' . $selected . '>'
                            . htmlspecialchars( $type, ENT_QUOTES, 'UTF-8' ) . '</option>' ;
+        }
+
+        // Generate environment dropdown from environment table
+        $envOptions = '<option value="">-- None --</option>' ;
+        $envMap = [] ;
+        $envConfig = new Config() ;
+        $defaultEnvName = $envConfig->getConfigValue( 'defaultEnvironment', 'production' ) ;
+        $envQuery = "SELECT environment_id, name FROM `" . $envConfig->getDbName() . "`.environment ORDER BY sort_order, name" ;
+        $envResult = $dbh->query( $envQuery ) ;
+        if ( $envResult ) {
+            while ( $envRow = $envResult->fetch_assoc() ) {
+                $envMap[ (int) $envRow['environment_id'] ] = $envRow['name'] ;
+                $selected = ( $envRow['name'] === $defaultEnvName ) ? ' selected="selected"' : '' ;
+                $envOptions .= '<option value="' . (int) $envRow['environment_id'] . '"' . $selected . '>'
+                             . htmlspecialchars( $envRow['name'], ENT_QUOTES, 'UTF-8' ) . '</option>' ;
+            }
+            $envResult->close() ;
         }
 
         // Form at the top for easier access
@@ -414,6 +440,7 @@ SQL;
     <tr><th colspan="2">Port Number</th><td><input type="number" id="portNumber" name="portNumber" size="5" value="3306" /></td></tr>
     <tr><th colspan="2">Description</th><td><textarea id="description" name="description" rows="4" cols="60"></textarea></td></tr>
     <tr><th colspan="2">DB Type</th><td><select id="dbType" name="dbType">$dbTypeOptions</select></td></tr>
+    <tr><th colspan="2">Environment</th><td><select id="environmentId" name="environmentId">$envOptions</select></td></tr>
     <tr><th colspan="2">Should Monitor</th><td><select id="shouldMonitor" name="shouldMonitor"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Should Backup</th><td><select id="shouldBackup" name="shouldBackup"><option value="1" selected="selected">Yes</option><option value="0">No</option></select></td></tr>
     <tr><th colspan="2">Should Schemaspy</th><td><select id="shouldSchemaspy" name="shouldSchemaspy"><option value="1">Yes</option><option value="0" selected="selected">No</option></select></td></tr>
@@ -471,6 +498,7 @@ document.getElementById('dbType').addEventListener('change', function() {
       <th rowspan="2">Decommissioned</th>
       <th colspan="4">Alert Seconds</th>
       <th rowspan="2">DB Type</th>
+      <th rowspan="2">Environment</th>
     </tr>
     <tr>
       <th>Critical</th>
@@ -492,6 +520,7 @@ HTML;
                 $jsHostname = htmlspecialchars( json_encode( $row[1] ), ENT_QUOTES, 'UTF-8' ) ;
                 $jsDescription = htmlspecialchars( json_encode( $row[3] ), ENT_QUOTES, 'UTF-8' ) ;
                 $jsDbType = htmlspecialchars( json_encode( $row[13] ), ENT_QUOTES, 'UTF-8' ) ;
+                $jsEnvId = ( $row[14] !== null ) ? intval( $row[14] ) : 'null' ;
                 $body .= "      <tr>"
                       .  "<td class=\"text-center\">"
                       .  "<button type=\"button\" onclick=\"fillHostForm("
@@ -508,14 +537,20 @@ HTML;
                       .  intval( $row[10] ) . ", "
                       .  intval( $row[11] ) . ", "
                       .  intval( $row[12] ) . ", "
-                      .  $jsDbType
+                      .  $jsDbType . ", "
+                      .  $jsEnvId
                       .  "); return false;\">Fill Host Form</button>"
                       .  "</td>"
                       ;
                 // Columns 4-8 are boolean flags that get color coding
                 $boolCols = [ 4, 5, 6, 7, 8 ] ;
-                for ( $i = 0 ; $i < 14 ; $i++ ) {
-                    if ( in_array( $i, $boolCols ) ) {
+                for ( $i = 0 ; $i < 15 ; $i++ ) {
+                    if ( $i === 14 ) {
+                        // Environment column: show name from lookup instead of raw ID
+                        $envName = ( $row[$i] !== null && isset( $envMap[ (int) $row[$i] ] ) )
+                                 ? $envMap[ (int) $row[$i] ] : '' ;
+                        $body .= "<td>" . htmlspecialchars( $envName, ENT_QUOTES, 'UTF-8' ) . "</td>" ;
+                    } elseif ( in_array( $i, $boolCols ) ) {
                         $class = ( $row[$i] == 1 ) ? 'bool-yes' : 'bool-no' ;
                         $body .= "<td class=\"$class\">" . htmlspecialchars( $row[$i] ?? '', ENT_QUOTES, 'UTF-8' ) . "</td>" ;
                     } else {

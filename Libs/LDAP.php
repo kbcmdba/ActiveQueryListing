@@ -53,11 +53,25 @@ class LDAP
         try {
             $oConfig = new Config() ;
             if ( ! $oConfig->getDoLDAPAuthentication() ) {
-                return true ;
+                // Local auth: check against adminPassword in config
+                $adminPassword = $oConfig->getConfigValue( 'adminPassword', '' ) ;
+                if ( empty( $adminPassword ) ) {
+                    // No adminPassword configured - deny access
+                    return false ;
+                }
+                if ( empty( $user ) || empty( $password ) ) {
+                    return false ;
+                }
+                if ( $password === $adminPassword ) {
+                    $_SESSION[ 'AuthUser' ] = $user ;
+                    $_SESSION[ 'AuthCanAccess' ] = 1 ;
+                    return true ;
+                }
+                return false ;
             }
         }
         catch ( ConfigurationException $e ) {
-            return true ;
+            return false ;
         }
         $debugEnabled = $oConfig->getLDAPDebugConnection() ;
         $debug = function( $msg ) use ( $debugEnabled ) {
