@@ -143,6 +143,24 @@ Migrations in `deployDDL.php` follow this pattern:
 - Config file is `./aql_config.xml` (local to each instance, not `/etc/`)
 - Test with `php index.php 2>&1 | head` to see runtime errors, not just syntax
   - Use `verifyAQLConfiguration.php` to check environment setup
+- **baseUrl must match the hostname you access AQL from** — mismatch = AJAX calls go to wrong server or get blocked by CORS
+- **Avoid trailing spaces in passwords** — they get trimmed by YAML, Ansible, and most templating tools, causing auth mismatches
+- **Per-type credentials**: `{type}Username` / `{type}Password` in config (e.g., `postgresqlUsername`, `mysqlPassword`). MySQL falls back to `dbUser`/`dbPass` if not set.
+
+### PostgreSQL/pg_connect Patterns
+- `pg_connect()` uses space-delimited connection strings — passwords with spaces must be single-quoted: `password='my pass'`
+- Escape single quotes and backslashes in passwords before embedding in connection string
+- `pg_monitor` role (PG 10+) grants read access to all monitoring views
+- Version from `version()` is verbose ("PostgreSQL 16.13 on x86_64...") — extract with regex for display
+
+### Adding New DB Types
+- Follow Redis as the wiring template (config, dispatch, handler, JS), but MySQL as the output template for relational DBs
+- Handler must return same JSON shape as `handleMySQLHost()`: `result[]`, `overviewData`, `slaveData`, `renderTimeData`
+- Add `dbType` field to JSON output for JS scoreboard routing
+- Update: `dbTypeStats` in common.js, scoreboard in WebPage.php, overview box in index.php
+- Update: `someHostsQuery` and host group query in index.php — these were hardcoded to MySQL types
+- Update: `verifyHostPermissions()` in manageData.php — skip for non-MySQL types
+- `utility.php` `processHost()` generates the AJAX calls — debug param must pass through fully, not just `debug=1`
 
 ### CSS Patterns
 - Use `rem` units, not `em`
