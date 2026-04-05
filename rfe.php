@@ -487,6 +487,11 @@ namespace com\kbcmdba\aql ;
 // ----------------------------------------------------------------------------
 // UI/UX ENHANCEMENTS
 // ----------------------------------------------------------------------------
+// @rfe 698 Host form: Move DB Type before Port Number
+//          - DB Type selection should come before Port Number in manageData.php host form
+//          - Auto-set port to default for selected type (MySQL=3306, PG=5432, Redis=6379, etc.)
+//          - Reduces errors from forgetting to change the port when adding non-MySQL hosts
+//
 // @rfe 700 Mobile-responsive design
 //          - Usable on phone/tablet
 //          - Touch-friendly controls

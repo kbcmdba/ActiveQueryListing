@@ -142,10 +142,31 @@ Migrations in `deployDDL.php` follow this pattern:
 - After `git pull`, new required config parameters can break AQL with 500 errors
 - Config file is `./aql_config.xml` (local to each instance, not `/etc/`)
 - Test with `php index.php 2>&1 | head` to see runtime errors, not just syntax
-  - Use `verifyAQLConfiguration.php` to check environment setup
+  - **Always run `verifyAQLConfiguration.php` before `deployDDL.php`** — verify catches config/PHP issues first
 - **baseUrl must match the hostname you access AQL from** — mismatch = AJAX calls go to wrong server or get blocked by CORS
 - **Avoid trailing spaces in passwords** — they get trimmed by YAML, Ansible, and most templating tools, causing auth mismatches
-- **Per-type credentials**: `{type}Username` / `{type}Password` in config (e.g., `postgresqlUsername`, `mysqlPassword`). MySQL falls back to `dbUser`/`dbPass` if not set.
+- **DB type config uses `<dbtype>` XML elements** (not flat `<param>` for type settings):
+  ```xml
+  <dbtype name="mysql" enabled="true" username="aql_app" password="pass" />
+  <dbtype name="postgresql" enabled="true" username="aql_mon" password="pass" />
+  <dbtype name="redis" enabled="true" />
+  ```
+  The parser maps attributes to flat keys (e.g., `mysqlEnabled`, `mysqlUsername`) for backward compat. Old `<param>` format still works.
+- **DTD validation**: `aql_config.dtd` validates config structure. Run `xmllint --valid --noout aql_config.xml` to check.
+- **Per-type credentials**: Set via `<dbtype>` attributes. MySQL falls back to `dbUser`/`dbPass` if username/password not set.
+
+### Authentication
+- **LDAP on**: Authenticates via Active Directory. `adminPassword` is ignored.
+- **LDAP off**: Authenticates via `adminPassword` in config. Any username accepted (tracked in session for audit).
+- These are mutually exclusive — `verifyAQLConfiguration.php` warns if both are configured.
+- **index.php graceful error**: If DB connection fails, shows a friendly error page with links to `verifyAQLConfiguration.php` and `deployDDL.php` instead of a raw 500.
+
+### Environment System
+- `environment` table with TINYINT UNSIGNED PK, name, sort_order
+- `host.environment_id` nullable FK (ON DELETE SET NULL)
+- Seeded from config `environments` param (comma-separated list)
+- `defaultEnvironment` config param sets the default for new hosts and backfills existing hosts
+- Environment dropdown in manageData.php host form
 
 ### PostgreSQL/pg_connect Patterns
 - `pg_connect()` uses space-delimited connection strings — passwords with spaces must be single-quoted: `password='my pass'`

@@ -92,11 +92,6 @@ namespace com\kbcmdba\aql ;
 //          - pg_stat_bgwriter for checkpoint/buffer stats
 //          - pg_stat_user_tables for table-level I/O stats
 //          - Vacuum/autovacuum status
-// @todo 22-55 Add environment column to host table
-//          - ENUM: dev, qa, pilot, staging, production (or similar)
-//          - Add deployDDL.php migration to add column
-//          - Update manageData.php to allow setting environment per host
-//          - Update setup_db.sql for fresh installs
 // @todo 22-56 Add environment CRUD to manageData.php
 //          - Add "Environments" data type to manageData.php
 //          - Allow add/edit/remove of environment names and sort order
