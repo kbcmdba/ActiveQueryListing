@@ -445,15 +445,40 @@ $fullRedisDebugBuffersHeaderFooter = <<<HTML
 HTML;
 
 $muted = Tools::param('mute') === "1" ;
-$page = new WebPage('Active Queries List');
-$config = new Config();
+try {
+    $page = new WebPage('Active Queries List');
+    $config = new Config();
+} catch ( \Exception $e ) {
+    echo "<!DOCTYPE html><html><head><title>AQL: Configuration Error</title>"
+       . "<link rel=\"stylesheet\" href=\"css/main.css\" />"
+       . "</head><body style=\"padding: 2rem; font-family: sans-serif;\">"
+       . "<h1>AQL Configuration Error</h1>"
+       . "<p style=\"color: var(--status-error, #f44336);\">" . htmlspecialchars( $e->getMessage() ) . "</p>"
+       . "<p>Please run <a href=\"verifyAQLConfiguration.php\">Verify AQL Configuration</a> to diagnose and fix the issue.</p>"
+       . "<p>Then run <a href=\"deployDDL.php\">Deploy DDL</a> to set up or update the database schema.</p>"
+       . "</body></html>" ;
+    exit( 1 ) ;
+}
 $redisEnabled = $config->getRedisEnabled() ;
 $postgresqlEnabled = $config->getPostgresqlEnabled() ;
 
 // Get DB types in use for per-type debug checkboxes
-$cfgDbc = new DBConnection() ;
-$cfgDbh = $cfgDbc->getConnection() ;
-$dbTypesInUse = $config->getDbTypesInUse( $cfgDbh ) ;
+try {
+    $cfgDbc = new DBConnection() ;
+    $cfgDbh = $cfgDbc->getConnection() ;
+    $dbTypesInUse = $config->getDbTypesInUse( $cfgDbh ) ;
+} catch ( \Exception $e ) {
+    echo "<!DOCTYPE html><html><head><title>AQL: Database Connection Error</title>"
+       . "<link rel=\"stylesheet\" href=\"css/main.css\" />"
+       . "</head><body style=\"padding: 2rem; font-family: sans-serif;\">"
+       . "<h1>AQL Database Connection Error</h1>"
+       . "<p style=\"color: var(--status-error, #f44336);\">" . htmlspecialchars( $e->getMessage() ) . "</p>"
+       . "<p>AQL could not connect to its configuration database.</p>"
+       . "<p>Please run <a href=\"verifyAQLConfiguration.php\">Verify AQL Configuration</a> to diagnose and fix the issue.</p>"
+       . "<p>Then run <a href=\"deployDDL.php\">Deploy DDL</a> to set up or update the database schema.</p>"
+       . "</body></html>" ;
+    exit( 1 ) ;
+}
 
 // Debug mode - single param: debug=MySQL,Redis,AQL (AQL means all)
 // Backward compat: debug=1 maps to debug=AQL

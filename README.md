@@ -1,10 +1,10 @@
-# MySQL Active Query Listing Tool (AQL)
+# Active Query Listing Tool (AQL)
 
-Welcome to the MySQL Active Query Listing (AQL) tool. This tool provides
-users with a listing of active queries on a (set of) MySQL server(s). This
+Welcome to the Active Query Listing (AQL) tool. This tool provides users with
+a listing of active queries on a set of database servers. AQL supports MySQL,
+MariaDB, PostgreSQL, and Redis, with additional database types planned. This
 PHP-based tool shows the list of queries running on a set of servers in a
-color-coded format showing the longest-running queries at the top of the
-list.
+color-coded format showing the longest-running queries at the top of the list.
 
 Please note that this software is somewhere between alpha and beta quality at
 this time.
@@ -34,7 +34,7 @@ instances to run with different configurations on the same server.
 There are three parts to this configuration file that you need to pay special
 attention to. DbPass is the password you're giving AQL in order to access
 servers. In the code above, it's the "SomethingComplicated" bit. This will need
-to be run on all your MySQL servers to AQL can access the server and get the
+to be run on all your MySQL servers so AQL can access the server and get the
 output of SHOW PROCESSLIST.
 
 The next thing you'll need to pay special attention to is the
@@ -45,6 +45,52 @@ Finally, roQueryPart needs to be configured to detect when a MySQL server is in
 read-only mode. For most installations, you can leave this alone. If you run an
 older version of MySQL, you may need to adjust this to suit your installation's
 needs.
+
+### Database Type Credentials
+
+Monitoring credentials are configured per database type using `<dbtype>` elements:
+
+```xml
+<dbtype name="mysql" enabled="true" username="aql_app" password="YourPassword" />
+<dbtype name="redis" enabled="true" />
+<dbtype name="postgresql" enabled="true" username="aql_mon" password="YourPassword" />
+```
+
+Each type can have its own username/password. MySQL credentials fall back to
+`dbUser`/`dbPass` if not specified. The config file includes a DTD
+(`aql_config.dtd`) for XML validation.
+
+## Setup Steps
+
+After creating your `aql_config.xml`, follow these steps in order:
+
+### Step 1: Verify Configuration (verifyAQLConfiguration.php)
+
+Run the configuration verification tool **first** to catch any errors before
+deploying the schema:
+
+```
+https://your-server/ActiveQueryListing/verifyAQLConfiguration.php
+```
+
+Fix all errors reported by this tool before proceeding. It checks PHP
+extensions, config values, database connectivity, and permissions.
+
+### Step 2: Deploy Schema (deployDDL.php)
+
+Once verification passes, deploy the database schema:
+
+```
+https://your-server/ActiveQueryListing/deployDDL.php
+```
+
+This creates all required tables and runs any pending migrations. It is
+idempotent and safe to run multiple times.
+
+### Step 3: Add Hosts (manageData.php)
+
+Log in and add the database hosts you want to monitor. Set the DB type,
+environment, and alert thresholds for each host.
 
 ## Verifying Your Configuration (verifyAQLConfiguration.php)
 

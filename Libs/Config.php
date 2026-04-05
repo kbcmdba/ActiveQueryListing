@@ -226,7 +226,39 @@ class Config
 
         // verify that all the parameters are present and just once.
         $seenDbTypeParams = [] ; // Track DB type params separately
+        $seenDbTypes = [] ; // Track <dbtype> elements
         foreach ( $xml as $v ) {
+            // Handle <dbtype> elements separately
+            if ( $v->getName() === 'dbtype' ) {
+                $typeName = (string) $v['name'] ;
+                if ( empty( $typeName ) ) {
+                    $errors .= "dbtype element missing name attribute\n" ;
+                    continue ;
+                }
+                if ( isset( $seenDbTypes[ $typeName ] ) ) {
+                    $errors .= "Multiply defined dbtype: " . $typeName . "\n" ;
+                    continue ;
+                }
+                $seenDbTypes[ $typeName ] = true ;
+                $lcType = strtolower( str_replace( [ '-', ' ' ], '', $typeName ) ) ;
+                if ( isset( $v['enabled'] ) ) {
+                    $enabledKey = $lcType . 'Enabled' ;
+                    $cfgValues[ $enabledKey ] = (string) $v['enabled'] ;
+                    $seenDbTypeParams[ $enabledKey ] = true ;
+                    // Satisfy the mysqlEnabled required check
+                    if ( isset( $paramList[ $enabledKey ] ) ) {
+                        $paramList[ $enabledKey ]['value'] ++ ;
+                    }
+                }
+                if ( isset( $v['username'] ) ) {
+                    $cfgValues[ $lcType . 'Username' ] = (string) $v['username'] ;
+                }
+                if ( isset( $v['password'] ) ) {
+                    $cfgValues[ $lcType . 'Password' ] = (string) $v['password'] ;
+                }
+                continue ;
+            }
+
             $key = (string) $v[ 'name' ] ;
 
             // Check $paramList first (for explicitly defined params like mysqlEnabled)
@@ -745,8 +777,28 @@ class Config
                 $xml = @simplexml_load_file( $configFile ) ;
                 if ( $xml ) {
                     $cfgValues = [] ;
+                    // Read flat <param name="key">value</param> elements
                     foreach ( $xml->param as $v ) {
                         $cfgValues[ (string) $v['name'] ] = (string) $v ;
+                    }
+                    // Read <dbtype> elements and map to flat keys for backward compat
+                    // <dbtype name="mysql" enabled="true" username="u" password="p" />
+                    // maps to: mysqlEnabled=true, mysqlUsername=u, mysqlPassword=p
+                    if ( isset( $xml->dbtype ) ) {
+                        foreach ( $xml->dbtype as $dt ) {
+                            $typeName = (string) $dt['name'] ;
+                            if ( empty( $typeName ) ) continue ;
+                            $lcType = strtolower( str_replace( [ '-', ' ' ], '', $typeName ) ) ;
+                            if ( isset( $dt['enabled'] ) ) {
+                                $cfgValues[ $lcType . 'Enabled' ] = (string) $dt['enabled'] ;
+                            }
+                            if ( isset( $dt['username'] ) ) {
+                                $cfgValues[ $lcType . 'Username' ] = (string) $dt['username'] ;
+                            }
+                            if ( isset( $dt['password'] ) ) {
+                                $cfgValues[ $lcType . 'Password' ] = (string) $dt['password'] ;
+                            }
+                        }
                     }
                 }
             }

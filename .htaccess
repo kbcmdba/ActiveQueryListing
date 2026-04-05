@@ -6,3 +6,7 @@
   Require all denied
 </Files>
 
+<Files "*.dtd">
+  Require all denied
+</Files>
+

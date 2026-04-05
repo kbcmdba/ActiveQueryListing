@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE config SYSTEM "aql_config.dtd">
 <config>
     <param name="baseUrl">https://localhost.localdomain/ActiveQueryListing/AJAXgetaql.php</param>
     <param name="dbHost">127.0.0.1</param>
@@ -12,39 +14,9 @@
     <param name="defaultRefresh">60</param>
     <param name="issueTrackerBaseUrl">https://somewhere.jira.com/</param>
     <!-- Jira Integration (optional) - enables "File Issue" button -->
-    <!-- Set jiraEnabled to true and configure your Jira instance -->
     <param name="jiraEnabled">false</param>
-    <!-- Database Type Monitoring - enable each type you want to monitor -->
-    <!-- mysqlEnabled is REQUIRED - AQL's backend database is MySQL -->
-    <!-- Each type has {type}Username and {type}Password for monitoring credentials -->
-    <!-- MySQL credentials fall back to dbUser/dbPass if not set -->
-    <param name="mysqlEnabled">true</param>
-    <param name="mysqlUsername">aql_app</param>
-    <param name="mysqlPassword">SomethingComplicated</param>
-    <param name="innodbclusterEnabled">false</param>
-    <param name="redisEnabled">false</param>
-    <!-- <param name="redisUsername"></param> -->
-    <!-- <param name="redisPassword"></param> -->
-    <param name="mssqlEnabled">false</param>
-    <param name="oracledbEnabled">false</param>
-    <param name="cassandraEnabled">false</param>
-    <param name="datastaxEnabled">false</param>
-    <param name="mongodbEnabled">false</param>
-    <param name="rdsEnabled">false</param>
-    <param name="auroraEnabled">false</param>
-    <param name="postgresqlEnabled">false</param>
-    <!-- <param name="postgresqlUsername">aql_mon</param> -->
-    <!-- <param name="postgresqlPassword">SomethingComplicated</param> -->
-    <!-- Environment definitions and default - comma-separated list of valid environments -->
-    <!-- deployDDL.php seeds the environment table from this list -->
-    <param name="environments">dev,test,qa,pilot,staging,production</param>
-    <param name="defaultEnvironment">production</param>
-    <!-- Jira project ID (numeric) - find via REST API or project settings -->
     <param name="jiraProjectId"></param>
-    <!-- Jira issue type ID (numeric) - find via /rest/api/3/issuetype -->
     <param name="jiraIssueTypeId"></param>
-    <!-- Optional: Custom field ID for query hash (e.g., customfield_10100) -->
-    <!-- Create a text custom field in Jira and put its ID here for duplicate detection -->
     <param name="jiraQueryHashFieldId"></param>
     <param name="globalStatusDb">performance_schema</param>
     <!-- Which DB is the global_status table in? MySQL: performance_schema. MariaDB: information_schema -->
@@ -52,21 +24,35 @@
     <!-- In AWS - this would be "CALL mysql.rds_kill( :pid )" -->
     <param name="killStatement">kill :pid</param>
     <param name="showSlaveStatement">show all slaves status</param>
-    <!-- Sample LDAP/AD config - check with your AD admin for the correct values for your company -->
+    <!-- Environment definitions -->
+    <!-- deployDDL.php seeds the environment table from this list -->
+    <param name="environments">dev,test,qa,pilot,staging,production</param>
+    <param name="defaultEnvironment">production</param>
+    <!-- Authentication -->
+    <!-- LDAP on  = authenticate via Active Directory (adminPassword ignored) -->
+    <!-- LDAP off = authenticate via adminPassword (any username accepted) -->
     <param name="doLDAPAuthentication">true</param>
-    <!-- Local admin password - ONLY used when doLDAPAuthentication is false -->
-    <!-- Ignored entirely when LDAP is enabled. These are mutually exclusive: -->
-    <!--   LDAP on  = authenticate via Active Directory (adminPassword ignored) -->
-    <!--   LDAP off = authenticate via this password (any username accepted) -->
-    <!-- Username is tracked in session for audit purposes either way -->
     <param name="adminPassword">changeme</param>
     <param name="ldapHost">ldaps://ad.mycompany.com/</param>
     <param name="ldapDomainName">DC=mycompany,DC=com</param>
     <param name="ldapUserGroup">Admins</param>
     <param name="ldapUserDomain">mycompany</param>
-    <!-- Set to false to skip SSL certificate verification (useful for self-signed certs) -->
     <param name="ldapVerifyCert">true</param>
-    <!-- Set to true to show LDAP debug output on screen -->
     <param name="ldapDebugConnection">false</param>
+    <!-- Database Type Monitoring -->
+    <!-- Each dbtype element defines a monitored database type -->
+    <!-- Attributes: name (required), enabled (required), username, password -->
+    <!-- mysql is REQUIRED - AQL's backend database is MySQL -->
+    <!-- MySQL credentials fall back to dbUser/dbPass if username/password not set -->
+    <dbtype name="mysql" enabled="true" username="aql_app" password="SomethingComplicated" />
+    <dbtype name="innodbcluster" enabled="false" />
+    <dbtype name="redis" enabled="false" />
+    <dbtype name="mssql" enabled="false" />
+    <dbtype name="oracledb" enabled="false" />
+    <dbtype name="cassandra" enabled="false" />
+    <dbtype name="datastax" enabled="false" />
+    <dbtype name="mongodb" enabled="false" />
+    <dbtype name="rds" enabled="false" />
+    <dbtype name="aurora" enabled="false" />
+    <dbtype name="postgresql" enabled="false" username="aql_mon" password="SomethingComplicated" />
 </config>
-

@@ -1,0 +1,16 @@
+<!-- DTD for AQL Configuration File -->
+
+<!ELEMENT config (param | dbtype)*>
+
+<!ELEMENT param (#PCDATA)>
+<!ATTLIST param
+    name CDATA #REQUIRED
+>
+
+<!ELEMENT dbtype EMPTY>
+<!ATTLIST dbtype
+    name     CDATA #REQUIRED
+    enabled  (true|false) #REQUIRED
+    username CDATA #IMPLIED
+    password CDATA #IMPLIED
+>
