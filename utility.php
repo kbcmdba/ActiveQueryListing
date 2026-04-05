@@ -71,7 +71,8 @@ function processParam($optionName, $columnName, $default, &$limits)
  */
 function processHost(&$js, $hostname, $baseUrl, $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs)
 {
-    $debug = ( Tools::param('debug')==='1' ) ? '&debug=1' : '' ;
+    $debugParam = Tools::param('debug') ?? '' ;
+    $debug = ( ! empty( $debugParam ) ) ? '&debug=' . urlencode( $debugParam ) : '' ;
     $debugLocks = ( Tools::param('debugLocks')==='1' ) ? '&debugLocks=1' : '' ;
     $blockNum = $js['Blocks'] ;
     $js['Blocks'] ++ ;
