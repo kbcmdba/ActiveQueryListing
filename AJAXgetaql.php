@@ -1155,7 +1155,9 @@ try {
     $phaseStart = microtime( true ) ;
     $connStr = "host=$pgHost port=$pgPort user=$monUser dbname=postgres connect_timeout=4" ;
     if ( ! empty( $monPass ) ) {
-        $connStr .= " password=$monPass" ;
+        // Escape single quotes in password and wrap in single quotes for libpq
+        $escapedPass = str_replace( [ '\\', "'" ], [ '\\\\', "\\'" ], $monPass ) ;
+        $connStr .= " password='$escapedPass'" ;
     }
     $pgConn = @pg_connect( $connStr ) ;
     if ( $pgConn === false ) {
