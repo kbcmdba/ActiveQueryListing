@@ -295,6 +295,129 @@ ORDER BY bh.blocked_count DESC
 LIMIT 10;
 ```
 
+## Setting Up Redis Monitoring
+
+AQL can monitor Redis instances for memory usage, connected clients, command
+statistics, slowlog entries, and more. Redis monitoring requires the `phpredis`
+PHP extension (`php-redis` package).
+
+### Redis Authentication
+
+Redis supports two authentication modes. AQL works with both.
+
+#### Option 1: Legacy Password (Redis < 6, or simple setups)
+
+This mode uses a single shared password with no usernames. It is configured in
+`redis.conf`:
+
+```
+requirepass YourRedisPassword
+```
+
+Restart Redis after changing the config:
+```bash
+sudo systemctl restart redis
+```
+
+In AQL's `aql_config.xml`, set the password only (leave username empty):
+```xml
+<dbtype name="redis" enabled="true" password="YourRedisPassword" />
+```
+
+#### Option 2: ACL Users (Redis 6+, recommended)
+
+Redis 6+ supports per-user access control with fine-grained command permissions.
+This is the recommended approach for production.
+
+Create a monitoring user on the Redis instance:
+```
+redis-cli
+> ACL SETUSER aql_mon on >YourRedisPassword ~* &* +@all -@dangerous
+```
+
+This creates a user `aql_mon` that can read all keys and run most commands but
+is blocked from dangerous operations (FLUSHALL, DEBUG, CONFIG SET, etc.).
+
+For a more restrictive monitoring-only user:
+```
+> ACL SETUSER aql_mon on >YourRedisPassword ~* &* +info +client +slowlog +memory +ping +select +scan +type +object +command +latency +pubsub +xinfo +xlen +xrange +xpending
+```
+
+To persist ACL changes across restarts, either:
+- Save to the ACL file: `ACL SAVE` (requires `aclfile` in redis.conf)
+- Or add the rule to `redis.conf` directly: `user aql_mon on >YourRedisPassword ...`
+
+In AQL's `aql_config.xml`:
+```xml
+<dbtype name="redis" enabled="true" username="aql_mon" password="YourRedisPassword" />
+```
+
+#### No Authentication (not recommended)
+
+Redis instances without authentication work with AQL out of the box — just
+enable Redis monitoring with no credentials:
+```xml
+<dbtype name="redis" enabled="true" />
+```
+
+This is a security risk. Any client that can reach the Redis port has full
+access. At minimum, use firewall rules to restrict access and consider enabling
+authentication even in development environments.
+
+### Redis Network Access
+
+Ensure the Redis instance is listening on a network interface (not just
+localhost) and that firewall rules allow the AQL server to reach port 6379:
+
+```bash
+# In redis.conf, change bind to include the server's IP or 0.0.0.0:
+bind 0.0.0.0
+
+# Also set protected-mode to no if using network access without auth:
+protected-mode no
+```
+
+Restart Redis after changes: `sudo systemctl restart redis`
+
+## Setting Up PostgreSQL Monitoring
+
+AQL monitors PostgreSQL instances using `pg_stat_activity` for active queries,
+with lock detection and replication monitoring planned.
+
+### PostgreSQL Monitoring User
+
+Create a dedicated monitoring user with the `pg_monitor` role (PostgreSQL 10+):
+
+```sql
+CREATE USER aql_mon WITH PASSWORD 'YourPassword';
+GRANT pg_monitor TO aql_mon;
+```
+
+The `pg_monitor` role grants read access to `pg_stat_activity`,
+`pg_stat_replication`, and other monitoring views without requiring superuser
+privileges.
+
+### PostgreSQL Network Access (pg_hba.conf)
+
+Add a line to `pg_hba.conf` allowing the AQL server to connect:
+
+```
+# Allow AQL monitoring connections
+host    all    aql_mon    <aql-server-ip>/32    scram-sha-256
+```
+
+Reload PostgreSQL after changes:
+```bash
+sudo systemctl reload postgresql
+```
+
+### AQL Configuration
+
+In `aql_config.xml`:
+```xml
+<dbtype name="postgresql" enabled="true" username="aql_mon" password="YourPassword" />
+```
+
 ## Test Harness (testAQL.php)
 
 AQL includes a test harness (`testAQL.php`) for validating your configuration and
