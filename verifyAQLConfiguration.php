@@ -147,6 +147,8 @@ if ( file_exists( $configFile ) && is_readable( $configFile ) ) {
         }
 
         // Parse <dbtype> elements (shared by both formats)
+        // Types with their own connection config don't inherit monitor credentials
+        $noMonitorFallback = [ 'redis' ] ;
         if ( isset( $xml->dbtype ) ) {
             foreach ( $xml->dbtype as $dt ) {
                 $typeName = (string) $dt['name'] ;
@@ -155,14 +157,15 @@ if ( file_exists( $configFile ) && is_readable( $configFile ) ) {
                 if ( isset( $dt['enabled'] ) ) {
                     $configValues[ $lcType . 'Enabled' ] = (string) $dt['enabled'] ;
                 }
+                $canFallback = $isGroupedFormat && ! in_array( $lcType, $noMonitorFallback, true ) ;
                 if ( isset( $dt['username'] ) ) {
                     $configValues[ $lcType . 'Username' ] = (string) $dt['username'] ;
-                } elseif ( $isGroupedFormat && ! empty( $configValues['monitorUser'] ?? '' ) ) {
+                } elseif ( $canFallback && ! empty( $configValues['monitorUser'] ?? '' ) ) {
                     $configValues[ $lcType . 'Username' ] = $configValues['monitorUser'] ;
                 }
                 if ( isset( $dt['password'] ) ) {
                     $configValues[ $lcType . 'Password' ] = (string) $dt['password'] ;
-                } elseif ( $isGroupedFormat && ! empty( $configValues['monitorPassword'] ?? '' ) ) {
+                } elseif ( $canFallback && ! empty( $configValues['monitorPassword'] ?? '' ) ) {
                     $configValues[ $lcType . 'Password' ] = $configValues['monitorPassword'] ;
                 }
             }

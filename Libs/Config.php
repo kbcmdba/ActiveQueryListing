@@ -444,6 +444,12 @@ class Config
      * @param string &$errors
      * @param bool $isGroupedFormat Whether using the new grouped format
      */
+    /**
+     * DB types that have their own connection config and should NOT inherit
+     * monitor user credentials. These use type-specific auth mechanisms.
+     */
+    private static $noMonitorFallbackTypes = [ 'redis' ] ;
+
     private function parseDbTypes( $xml, &$cfgValues, &$paramList, &$errors, $isGroupedFormat = false ) {
         $seenDbTypes = [] ;
 
@@ -466,15 +472,15 @@ class Config
                     $paramList[ $enabledKey ]['value'] ++ ;
                 }
             }
+            $canFallback = $isGroupedFormat && ! in_array( $lcType, self::$noMonitorFallbackTypes, true ) ;
             if ( isset( $v['username'] ) ) {
                 $cfgValues[ $lcType . 'Username' ] = (string) $v['username'] ;
-            } elseif ( $isGroupedFormat && ! empty( $cfgValues['monitorUser'] ) ) {
-                // In grouped format, fall back to monitor user credentials
+            } elseif ( $canFallback && ! empty( $cfgValues['monitorUser'] ) ) {
                 $cfgValues[ $lcType . 'Username' ] = $cfgValues['monitorUser'] ;
             }
             if ( isset( $v['password'] ) ) {
                 $cfgValues[ $lcType . 'Password' ] = (string) $v['password'] ;
-            } elseif ( $isGroupedFormat && ! empty( $cfgValues['monitorPassword'] ) ) {
+            } elseif ( $canFallback && ! empty( $cfgValues['monitorPassword'] ) ) {
                 $cfgValues[ $lcType . 'Password' ] = $cfgValues['monitorPassword'] ;
             }
         }
@@ -1085,14 +1091,15 @@ class Config
                             if ( isset( $dt['enabled'] ) ) {
                                 $cfgValues[ $lcType . 'Enabled' ] = (string) $dt['enabled'] ;
                             }
+                            $canFallback = $isGrouped && ! in_array( $lcType, self::$noMonitorFallbackTypes, true ) ;
                             if ( isset( $dt['username'] ) ) {
                                 $cfgValues[ $lcType . 'Username' ] = (string) $dt['username'] ;
-                            } elseif ( $isGrouped && ! empty( $cfgValues['monitorUser'] ) ) {
+                            } elseif ( $canFallback && ! empty( $cfgValues['monitorUser'] ) ) {
                                 $cfgValues[ $lcType . 'Username' ] = $cfgValues['monitorUser'] ;
                             }
                             if ( isset( $dt['password'] ) ) {
                                 $cfgValues[ $lcType . 'Password' ] = (string) $dt['password'] ;
-                            } elseif ( $isGrouped && ! empty( $cfgValues['monitorPassword'] ) ) {
+                            } elseif ( $canFallback && ! empty( $cfgValues['monitorPassword'] ) ) {
                                 $cfgValues[ $lcType . 'Password' ] = $cfgValues['monitorPassword'] ;
                             }
                         }
