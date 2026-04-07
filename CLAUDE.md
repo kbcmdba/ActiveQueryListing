@@ -28,7 +28,7 @@ This prevents merge conflicts and ensures we have the latest changes from the re
 
 ## Supported DB Types
 
-The `db_type` ENUM in the host table: MySQL, InnoDBCluster, MS-SQL, Redis, OracleDB, Cassandra, DataStax, MongoDB, RDS, Aurora
+The `db_type` ENUM in the host table: MySQL, InnoDBCluster, MS-SQL, Redis, OracleDB, Cassandra, DataStax, MongoDB, RDS, Aurora, PostgreSQL
 
 - **MySQL** includes MariaDB (combined - same monitoring code path)
 - **OracleDB** named to distinguish from Oracle-owned MySQL
@@ -46,6 +46,7 @@ The `db_type` ENUM in the host table: MySQL, InnoDBCluster, MS-SQL, Redis, Oracl
 - `js/common.js` - Main JavaScript functions
 - `js/klaxon.js` - Alert sounds and speech synthesis
 - `utility.php` - PHP utility functions
+- `upgradeConfig.php` - Config format migration tool (v1→v2)
 - `todo.php` - Active todo list (see below)
 - `rfe.php` - Feature requests for future consideration
 
@@ -145,15 +146,42 @@ Migrations in `deployDDL.php` follow this pattern:
   - **Always run `verifyAQLConfiguration.php` before `deployDDL.php`** — verify catches config/PHP issues first
 - **baseUrl must match the hostname you access AQL from** — mismatch = AJAX calls go to wrong server or get blocked by CORS
 - **Avoid trailing spaces in passwords** — they get trimmed by YAML, Ansible, and most templating tools, causing auth mismatches
-- **DB type config uses `<dbtype>` XML elements** (not flat `<param>` for type settings):
-  ```xml
-  <dbtype name="mysql" enabled="true" username="aql_app" password="pass" />
-  <dbtype name="postgresql" enabled="true" username="aql_mon" password="pass" />
-  <dbtype name="redis" enabled="true" />
-  ```
-  The parser maps attributes to flat keys (e.g., `mysqlEnabled`, `mysqlUsername`) for backward compat. Old `<param>` format still works.
 - **DTD validation**: `aql_config.dtd` validates config structure. Run `xmllint --valid --noout aql_config.xml` to check.
-- **Per-type credentials**: Set via `<dbtype>` attributes. MySQL falls back to `dbUser`/`dbPass` if username/password not set.
+
+### Config Format (v2 — Grouped Elements)
+- **Config version**: `<config version="2">` — no version attribute = legacy v1
+- **Format detection**: Parser auto-detects via `version` attribute or presence of `<configdb>`/`<monitoring>`/`<user>` elements
+- **Upgrade tool**: `php upgradeConfig.php` (dry run) or `php upgradeConfig.php --write` (auto-backs up to `.bk`)
+- **Legacy v1 flat `<param>` format still fully supported** — backward compatible
+- **Key grouped elements**:
+  - `<configdb type="mysql" host="..." port="..." name="..." />` — AQL's own database (ONLY host in config)
+  - `<user type="admin" name="..." password="..." />` — configdb credentials
+  - `<user type="monitor" name="..." password="..." />` — default for all monitored hosts
+  - `<monitoring>`, `<authentication>`, `<ldap>`, `<jira>`, `<features>`, `<testing>` — grouped settings
+  - `<environment_types>` with `<environment_type name="..." default="true" />` children
+  - `<redis>` — connection tuning only (connectTimeout, database)
+  - `<dbtype>` elements unchanged — control which types are enabled + per-type credential overrides
+- **Credential resolution chain**: admin user → configdb only. monitor user → default for all monitored hosts. `<dbtype username/password>` → per-type override. Per-host → future.
+- **All monitored hosts live in the `host` table** (via manageData.php), never in config XML
+- **Internal flat-key mapping**: `parseGroupedConfig()` maps grouped attributes back to same internal flat keys (`dbHost`, `ldapHost`, etc.) — all getters and `getConfigValue()` callers unchanged
+
+### Config Testing Pattern
+When modifying config parsing, always test all three steps:
+1. Old v1 config with new code (backward compat)
+2. Run `upgradeConfig.php --write` (migration)
+3. New v2 config with new code (post-upgrade)
+
+### Redis Config Keys
+- **`redisUser`/`redisPassword`**: Read by `getRedisUser()`/`getRedisPassword()` in AJAXgetaql.php — these are the keys that matter for Redis auth
+- **`redisUsername`/`redisPassword`**: Set by `<dbtype name="redis" username="...">` pattern
+- **Key mismatch fix**: `parseDbTypes()` special-cases Redis to also set `redisUser` when `username` is on `<dbtype>`
+- **`noMonitorFallbackTypes`**: Redis (and future non-relational types) excluded from monitor user credential inheritance — Redis has its own auth model
+- **Three Redis auth scenarios**: No auth (no creds), password only (`password="..."` on dbtype), ACL user+password (`username="..." password="..."` on dbtype)
+
+### Per-type Credentials
+- Set via `<dbtype>` attributes or inherited from `<user type="monitor">`
+- MySQL falls back to admin user (dbUser/dbPass) in v1, monitor user in v2
+- Redis does NOT inherit monitor credentials — uses its own auth or none
 
 ### Authentication
 - **LDAP on**: Authenticates via Active Directory. `adminPassword` is ignored.
@@ -164,8 +192,9 @@ Migrations in `deployDDL.php` follow this pattern:
 ### Environment System
 - `environment` table with TINYINT UNSIGNED PK, name, sort_order
 - `host.environment_id` nullable FK (ON DELETE SET NULL)
-- Seeded from config `environments` param (comma-separated list)
-- `defaultEnvironment` config param sets the default for new hosts and backfills existing hosts
+- **v2 config**: `<environment_types>` with `<environment_type>` children. Document order = sort_order (10, 20, 30...). Optional explicit `sort_order` attribute (all-or-nothing). `default="true"` marks the default.
+- **v1 config**: `environments` param (comma-separated list), `defaultEnvironment` param
+- `deployDDL.php` uses `getEnvironmentTypes()` for structured data, falls back to comma-separated string
 - Environment dropdown in manageData.php host form
 
 ### PostgreSQL/pg_connect Patterns
@@ -226,6 +255,7 @@ Migrations in `deployDDL.php` follow this pattern:
 ### Version String Patterns
 - MySQL: Returns plain version like "8.4.6" (no type indicator)
 - MariaDB: Returns version with suffix like "10.5.18-MariaDB" (includes type)
+- PostgreSQL: Handler extracts and prefixes as "PG 16.13" (from verbose `version()` output)
 - Redis: Returns plain version like "7.2.4" (no type indicator)
 - Use regex `/[a-zA-Z]/` to detect if version already contains a type indicator before prefixing
 

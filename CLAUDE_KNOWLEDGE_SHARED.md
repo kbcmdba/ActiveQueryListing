@@ -28,7 +28,7 @@ This prevents merge conflicts and ensures we have the latest changes from the re
 
 ## Supported DB Types
 
-The `db_type` ENUM in the host table: MySQL, InnoDBCluster, MS-SQL, Redis, OracleDB, Cassandra, DataStax, MongoDB, RDS, Aurora
+The `db_type` ENUM in the host table: MySQL, InnoDBCluster, MS-SQL, Redis, OracleDB, Cassandra, DataStax, MongoDB, RDS, Aurora, PostgreSQL
 
 - **MySQL** includes MariaDB (combined - same monitoring code path)
 - **OracleDB** named to distinguish from Oracle-owned MySQL
@@ -46,6 +46,7 @@ The `db_type` ENUM in the host table: MySQL, InnoDBCluster, MS-SQL, Redis, Oracl
 - `js/common.js` - Main JavaScript functions
 - `js/klaxon.js` - Alert sounds and speech synthesis
 - `utility.php` - PHP utility functions
+- `upgradeConfig.php` - Config format migration tool (v1→v2)
 - `todo.php` - Active todo list (see below)
 - `rfe.php` - Feature requests for future consideration
 
@@ -145,14 +146,34 @@ Migrations in `deployDDL.php` follow this pattern:
   - **Always run `verifyAQLConfiguration.php` before `deployDDL.php`** — verify catches config/PHP issues first
 - **baseUrl must match the hostname you access AQL from** — mismatch = AJAX calls go to wrong server or get blocked by CORS
 - **Avoid trailing spaces in passwords** — they get trimmed by YAML, Ansible, and most templating tools, causing auth mismatches
-- **DB type config uses `<dbtype>` XML elements** (not flat `<param>` for type settings):
-  ```xml
-  <dbtype name="mysql" enabled="true" username="aql_app" password="pass" />
-  <dbtype name="postgresql" enabled="true" username="aql_mon" password="pass" />
-  ```
-  The parser maps attributes to flat keys for backward compat. Old `<param>` format still works.
-- **DTD validation**: `aql_config.dtd` validates config structure.
-- **Per-type credentials**: Set via `<dbtype>` attributes. MySQL falls back to `dbUser`/`dbPass` if not set.
+- **DTD validation**: `aql_config.dtd` validates config structure. Run `xmllint --valid --noout aql_config.xml` to check.
+
+### Config Format (v2 — Grouped Elements)
+- **Config version**: `<config version="2">` — no version attribute = legacy v1
+- **Format detection**: Auto-detects via `version` attribute or presence of grouped elements
+- **Upgrade tool**: `php upgradeConfig.php` (dry run) or `php upgradeConfig.php --write` (auto-backs up to `.bk`)
+- **Legacy v1 flat `<param>` format still fully supported** — backward compatible
+- **Key grouped elements**: `<configdb>`, `<user type="admin|monitor">`, `<monitoring>`, `<authentication>`, `<ldap>`, `<jira>`, `<environment_types>`, `<redis>`, `<features>`, `<testing>`, `<dbtype>`
+- **Credential resolution chain**: admin user → configdb only. monitor user → default for all monitored hosts. `<dbtype username/password>` → per-type override. Per-host → future.
+- **All monitored hosts live in the `host` table**, never in config XML
+- **Internal flat-key mapping**: Grouped attributes map back to same flat keys — all getters unchanged
+
+### Config Testing Pattern
+When modifying config parsing, always test all three steps:
+1. Old v1 config with new code (backward compat)
+2. Run `upgradeConfig.php --write` (migration)
+3. New v2 config with new code (post-upgrade)
+
+### Redis Config Keys
+- **`redisUser`/`redisPassword`**: Read by the Redis handler for auth
+- **`redisUsername`**: Set by `<dbtype name="redis" username="...">` pattern — `parseDbTypes()` special-cases Redis to also set `redisUser`
+- **`noMonitorFallbackTypes`**: Redis excluded from monitor user credential inheritance
+- **Three Redis auth scenarios**: No auth, password only, ACL user+password — all configurable via `<dbtype>`
+
+### Per-type Credentials
+- Set via `<dbtype>` attributes or inherited from `<user type="monitor">`
+- MySQL falls back to admin user in v1, monitor user in v2
+- Redis does NOT inherit monitor credentials
 
 ### Authentication
 - **LDAP on**: Authenticates via Active Directory. `adminPassword` is ignored.
@@ -179,10 +200,12 @@ Migrations in `deployDDL.php` follow this pattern:
 - Alternating row styles (e.g., `level4-alt`) must match base styles (e.g., `level4`) for font-size
 - Use CSS variables for theme support: `var(--text-primary)`, `var(--bg-tertiary)`, etc.
 - For theme-compatible elements: `color: inherit; background: transparent;`
+- **Right-align class**: Use Bootstrap's `text-right`, not custom `right-align` (no such class exists in our CSS)
 
 ### JavaScript Patterns
 - `friendlyTime()` in JS matches `Tools::friendlyTime()` in PHP
 - Use `data-text` attribute for tablesorter numeric sorting with display text
+- **tablesorter and summary rows**: Put summary/total rows in `<tfoot>`, not `<tbody>`. Tablesorter re-sorts `<tbody>` rows but leaves `<thead>` and `<tfoot>` alone, so summary rows in `<tbody>` end up in the middle of the table.
 - Local silencing uses `localStorage` (shared across tabs)
 - Speech synthesis needs to re-check `checkMuted()` before firing (2-second delay)
 - **jQuery $.when() gotcha**: With 2+ promises, results are wrapped as `[data, textStatus, jqXHR]` arrays. With 1 promise, data is passed directly. Handle both cases!

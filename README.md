@@ -26,39 +26,69 @@ https://www.apachefriends.org/download.html
 
 ## Configuring AQL
 
-Your installation comes with a config_sample.xml file. Copy this file to
-aql_config.xml in the application directory. It should be readable only by the
+Your installation comes with a `config_sample.xml` file. Copy this file to
+`aql_config.xml` in the application directory. It should be readable only by the
 web server in order to protect it from prying eyes. This allows multiple AQL
 instances to run with different configurations on the same server.
 
-There are three parts to this configuration file that you need to pay special
-attention to. DbPass is the password you're giving AQL in order to access
-servers. In the code above, it's the "SomethingComplicated" bit. This will need
-to be run on all your MySQL servers so AQL can access the server and get the
-output of SHOW PROCESSLIST.
+### Configuration Format (v2)
 
-The next thing you'll need to pay special attention to is the
-issueTrackerBaseUrl. Configuring this can be a bit of a project, but once it's
-set up properly, it makes filing issues against a particular query very simple.
+AQL uses a grouped XML configuration format (version 2). Settings are organized
+into semantic elements rather than flat key-value pairs:
 
-Finally, roQueryPart needs to be configured to detect when a MySQL server is in
-read-only mode. For most installations, you can leave this alone. If you run an
-older version of MySQL, you may need to adjust this to suit your installation's
-needs.
+```xml
+<config version="2">
+    <configdb type="mysql" host="127.0.0.1" port="3306" name="aql_db" />
+
+    <user type="admin" name="aql_app" password="AdminPassword" />
+    <user type="monitor" name="aql_mon" password="MonitorPassword" />
+
+    <monitoring baseUrl="https://yourserver/ActiveQueryListing/AJAXgetaql.php"
+                timeZone="America/Chicago" ... />
+
+    <dbtype name="mysql" enabled="true" />
+    <dbtype name="postgresql" enabled="true" />
+    <dbtype name="redis" enabled="true" />
+</config>
+```
+
+Key concepts:
+- **`<configdb>`** — AQL's own database where host list and settings are stored.
+  This is the only host defined in the config file.
+- **`<user type="admin">`** — Credentials for the configdb connection.
+- **`<user type="monitor">`** — Default credentials for all monitored hosts.
+- **`<dbtype>`** — Controls which database types are enabled. Per-type credential
+  overrides via `username`/`password` attributes when the monitor user differs.
+- All monitored hosts are managed via `manageData.php`, not the config file.
+
+See `config_sample.xml` for the full list of elements and attributes.
+
+### Upgrading from Legacy Format
+
+If you have an existing `aql_config.xml` using the old flat `<param>` format,
+use the upgrade tool:
+
+```bash
+# Preview the conversion (dry run)
+php upgradeConfig.php
+
+# Apply the conversion (backs up to aql_config.xml.bk)
+php upgradeConfig.php --write
+```
+
+The legacy format is still fully supported — the parser auto-detects the format.
 
 ### Database Type Credentials
 
-Monitoring credentials are configured per database type using `<dbtype>` elements:
+Monitoring credentials follow this resolution chain:
 
-```xml
-<dbtype name="mysql" enabled="true" username="aql_app" password="YourPassword" />
-<dbtype name="redis" enabled="true" />
-<dbtype name="postgresql" enabled="true" username="aql_mon" password="YourPassword" />
-```
+1. **`<user type="monitor">`** — Default for all monitored hosts
+2. **`<dbtype username="..." password="...">`** — Per-type override (e.g.,
+   PostgreSQL needs a different user with `pg_monitor` role)
+3. **Redis** — Uses its own auth model; does not inherit monitor credentials.
+   Set credentials directly on `<dbtype name="redis" password="..." />`.
 
-Each type can have its own username/password. MySQL credentials fall back to
-`dbUser`/`dbPass` if not specified. The config file includes a DTD
-(`aql_config.dtd`) for XML validation.
+Validate your config with: `xmllint --valid --noout aql_config.xml`
 
 ## Setup Steps
 
