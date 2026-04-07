@@ -109,6 +109,44 @@ namespace com\kbcmdba\aql ;
 //          - handleMySQLHost(), handleRedisHost(), and handlePostgreSQLHost() now implemented
 //          - Future: Use dispatch array: $handlers[$dbType]($hostname, $hostId, ...)
 //          - Future: Split into separate files (AJAXgetmysqlDB.php, AJAXgetredisDB.php, AJAXgetpgsqlDB.php)
+// @todo 24 Per-dbtype kill/cancel support (parent - see subtasks)
+//          AJAXKillProc.php is MySQL-only. PG has kill buttons but they're broken.
+//          Need dbtype-aware kill dispatch for all supported types.
+// @todo 24-10 Refactor AJAXKillProc.php for dbtype dispatch
+//          - Pass dbType from JS killProcOnHost() to AJAXKillProc.php
+//          - Look up host's db_type from host table (or pass from frontend)
+//          - Dispatch to per-type kill handler
+// @todo 24-20 Per-type kill statements (replace single killStatement config)
+//          - MySQL: KILL :pid
+//          - RDS (MySQL): CALL mysql.rds_kill(:pid)
+//          - Aurora (MySQL): CALL mysql.rds_kill(:pid)
+//          - RDS (PostgreSQL): same as PG (pg_cancel/terminate_backend)
+//          - PostgreSQL: SELECT pg_cancel_backend(:pid) (cancel query)
+//                        SELECT pg_terminate_backend(:pid) (kill connection)
+//          - MS-SQL: KILL :pid
+//          - Oracle: ALTER SYSTEM KILL SESSION 'sid,serial#'
+//          - GCP Cloud SQL: standard MySQL/PG kill (no wrapper needed)
+//          - Azure: standard kill for Azure SQL / Azure DB for MySQL/PG
+//          - Key insight: db_type is the CLOUD PLATFORM + ENGINE combination
+//            RDS/Aurora are MySQL-compatible but need different kill commands
+//            Users may run mixed on-prem + cloud, so db_type must distinguish
+//          - Config: per-dbtype killStatement attribute on <dbtype> element
+//          - Consider cancel vs terminate as separate actions in UI
+// @todo 24-30 Per-type process verification before kill
+//          - MySQL: INFORMATION_SCHEMA.PROCESSLIST (current)
+//          - PostgreSQL: pg_stat_activity WHERE pid = :pid
+//          - MS-SQL: sys.dm_exec_sessions + sys.dm_exec_requests
+//          - Oracle: V$SESSION
+//          - Each type needs its own connection method (PDO vs pg_connect vs oci)
+// @todo 24-40 Per-type kill logging
+//          - kill_log table currently MySQL-centric (thread ID, PROCESSLIST fields)
+//          - Generalize columns or add db_type column
+//          - PG uses pid (not thread ID), different state/command vocabulary
+// @todo 24-50 UI: cancel vs terminate for PostgreSQL
+//          - pg_cancel_backend() = cancel current query (safe, query stops)
+//          - pg_terminate_backend() = kill entire connection (forceful)
+//          - Show two buttons or a dropdown for PG hosts
+//          - MySQL KILL is closer to pg_terminate_backend
 // @todo 25 Move hardcoded values to config (parent - see subtasks)
 // @todo 25-10 Blocking cache settings (AJAXgetaql.php lines 79-82)
 //          - BLOCKING_CACHE_REDIS_HOST (127.0.0.1), BLOCKING_CACHE_REDIS_PORT (6379)
