@@ -168,6 +168,15 @@ if ( file_exists( $configFile ) && is_readable( $configFile ) ) {
                 } elseif ( $canFallback && ! empty( $configValues['monitorPassword'] ?? '' ) ) {
                     $configValues[ $lcType . 'Password' ] = $configValues['monitorPassword'] ;
                 }
+                // Redis handler reads redisUser/redisPassword (not redisUsername)
+                if ( $lcType === 'redis' ) {
+                    if ( isset( $dt['username'] ) ) {
+                        $configValues['redisUser'] = (string) $dt['username'] ;
+                    }
+                    if ( isset( $dt['password'] ) ) {
+                        $configValues['redisPassword'] = (string) $dt['password'] ;
+                    }
+                }
             }
         }
 

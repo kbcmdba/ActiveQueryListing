@@ -483,6 +483,16 @@ class Config
             } elseif ( $canFallback && ! empty( $cfgValues['monitorPassword'] ) ) {
                 $cfgValues[ $lcType . 'Password' ] = $cfgValues['monitorPassword'] ;
             }
+            // Redis handler reads redisUser/redisPassword (not redisUsername/redisPassword)
+            // so also set those keys when credentials come from <dbtype name="redis">
+            if ( $lcType === 'redis' ) {
+                if ( isset( $v['username'] ) ) {
+                    $cfgValues['redisUser'] = (string) $v['username'] ;
+                }
+                if ( isset( $v['password'] ) ) {
+                    $cfgValues['redisPassword'] = (string) $v['password'] ;
+                }
+            }
         }
     }
 
@@ -1101,6 +1111,15 @@ class Config
                                 $cfgValues[ $lcType . 'Password' ] = (string) $dt['password'] ;
                             } elseif ( $canFallback && ! empty( $cfgValues['monitorPassword'] ) ) {
                                 $cfgValues[ $lcType . 'Password' ] = $cfgValues['monitorPassword'] ;
+                            }
+                            // Redis handler reads redisUser/redisPassword (not redisUsername)
+                            if ( $lcType === 'redis' ) {
+                                if ( isset( $dt['username'] ) ) {
+                                    $cfgValues['redisUser'] = (string) $dt['username'] ;
+                                }
+                                if ( isset( $dt['password'] ) ) {
+                                    $cfgValues['redisPassword'] = (string) $dt['password'] ;
+                                }
                             }
                         }
                     }
