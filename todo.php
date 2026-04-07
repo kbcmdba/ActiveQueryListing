@@ -29,6 +29,38 @@ namespace com\kbcmdba\aql ;
 //             - Test LDAP server connectivity
 //             - Verify SSL certificate (if ldapVerifyCert=true)
 //             - Test bind with a known test credential (optional, manual)
+// @todo 05 Adopt PHPUnit for incremental TDD (parent - see subtasks)
+//          The longer we delay, the harder full coverage gets.
+//          Start with isolated, well-defined classes and expand outward.
+// @todo 05-10 PHPUnit bootstrap
+//          - Add phpunit/phpunit to composer.json (dev dependency)
+//          - Create phpunit.xml config (test directory, bootstrap, coverage)
+//          - Create tests/ directory structure mirroring Libs/
+//          - Verify `composer test` or `vendor/bin/phpunit` runs clean
+// @todo 05-20 Config.php unit tests (highest value - just refactored)
+//          - Test parseGroupedConfig() with v2 XML fixtures
+//          - Test parseFlatConfig() with v1 XML fixtures
+//          - Test parseDbTypes() including noMonitorFallbackTypes (Redis auth bug)
+//          - Test getConfigValue() with both formats
+//          - Test environment_types parsing (document order, explicit sort_order, all-or-nothing)
+//          - Test credential resolution chain (admin, monitor, per-dbtype override)
+//          - Test format detection (version attribute, element presence)
+// @todo 05-30 upgradeConfig.php tests
+//          - Test v1→v2 conversion with various input configs
+//          - Test idempotence (already v2 = no-op)
+//          - Test edge cases (empty values, special chars in passwords, missing optional params)
+// @todo 05-40 Tools.php / utility.php unit tests
+//          - Test friendlyTime(), param(), query normalization
+//          - These are pure functions — easiest to test
+// @todo 05-50 AJAXgetaql.php handler tests (requires mocking DB connections)
+//          - Test JSON output shape for each handler
+//          - Test alert level thresholds
+//          - Test blocking cache logic
+//          - May need to extract handler logic into testable classes first
+// @todo 05-60 Pre-commit hook integration
+//          - Run PHPUnit on changed files before allowing commit
+//          - Fast feedback loop — fail the commit if tests break
+//          - Consider phpstan/psalm for static analysis alongside tests
 // @todo 15 Per-tab vs per-browser silencing behavior (UNDER CONSIDERATION)
 //          - Currently uses localStorage (shared across all tabs)
 //          - Question: Should silencing a host affect all tabs or just current tab?
