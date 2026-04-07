@@ -97,7 +97,7 @@
     <!-- ================================================================== -->
     <!-- Feature Toggles                                                    -->
     <!-- ================================================================== -->
-    <features enableMaintenanceWindows="false"
+    <features enableMaintenanceWindows="true"
               dbaSessionTimeout="86400"
               enableSpeechAlerts="true" />
 
