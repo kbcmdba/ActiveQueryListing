@@ -96,6 +96,8 @@
 
     <!-- ================================================================== -->
     <!-- Feature Toggles                                                    -->
+    <!-- enableSpeechAlerts is a global kill switch - leave true and let     -->
+    <!-- users mute individually via the browser UI                         -->
     <!-- ================================================================== -->
     <features enableMaintenanceWindows="true"
               dbaSessionTimeout="86400"
