@@ -34,7 +34,7 @@ class Config
     /**
      * AQL Version - update this when releasing new versions
      */
-    const VERSION = 'v2.91' ;
+    const VERSION = 'v2.92' ;
 
     /**
      * Configuration Class
@@ -96,6 +96,7 @@ class Config
     private $redisDatabase = null;
     private $postgresqlEnabled = null;
     private $enableSpeechAlerts = null;
+    private $configDbType = null;
 
     /**
      * DB Type properties - stores enabled/username/password for each database type
@@ -122,29 +123,12 @@ class Config
      */
 
     /**
-     * Class Constructor
+     * Default values for config parameters
      *
-     * @param string $dbHost
-     * @param int|null $dbPort
-     * @param string $dbInstanceName
-     * @param string $dbName
-     * @param string $dbUser
-     * @param string $dbPass
-     * @throws ConfigurationException
-     * @SuppressWarnings indentation
+     * @return array
      */
-    public function __construct( $dbHost = null, $dbPort = null, $dbInstanceName = null, $dbName = null, $dbUser = null, $dbPass = null )
-    {
-        $configFile = __DIR__ . '/../aql_config.xml' ;
-        if ( ! is_readable( $configFile ) ) {
-            throw new ConfigurationException( "Unable to load configuration from $configFile!" ) ;
-        }
-        $xml = simplexml_load_file( $configFile ) ;
-        if ( ! $xml ) {
-            throw new ConfigurationException( "Invalid syntax in $configFile!" ) ;
-        }
-        $errors = "" ;
-        $cfgValues = [
+    private static function getDefaults() {
+        return [
             'dbInstanceName' => '',
             'minRefresh' => 15,
             'defaultRefresh' => 60,
@@ -170,9 +154,18 @@ class Config
             'redisDatabase' => 0,
             'postgresqlEnabled' => 'false',
             'enableSpeechAlerts' => 'true',
-            'mysqlEnabled' => 'true'
+            'mysqlEnabled' => 'true',
+            'configDbType' => 'mysql',
         ] ;
-        $paramList = [
+    }
+
+    /**
+     * Parameter list with required/optional flags
+     *
+     * @return array
+     */
+    private static function getParamList() {
+        return [
             'dbHost'               => [ 'isRequired' => 1, 'value' => 0 ],
             'dbPass'               => [ 'isRequired' => 1, 'value' => 0 ],
             'dbInstanceName'       => [ 'isRequired' => 0, 'value' => 0 ],
@@ -219,49 +212,38 @@ class Config
             // Note: Other DB Type settings ({type}Enabled, {type}Username, {type}Password)
             // are validated dynamically via pattern matching to avoid hardcoding
         ] ;
+    }
 
-        // Regex patterns for dynamic DB type config params (avoids hardcoding each type)
-        // Matches: mysqlEnabled, mariadbUsername, rdsPassword, etc.
+    /**
+     * Detect whether the XML uses the new grouped element format
+     *
+     * @param \SimpleXMLElement $xml
+     * @return bool
+     */
+    private static function isGroupedFormat( $xml ) {
+        $version = (int) ( (string) ( $xml['version'] ?? 0 ) ) ;
+        return $version >= 2 || isset( $xml->configdb ) || isset( $xml->monitoring ) || isset( $xml->user ) ;
+    }
+
+    /**
+     * Parse legacy flat <param> format
+     *
+     * @param \SimpleXMLElement $xml
+     * @param array &$cfgValues
+     * @param array &$paramList
+     * @param string &$errors
+     */
+    private function parseFlatConfig( $xml, &$cfgValues, &$paramList, &$errors ) {
         $dbTypeParamPattern = '/^[a-z]+(?:Enabled|Username|Password)$/' ;
+        $seenDbTypeParams = [] ;
 
-        // verify that all the parameters are present and just once.
-        $seenDbTypeParams = [] ; // Track DB type params separately
-        $seenDbTypes = [] ; // Track <dbtype> elements
         foreach ( $xml as $v ) {
-            // Handle <dbtype> elements separately
             if ( $v->getName() === 'dbtype' ) {
-                $typeName = (string) $v['name'] ;
-                if ( empty( $typeName ) ) {
-                    $errors .= "dbtype element missing name attribute\n" ;
-                    continue ;
-                }
-                if ( isset( $seenDbTypes[ $typeName ] ) ) {
-                    $errors .= "Multiply defined dbtype: " . $typeName . "\n" ;
-                    continue ;
-                }
-                $seenDbTypes[ $typeName ] = true ;
-                $lcType = strtolower( str_replace( [ '-', ' ' ], '', $typeName ) ) ;
-                if ( isset( $v['enabled'] ) ) {
-                    $enabledKey = $lcType . 'Enabled' ;
-                    $cfgValues[ $enabledKey ] = (string) $v['enabled'] ;
-                    $seenDbTypeParams[ $enabledKey ] = true ;
-                    // Satisfy the mysqlEnabled required check
-                    if ( isset( $paramList[ $enabledKey ] ) ) {
-                        $paramList[ $enabledKey ]['value'] ++ ;
-                    }
-                }
-                if ( isset( $v['username'] ) ) {
-                    $cfgValues[ $lcType . 'Username' ] = (string) $v['username'] ;
-                }
-                if ( isset( $v['password'] ) ) {
-                    $cfgValues[ $lcType . 'Password' ] = (string) $v['password'] ;
-                }
-                continue ;
+                continue ; // handled by parseDbTypes()
             }
 
             $key = (string) $v[ 'name' ] ;
 
-            // Check $paramList first (for explicitly defined params like mysqlEnabled)
             if ( isset( $paramList[ $key ] ) ) {
                 if ( $paramList[ $key ][ 'value' ] != 0 ) {
                     $errors .= "Multiply set parameter: " . $key . "\n" ;
@@ -279,7 +261,6 @@ class Config
                     }
                 }
             } elseif ( preg_match( $dbTypeParamPattern, $key ) ) {
-                // Dynamic DB type params validated by pattern, track for duplicates
                 if ( isset( $seenDbTypeParams[ $key ] ) ) {
                     $errors .= "Multiply set DB type parameter: " . $key . "\n" ;
                 } else {
@@ -290,14 +271,227 @@ class Config
                 $errors .= "Unknown parameter: " . $key . "\n" ;
             }
         }
-        foreach ($paramList as $key => $x) {
-            if ( ( 1 === $x[ 'isRequired' ] ) && ( 0 === $x[ 'value' ] ) ) {
-                $errors .= "Missing parameter: " . $key . "\n" ;
+    }
+
+    /**
+     * Mapping from grouped XML attributes to flat config keys
+     *
+     * @return array [ 'elementName' => [ 'xmlAttr' => 'flatKey', ... ], ... ]
+     */
+    private static function getGroupedMapping() {
+        return [
+            'configdb' => [
+                'host'         => 'dbHost',
+                'port'         => 'dbPort',
+                'name'         => 'dbName',
+                'instanceName' => 'dbInstanceName',
+                'type'         => 'configDbType',
+            ],
+            'monitoring' => [
+                'baseUrl'             => 'baseUrl',
+                'timeZone'            => 'timeZone',
+                'issueTrackerBaseUrl' => 'issueTrackerBaseUrl',
+                'minRefresh'          => 'minRefresh',
+                'defaultRefresh'      => 'defaultRefresh',
+                'roQueryPart'         => 'roQueryPart',
+                'killStatement'       => 'killStatement',
+                'showSlaveStatement'  => 'showSlaveStatement',
+                'globalStatusDb'      => 'globalStatusDb',
+            ],
+            'authentication' => [
+                'adminPassword' => 'adminPassword',
+            ],
+            'ldap' => [
+                'enabled'         => 'doLDAPAuthentication',
+                'host'            => 'ldapHost',
+                'domainName'      => 'ldapDomainName',
+                'userGroup'       => 'ldapUserGroup',
+                'userDomain'      => 'ldapUserDomain',
+                'verifyCert'      => 'ldapVerifyCert',
+                'debugConnection' => 'ldapDebugConnection',
+            ],
+            'jira' => [
+                'enabled'          => 'jiraEnabled',
+                'projectId'        => 'jiraProjectId',
+                'issueTypeId'      => 'jiraIssueTypeId',
+                'queryHashFieldId' => 'jiraQueryHashFieldId',
+            ],
+            'redis' => [
+                'user'           => 'redisUser',
+                'password'       => 'redisPassword',
+                'connectTimeout' => 'redisConnectTimeout',
+                'database'       => 'redisDatabase',
+            ],
+            'features' => [
+                'enableMaintenanceWindows' => 'enableMaintenanceWindows',
+                'dbaSessionTimeout'        => 'dbaSessionTimeout',
+                'enableSpeechAlerts'       => 'enableSpeechAlerts',
+            ],
+            'testing' => [
+                'dbUser' => 'testDbUser',
+                'dbPass' => 'testDbPass',
+                'dbName' => 'testDbName',
+            ],
+        ] ;
+    }
+
+    /**
+     * Integer-typed config keys that need (int) casting
+     */
+    private static $intKeys = [
+        'minRefresh', 'defaultRefresh', 'redisConnectTimeout', 'redisDatabase',
+    ] ;
+
+    /**
+     * Parse new grouped element format
+     *
+     * @param \SimpleXMLElement $xml
+     * @param array &$cfgValues
+     * @param array &$paramList
+     * @param string &$errors
+     */
+    private function parseGroupedConfig( $xml, &$cfgValues, &$paramList, &$errors ) {
+        $mapping = self::getGroupedMapping() ;
+
+        // Parse each grouped element
+        foreach ( $mapping as $elementName => $attrMap ) {
+            if ( ! isset( $xml->$elementName ) ) {
+                continue ;
+            }
+            $element = $xml->$elementName ;
+            foreach ( $attrMap as $xmlAttr => $flatKey ) {
+                if ( isset( $element[ $xmlAttr ] ) ) {
+                    $value = (string) $element[ $xmlAttr ] ;
+                    if ( in_array( $flatKey, self::$intKeys, true ) ) {
+                        $cfgValues[ $flatKey ] = (int) $value ;
+                    } else {
+                        $cfgValues[ $flatKey ] = $value ;
+                    }
+                    if ( isset( $paramList[ $flatKey ] ) ) {
+                        $paramList[ $flatKey ][ 'value' ] ++ ;
+                    }
+                }
             }
         }
-        if ($errors !== '') {
-            throw new \Exception( "\nConfiguration problem!\n\n" . $errors . "\n" ) ;
+
+        // Parse <user> elements (admin and monitor)
+        if ( isset( $xml->user ) ) {
+            foreach ( $xml->user as $userEl ) {
+                $userType = (string) $userEl['type'] ;
+                $userName = (string) $userEl['name'] ;
+                $userPass = (string) $userEl['password'] ;
+                if ( $userType === 'admin' ) {
+                    $cfgValues['dbUser'] = $userName ;
+                    $cfgValues['dbPass'] = $userPass ;
+                    if ( isset( $paramList['dbUser'] ) ) {
+                        $paramList['dbUser']['value'] ++ ;
+                    }
+                    if ( isset( $paramList['dbPass'] ) ) {
+                        $paramList['dbPass']['value'] ++ ;
+                    }
+                } elseif ( $userType === 'monitor' ) {
+                    $cfgValues['monitorUser'] = $userName ;
+                    $cfgValues['monitorPassword'] = $userPass ;
+                } else {
+                    $errors .= "Unknown user type: " . $userType . "\n" ;
+                }
+            }
         }
+
+        // Parse <environment_types> element
+        if ( isset( $xml->environment_types ) ) {
+            $envNames = [] ;
+            $defaultEnv = '' ;
+            $hasExplicitOrder = false ;
+            $hasMissingOrder = false ;
+
+            foreach ( $xml->environment_types->environment_type as $envEl ) {
+                $envName = (string) $envEl['name'] ;
+                $envNames[] = $envName ;
+                if ( isset( $envEl['default'] ) && (string) $envEl['default'] === 'true' ) {
+                    $defaultEnv = $envName ;
+                }
+                if ( isset( $envEl['sort_order'] ) ) {
+                    $hasExplicitOrder = true ;
+                } else {
+                    $hasMissingOrder = true ;
+                }
+            }
+
+            if ( $hasExplicitOrder && $hasMissingOrder ) {
+                $errors .= "environment_types: if any environment_type has sort_order, all must\n" ;
+            }
+
+            $cfgValues['environments'] = implode( ',', $envNames ) ;
+            if ( isset( $paramList['environments'] ) ) {
+                $paramList['environments']['value'] ++ ;
+            }
+            if ( ! empty( $defaultEnv ) ) {
+                $cfgValues['defaultEnvironment'] = $defaultEnv ;
+                if ( isset( $paramList['defaultEnvironment'] ) ) {
+                    $paramList['defaultEnvironment']['value'] ++ ;
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse <dbtype> elements (shared by both formats)
+     *
+     * @param \SimpleXMLElement $xml
+     * @param array &$cfgValues
+     * @param array &$paramList
+     * @param string &$errors
+     * @param bool $isGroupedFormat Whether using the new grouped format
+     */
+    private function parseDbTypes( $xml, &$cfgValues, &$paramList, &$errors, $isGroupedFormat = false ) {
+        $seenDbTypes = [] ;
+
+        foreach ( $xml->dbtype as $v ) {
+            $typeName = (string) $v['name'] ;
+            if ( empty( $typeName ) ) {
+                $errors .= "dbtype element missing name attribute\n" ;
+                continue ;
+            }
+            if ( isset( $seenDbTypes[ $typeName ] ) ) {
+                $errors .= "Multiply defined dbtype: " . $typeName . "\n" ;
+                continue ;
+            }
+            $seenDbTypes[ $typeName ] = true ;
+            $lcType = strtolower( str_replace( [ '-', ' ' ], '', $typeName ) ) ;
+            if ( isset( $v['enabled'] ) ) {
+                $enabledKey = $lcType . 'Enabled' ;
+                $cfgValues[ $enabledKey ] = (string) $v['enabled'] ;
+                if ( isset( $paramList[ $enabledKey ] ) ) {
+                    $paramList[ $enabledKey ]['value'] ++ ;
+                }
+            }
+            if ( isset( $v['username'] ) ) {
+                $cfgValues[ $lcType . 'Username' ] = (string) $v['username'] ;
+            } elseif ( $isGroupedFormat && ! empty( $cfgValues['monitorUser'] ) ) {
+                // In grouped format, fall back to monitor user credentials
+                $cfgValues[ $lcType . 'Username' ] = $cfgValues['monitorUser'] ;
+            }
+            if ( isset( $v['password'] ) ) {
+                $cfgValues[ $lcType . 'Password' ] = (string) $v['password'] ;
+            } elseif ( $isGroupedFormat && ! empty( $cfgValues['monitorPassword'] ) ) {
+                $cfgValues[ $lcType . 'Password' ] = $cfgValues['monitorPassword'] ;
+            }
+        }
+    }
+
+    /**
+     * Assign parsed config values to class properties
+     *
+     * @param array $cfgValues
+     * @param string|null $dbHost Constructor override
+     * @param int|null $dbPort Constructor override
+     * @param string|null $dbInstanceName Constructor override
+     * @param string|null $dbName Constructor override
+     * @param string|null $dbUser Constructor override
+     * @param string|null $dbPass Constructor override
+     */
+    private function assignProperties( $cfgValues, $dbHost, $dbPort, $dbInstanceName, $dbName, $dbUser, $dbPass ) {
         $this->baseUrl = $cfgValues[ 'baseUrl' ] ;
         $this->dbHost = (! isset( $dbHost ) ) ? $cfgValues[ 'dbHost' ] : $dbHost ;
         $this->dbPort = (! isset( $dbPort ) ) ? $cfgValues[ 'dbPort' ] : $dbPort ;
@@ -337,6 +531,52 @@ class Config
         $this->redisDatabase = $cfgValues[ 'redisDatabase' ] ?? 0 ;
         $this->postgresqlEnabled = $cfgValues[ 'postgresqlEnabled' ] ?? 'false' ;
         $this->enableSpeechAlerts = $cfgValues[ 'enableSpeechAlerts' ] ?? 'true' ;
+        $this->configDbType = $cfgValues[ 'configDbType' ] ?? 'mysql' ;
+    }
+
+    /**
+     * Class Constructor
+     *
+     * @param string $dbHost
+     * @param int|null $dbPort
+     * @param string $dbInstanceName
+     * @param string $dbName
+     * @param string $dbUser
+     * @param string $dbPass
+     * @throws ConfigurationException
+     * @SuppressWarnings indentation
+     */
+    public function __construct( $dbHost = null, $dbPort = null, $dbInstanceName = null, $dbName = null, $dbUser = null, $dbPass = null )
+    {
+        $configFile = __DIR__ . '/../aql_config.xml' ;
+        if ( ! is_readable( $configFile ) ) {
+            throw new ConfigurationException( "Unable to load configuration from $configFile!" ) ;
+        }
+        $xml = simplexml_load_file( $configFile ) ;
+        if ( ! $xml ) {
+            throw new ConfigurationException( "Invalid syntax in $configFile!" ) ;
+        }
+        $errors = "" ;
+        $cfgValues = self::getDefaults() ;
+        $paramList = self::getParamList() ;
+
+        $isGrouped = self::isGroupedFormat( $xml ) ;
+        if ( $isGrouped ) {
+            $this->parseGroupedConfig( $xml, $cfgValues, $paramList, $errors ) ;
+        } else {
+            $this->parseFlatConfig( $xml, $cfgValues, $paramList, $errors ) ;
+        }
+        $this->parseDbTypes( $xml, $cfgValues, $paramList, $errors, $isGrouped ) ;
+
+        foreach ($paramList as $key => $x) {
+            if ( ( 1 === $x[ 'isRequired' ] ) && ( 0 === $x[ 'value' ] ) ) {
+                $errors .= "Missing parameter: " . $key . "\n" ;
+            }
+        }
+        if ($errors !== '') {
+            throw new \Exception( "\nConfiguration problem!\n\n" . $errors . "\n" ) ;
+        }
+        $this->assignProperties( $cfgValues, $dbHost, $dbPort, $dbInstanceName, $dbName, $dbUser, $dbPass ) ;
     }
 
     /**
@@ -701,6 +941,15 @@ class Config
     }
 
     /**
+     * Get the configdb type (defaults to 'mysql')
+     *
+     * @return string
+     */
+    public function getConfigDbType() {
+        return $this->configDbType ?? 'mysql' ;
+    }
+
+    /**
      * Get list of DB types from the DDL ENUM definition
      *
      * @param \mysqli $dbh Database connection
@@ -763,6 +1012,7 @@ class Config
 
     /**
      * Get a config value by key with default
+     * Supports both legacy flat <param> format and new grouped element format
      *
      * @param string $key Config key
      * @param mixed $default Default value
@@ -777,14 +1027,57 @@ class Config
                 $xml = @simplexml_load_file( $configFile ) ;
                 if ( $xml ) {
                     $cfgValues = [] ;
-                    // Read flat <param name="key">value</param> elements
-                    foreach ( $xml->param as $v ) {
-                        $cfgValues[ (string) $v['name'] ] = (string) $v ;
+
+                    if ( self::isGroupedFormat( $xml ) ) {
+                        // New grouped format
+                        $mapping = self::getGroupedMapping() ;
+                        foreach ( $mapping as $elementName => $attrMap ) {
+                            if ( ! isset( $xml->$elementName ) ) continue ;
+                            $element = $xml->$elementName ;
+                            foreach ( $attrMap as $xmlAttr => $flatKey ) {
+                                if ( isset( $element[ $xmlAttr ] ) ) {
+                                    $cfgValues[ $flatKey ] = (string) $element[ $xmlAttr ] ;
+                                }
+                            }
+                        }
+                        // Parse <user> elements
+                        if ( isset( $xml->user ) ) {
+                            foreach ( $xml->user as $userEl ) {
+                                $userType = (string) $userEl['type'] ;
+                                if ( $userType === 'admin' ) {
+                                    $cfgValues['dbUser'] = (string) $userEl['name'] ;
+                                    $cfgValues['dbPass'] = (string) $userEl['password'] ;
+                                } elseif ( $userType === 'monitor' ) {
+                                    $cfgValues['monitorUser'] = (string) $userEl['name'] ;
+                                    $cfgValues['monitorPassword'] = (string) $userEl['password'] ;
+                                }
+                            }
+                        }
+                        // Parse <environment_types>
+                        if ( isset( $xml->environment_types ) ) {
+                            $envNames = [] ;
+                            $defaultEnv = '' ;
+                            foreach ( $xml->environment_types->environment_type as $envEl ) {
+                                $envNames[] = (string) $envEl['name'] ;
+                                if ( isset( $envEl['default'] ) && (string) $envEl['default'] === 'true' ) {
+                                    $defaultEnv = (string) $envEl['name'] ;
+                                }
+                            }
+                            $cfgValues['environments'] = implode( ',', $envNames ) ;
+                            if ( ! empty( $defaultEnv ) ) {
+                                $cfgValues['defaultEnvironment'] = $defaultEnv ;
+                            }
+                        }
+                    } else {
+                        // Legacy flat <param> format
+                        foreach ( $xml->param as $v ) {
+                            $cfgValues[ (string) $v['name'] ] = (string) $v ;
+                        }
                     }
-                    // Read <dbtype> elements and map to flat keys for backward compat
-                    // <dbtype name="mysql" enabled="true" username="u" password="p" />
-                    // maps to: mysqlEnabled=true, mysqlUsername=u, mysqlPassword=p
+
+                    // Read <dbtype> elements and map to flat keys (shared by both formats)
                     if ( isset( $xml->dbtype ) ) {
+                        $isGrouped = self::isGroupedFormat( $xml ) ;
                         foreach ( $xml->dbtype as $dt ) {
                             $typeName = (string) $dt['name'] ;
                             if ( empty( $typeName ) ) continue ;
@@ -794,9 +1087,13 @@ class Config
                             }
                             if ( isset( $dt['username'] ) ) {
                                 $cfgValues[ $lcType . 'Username' ] = (string) $dt['username'] ;
+                            } elseif ( $isGrouped && ! empty( $cfgValues['monitorUser'] ) ) {
+                                $cfgValues[ $lcType . 'Username' ] = $cfgValues['monitorUser'] ;
                             }
                             if ( isset( $dt['password'] ) ) {
                                 $cfgValues[ $lcType . 'Password' ] = (string) $dt['password'] ;
+                            } elseif ( $isGrouped && ! empty( $cfgValues['monitorPassword'] ) ) {
+                                $cfgValues[ $lcType . 'Password' ] = $cfgValues['monitorPassword'] ;
                             }
                         }
                     }
@@ -846,5 +1143,30 @@ class Config
         return $inUse ;
     }
 
-}
+    /**
+     * Get parsed environment types from config (new grouped format only)
+     * Returns array of ['name' => string, 'default' => bool, 'sort_order' => int|null]
+     *
+     * @return array|null Null if using legacy format (use getConfigValue('environments') instead)
+     */
+    public function getEnvironmentTypes() {
+        $configFile = __DIR__ . '/../aql_config.xml' ;
+        $xml = @simplexml_load_file( $configFile ) ;
+        if ( ! $xml || ! isset( $xml->environment_types ) ) {
+            return null ;
+        }
+        $envTypes = [] ;
+        $position = 1 ;
+        foreach ( $xml->environment_types->environment_type as $envEl ) {
+            $sortOrder = isset( $envEl['sort_order'] ) ? (int) $envEl['sort_order'] : ( $position * 10 ) ;
+            $envTypes[] = [
+                'name'       => (string) $envEl['name'],
+                'default'    => ( isset( $envEl['default'] ) && (string) $envEl['default'] === 'true' ),
+                'sort_order' => $sortOrder,
+            ] ;
+            $position ++ ;
+        }
+        return $envTypes ;
+    }
 
+}

@@ -657,18 +657,33 @@ if ( ! tableExists( $dbh, 'environment' ) ) {
 
 // 7b: Seed environment table from config
 if ( tableExists( $dbh, 'environment' ) ) {
-    $envList = $config->getConfigValue( 'environments', 'dev,test,qa,pilot,staging,production' ) ;
-    $envNames = array_map( 'trim', explode( ',', $envList ) ) ;
-    $envNames = array_filter( $envNames, function( $v ) { return $v !== '' ; } ) ;
-    $sortOrder = 10 ;
+    // Try structured environment_types first (new grouped format)
+    $envTypes = $config->getEnvironmentTypes() ;
     $seeded = 0 ;
-    foreach ( $envNames as $envName ) {
-        $safeName = $dbh->real_escape_string( $envName ) ;
-        $sql = "INSERT IGNORE INTO environment (name, sort_order) VALUES ('$safeName', $sortOrder)" ;
-        if ( $dbh->query( $sql ) && $dbh->affected_rows > 0 ) {
-            $seeded++ ;
+    if ( $envTypes !== null ) {
+        // New grouped format: use structured data with explicit sort_order
+        foreach ( $envTypes as $env ) {
+            $safeName = $dbh->real_escape_string( $env['name'] ) ;
+            $sortOrder = (int) $env['sort_order'] ;
+            $sql = "INSERT IGNORE INTO environment (name, sort_order) VALUES ('$safeName', $sortOrder)" ;
+            if ( $dbh->query( $sql ) && $dbh->affected_rows > 0 ) {
+                $seeded++ ;
+            }
         }
-        $sortOrder += 10 ;
+    } else {
+        // Legacy format: comma-separated list, auto-assign sort_order
+        $envList = $config->getConfigValue( 'environments', 'dev,test,qa,pilot,staging,production' ) ;
+        $envNames = array_map( 'trim', explode( ',', $envList ) ) ;
+        $envNames = array_filter( $envNames, function( $v ) { return $v !== '' ; } ) ;
+        $sortOrder = 10 ;
+        foreach ( $envNames as $envName ) {
+            $safeName = $dbh->real_escape_string( $envName ) ;
+            $sql = "INSERT IGNORE INTO environment (name, sort_order) VALUES ('$safeName', $sortOrder)" ;
+            if ( $dbh->query( $sql ) && $dbh->affected_rows > 0 ) {
+                $seeded++ ;
+            }
+            $sortOrder += 10 ;
+        }
     }
     if ( $seeded > 0 ) {
         $body .= "<tr><td>environment seed</td><td>SEEDED</td><td>Added $seeded environment(s)</td></tr>\n" ;

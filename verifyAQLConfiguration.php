@@ -62,10 +62,112 @@ $configLoaded = false ;
 if ( file_exists( $configFile ) && is_readable( $configFile ) ) {
     $xml = @simplexml_load_file( $configFile ) ;
     if ( $xml ) {
-        foreach ( $xml as $v ) {
-            $key = (string) $v['name'] ;
-            $configValues[$key] = (string) $v ;
+        // Detect format: new grouped elements vs legacy flat <param>
+        $configVersion = (int) ( (string) ( $xml['version'] ?? 0 ) ) ;
+        $isGroupedFormat = $configVersion >= 2 || isset( $xml->configdb ) || isset( $xml->monitoring ) || isset( $xml->user ) ;
+
+        if ( $isGroupedFormat ) {
+            // New grouped element format — map attributes to flat keys
+            $groupedMapping = [
+                'configdb' => [
+                    'host' => 'dbHost', 'port' => 'dbPort', 'name' => 'dbName',
+                    'instanceName' => 'dbInstanceName', 'type' => 'configDbType',
+                ],
+                'monitoring' => [
+                    'baseUrl' => 'baseUrl', 'timeZone' => 'timeZone',
+                    'issueTrackerBaseUrl' => 'issueTrackerBaseUrl',
+                    'minRefresh' => 'minRefresh', 'defaultRefresh' => 'defaultRefresh',
+                    'roQueryPart' => 'roQueryPart', 'killStatement' => 'killStatement',
+                    'showSlaveStatement' => 'showSlaveStatement', 'globalStatusDb' => 'globalStatusDb',
+                ],
+                'authentication' => [ 'adminPassword' => 'adminPassword' ],
+                'ldap' => [
+                    'enabled' => 'doLDAPAuthentication', 'host' => 'ldapHost',
+                    'domainName' => 'ldapDomainName', 'userGroup' => 'ldapUserGroup',
+                    'userDomain' => 'ldapUserDomain', 'verifyCert' => 'ldapVerifyCert',
+                    'debugConnection' => 'ldapDebugConnection',
+                ],
+                'jira' => [
+                    'enabled' => 'jiraEnabled', 'projectId' => 'jiraProjectId',
+                    'issueTypeId' => 'jiraIssueTypeId', 'queryHashFieldId' => 'jiraQueryHashFieldId',
+                ],
+                'redis' => [
+                    'user' => 'redisUser', 'password' => 'redisPassword',
+                    'connectTimeout' => 'redisConnectTimeout', 'database' => 'redisDatabase',
+                ],
+                'features' => [
+                    'enableMaintenanceWindows' => 'enableMaintenanceWindows',
+                    'dbaSessionTimeout' => 'dbaSessionTimeout',
+                    'enableSpeechAlerts' => 'enableSpeechAlerts',
+                ],
+                'testing' => [
+                    'dbUser' => 'testDbUser', 'dbPass' => 'testDbPass', 'dbName' => 'testDbName',
+                ],
+            ] ;
+            foreach ( $groupedMapping as $elementName => $attrMap ) {
+                if ( ! isset( $xml->$elementName ) ) continue ;
+                $element = $xml->$elementName ;
+                foreach ( $attrMap as $xmlAttr => $flatKey ) {
+                    if ( isset( $element[ $xmlAttr ] ) ) {
+                        $configValues[ $flatKey ] = (string) $element[ $xmlAttr ] ;
+                    }
+                }
+            }
+            // Parse <user> elements
+            if ( isset( $xml->user ) ) {
+                foreach ( $xml->user as $userEl ) {
+                    $userType = (string) $userEl['type'] ;
+                    if ( $userType === 'admin' ) {
+                        $configValues['dbUser'] = (string) $userEl['name'] ;
+                        $configValues['dbPass'] = (string) $userEl['password'] ;
+                    } elseif ( $userType === 'monitor' ) {
+                        $configValues['monitorUser'] = (string) $userEl['name'] ;
+                        $configValues['monitorPassword'] = (string) $userEl['password'] ;
+                    }
+                }
+            }
+            // Parse <environment_types>
+            if ( isset( $xml->environment_types ) ) {
+                $envNames = [] ;
+                foreach ( $xml->environment_types->environment_type as $envEl ) {
+                    $envNames[] = (string) $envEl['name'] ;
+                    if ( isset( $envEl['default'] ) && (string) $envEl['default'] === 'true' ) {
+                        $configValues['defaultEnvironment'] = (string) $envEl['name'] ;
+                    }
+                }
+                $configValues['environments'] = implode( ',', $envNames ) ;
+            }
+        } else {
+            // Legacy flat <param> format
+            foreach ( $xml as $v ) {
+                if ( $v->getName() === 'dbtype' ) continue ;
+                $key = (string) $v['name'] ;
+                $configValues[$key] = (string) $v ;
+            }
         }
+
+        // Parse <dbtype> elements (shared by both formats)
+        if ( isset( $xml->dbtype ) ) {
+            foreach ( $xml->dbtype as $dt ) {
+                $typeName = (string) $dt['name'] ;
+                if ( empty( $typeName ) ) continue ;
+                $lcType = strtolower( str_replace( [ '-', ' ' ], '', $typeName ) ) ;
+                if ( isset( $dt['enabled'] ) ) {
+                    $configValues[ $lcType . 'Enabled' ] = (string) $dt['enabled'] ;
+                }
+                if ( isset( $dt['username'] ) ) {
+                    $configValues[ $lcType . 'Username' ] = (string) $dt['username'] ;
+                } elseif ( $isGroupedFormat && ! empty( $configValues['monitorUser'] ?? '' ) ) {
+                    $configValues[ $lcType . 'Username' ] = $configValues['monitorUser'] ;
+                }
+                if ( isset( $dt['password'] ) ) {
+                    $configValues[ $lcType . 'Password' ] = (string) $dt['password'] ;
+                } elseif ( $isGroupedFormat && ! empty( $configValues['monitorPassword'] ?? '' ) ) {
+                    $configValues[ $lcType . 'Password' ] = $configValues['monitorPassword'] ;
+                }
+            }
+        }
+
         $configLoaded = true ;
     }
 }
@@ -608,12 +710,22 @@ foreach ( $allParams as $name => $info ) :
 <?php if ( !empty( $missingRequired ) ) : ?>
     <div class="fix-section">
         <h3>Missing Required Parameters</h3>
+<?php if ( $isGroupedFormat ?? false ) : ?>
+        <p>Check that the relevant grouped elements in <code>aql_config.xml</code> have these attributes set:</p>
+        <pre><?php
+foreach ( $missingRequired as $name => $info ) {
+    echo htmlspecialchars( $name ) . ' = "' . htmlspecialchars( $info['example'] ) . '"' . "\n" ;
+}
+?></pre>
+        <p>See <code>config_sample.xml</code> for the grouped element format.</p>
+<?php else : ?>
         <p>Add these to your <code>aql_config.xml</code>:</p>
         <pre><?php
 foreach ( $missingRequired as $name => $info ) {
     echo '&lt;param name="' . htmlspecialchars( $name ) . '"&gt;' . htmlspecialchars( $info['example'] ) . '&lt;/param&gt;' . "\n" ;
 }
 ?></pre>
+<?php endif ; ?>
     </div>
 <?php endif ; ?>
 

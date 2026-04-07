@@ -1,50 +1,120 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE config SYSTEM "aql_config.dtd">
-<config>
-    <param name="baseUrl">https://localhost.localdomain/ActiveQueryListing/AJAXgetaql.php</param>
-    <param name="dbHost">127.0.0.1</param>
-    <!-- MS-SQL Instance Name -->
-    <!-- <param name="dbInstanceName"></param> -->
-    <param name="dbName">aql_db</param>
-    <param name="dbPort">3306</param>
-    <param name="dbUser">aql_app</param>
-    <param name="dbPass">SomethingComplicated</param>
-    <param name="timeZone">America/Chicago</param>
-    <param name="minRefresh">15</param>
-    <param name="defaultRefresh">60</param>
-    <param name="issueTrackerBaseUrl">https://somewhere.jira.com/</param>
-    <!-- Jira Integration (optional) - enables "File Issue" button -->
-    <param name="jiraEnabled">false</param>
-    <param name="jiraProjectId"></param>
-    <param name="jiraIssueTypeId"></param>
-    <param name="jiraQueryHashFieldId"></param>
-    <param name="globalStatusDb">performance_schema</param>
-    <!-- Which DB is the global_status table in? MySQL: performance_schema. MariaDB: information_schema -->
-    <param name="roQueryPart">@@global.read_only OR @@global.innodb_read_only</param>
-    <!-- In AWS - this would be "CALL mysql.rds_kill( :pid )" -->
-    <param name="killStatement">kill :pid</param>
-    <param name="showSlaveStatement">show all slaves status</param>
-    <!-- Environment definitions -->
-    <!-- deployDDL.php seeds the environment table from this list -->
-    <param name="environments">dev,test,qa,pilot,staging,production</param>
-    <param name="defaultEnvironment">production</param>
-    <!-- Authentication -->
-    <!-- LDAP on  = authenticate via Active Directory (adminPassword ignored) -->
-    <!-- LDAP off = authenticate via adminPassword (any username accepted) -->
-    <param name="doLDAPAuthentication">true</param>
-    <param name="adminPassword">changeme</param>
-    <param name="ldapHost">ldaps://ad.mycompany.com/</param>
-    <param name="ldapDomainName">DC=mycompany,DC=com</param>
-    <param name="ldapUserGroup">Admins</param>
-    <param name="ldapUserDomain">mycompany</param>
-    <param name="ldapVerifyCert">true</param>
-    <param name="ldapDebugConnection">false</param>
-    <!-- Database Type Monitoring -->
-    <!-- Each dbtype element defines a monitored database type -->
-    <!-- Attributes: name (required), enabled (required), username, password -->
-    <!-- mysql is REQUIRED - AQL's backend database is MySQL -->
-    <!-- MySQL credentials fall back to dbUser/dbPass if username/password not set -->
-    <dbtype name="mysql" enabled="true" username="aql_app" password="SomethingComplicated" />
+<!--
+    AQL Configuration File (New Grouped Format)
+
+    Copy this file to aql_config.xml and edit to match your environment.
+    The config file should be readable only by the web server to protect credentials.
+
+    Legacy flat <param> format is still supported for backward compatibility.
+    See config_sample_legacy.xml for the old format.
+-->
+<config version="2">
+    <!-- ================================================================== -->
+    <!-- Configuration Database                                             -->
+    <!-- AQL's own database where host list, groups, and settings are stored -->
+    <!-- This is the ONLY host defined in config - all monitored hosts are  -->
+    <!-- managed via manageData.php and stored in the host table.           -->
+    <!-- ================================================================== -->
+    <configdb type="mysql"
+              host="127.0.0.1"
+              port="3306"
+              name="aql_db" />
+    <!-- For MS-SQL, add instanceName attribute:                            -->
+    <!-- <configdb type="mssql" host="..." port="1433" name="aql_db"       -->
+    <!--           instanceName="SQLEXPRESS" />                             -->
+
+    <!-- ================================================================== -->
+    <!-- Credentials                                                        -->
+    <!-- admin: connects to the configdb above                              -->
+    <!-- monitor: default for all monitored hosts (override per-dbtype)     -->
+    <!-- ================================================================== -->
+    <user type="admin" name="aql_app" password="SomethingComplicated" />
+    <user type="monitor" name="aql_mon" password="SomethingComplicated" />
+
+    <!-- ================================================================== -->
+    <!-- Monitoring Behavior                                                -->
+    <!-- ================================================================== -->
+    <monitoring baseUrl="https://localhost.localdomain/ActiveQueryListing/AJAXgetaql.php"
+                timeZone="America/Chicago"
+                minRefresh="15"
+                defaultRefresh="60"
+                issueTrackerBaseUrl="https://somewhere.jira.com/"
+                roQueryPart="@@global.read_only OR @@global.innodb_read_only"
+                killStatement="kill :pid"
+                showSlaveStatement="show all slaves status"
+                globalStatusDb="performance_schema" />
+    <!-- roQueryPart: SQL expression to detect read-only servers             -->
+    <!-- killStatement: Use "CALL mysql.rds_kill( :pid )" for AWS RDS       -->
+    <!-- globalStatusDb: "performance_schema" for MySQL, "information_schema" for MariaDB -->
+
+    <!-- ================================================================== -->
+    <!-- Authentication                                                     -->
+    <!-- LDAP and adminPassword are mutually exclusive:                     -->
+    <!--   LDAP enabled  = authenticate via Active Directory                -->
+    <!--   LDAP disabled = authenticate via adminPassword (any user accepted) -->
+    <!-- ================================================================== -->
+    <authentication adminPassword="changeme" />
+
+    <ldap enabled="true"
+          host="ldaps://ad.mycompany.com/"
+          domainName="DC=mycompany,DC=com"
+          userGroup="Admins"
+          userDomain="mycompany"
+          verifyCert="true"
+          debugConnection="false" />
+
+    <!-- ================================================================== -->
+    <!-- Jira Integration (optional)                                        -->
+    <!-- Enables "File Issue" button on blocking queries                    -->
+    <!-- ================================================================== -->
+    <jira enabled="false"
+          projectId=""
+          issueTypeId=""
+          queryHashFieldId="" />
+
+    <!-- ================================================================== -->
+    <!-- Environment Types                                                  -->
+    <!-- deployDDL.php seeds the environment table from this list.           -->
+    <!-- Document order determines sort_order (10, 20, 30...) unless        -->
+    <!-- explicit sort_order attributes are provided (all-or-nothing).      -->
+    <!-- ================================================================== -->
+    <environment_types>
+        <environment_type name="dev" />
+        <environment_type name="test" />
+        <environment_type name="qa" />
+        <environment_type name="pilot" />
+        <environment_type name="staging" />
+        <environment_type name="production" default="true" />
+    </environment_types>
+
+    <!-- ================================================================== -->
+    <!-- Redis Connection Tuning (optional)                                 -->
+    <!-- Separate from dbtype enable/disable - these are connection params  -->
+    <!-- ================================================================== -->
+    <!-- <redis connectTimeout="2" database="0" /> -->
+
+    <!-- ================================================================== -->
+    <!-- Feature Toggles                                                    -->
+    <!-- ================================================================== -->
+    <features enableMaintenanceWindows="false"
+              dbaSessionTimeout="86400"
+              enableSpeechAlerts="true" />
+
+    <!-- ================================================================== -->
+    <!-- Test Harness (optional)                                            -->
+    <!-- Dedicated test user/database for testAQL.php                       -->
+    <!-- ================================================================== -->
+    <!-- <testing dbUser="aql_test" dbPass="TestPassword" dbName="aql_test" /> -->
+
+    <!-- ================================================================== -->
+    <!-- Database Type Monitoring                                           -->
+    <!-- Controls which DB types AQL monitors. mysql is REQUIRED.           -->
+    <!-- Monitor user credentials are used by default for all types.        -->
+    <!-- Add username/password on a dbtype to override for that type.       -->
+    <!-- All monitored HOSTS are in the host table, not here.               -->
+    <!-- ================================================================== -->
+    <dbtype name="mysql" enabled="true" />
     <dbtype name="innodbcluster" enabled="false" />
     <dbtype name="redis" enabled="false" />
     <dbtype name="mssql" enabled="false" />

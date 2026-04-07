@@ -1,16 +1,117 @@
 <!-- DTD for AQL Configuration File -->
+<!-- Supports both legacy flat <param> format and new grouped element format -->
 
-<!ELEMENT config (param | dbtype)*>
+<!ELEMENT config (param | dbtype | configdb | user | monitoring | authentication |
+                  ldap | jira | environment_types | redis | features | testing)*>
+<!ATTLIST config
+    version CDATA #IMPLIED
+>
 
+<!-- Legacy flat parameter format (backward compatible) -->
 <!ELEMENT param (#PCDATA)>
 <!ATTLIST param
     name CDATA #REQUIRED
 >
 
+<!-- Database type monitoring (shared by both formats) -->
 <!ELEMENT dbtype EMPTY>
 <!ATTLIST dbtype
     name     CDATA #REQUIRED
     enabled  (true|false) #REQUIRED
     username CDATA #IMPLIED
     password CDATA #IMPLIED
+>
+
+<!-- AQL's own database (where aql_db and host list live) -->
+<!ELEMENT configdb EMPTY>
+<!ATTLIST configdb
+    type         CDATA #IMPLIED
+    host         CDATA #REQUIRED
+    port         CDATA #REQUIRED
+    name         CDATA #REQUIRED
+    instanceName CDATA #IMPLIED
+>
+
+<!-- Credential definitions: type="admin" for configdb, type="monitor" for monitored hosts -->
+<!ELEMENT user EMPTY>
+<!ATTLIST user
+    type     (admin|monitor) #REQUIRED
+    name     CDATA #REQUIRED
+    password CDATA #REQUIRED
+>
+
+<!-- Monitoring behavior settings -->
+<!ELEMENT monitoring EMPTY>
+<!ATTLIST monitoring
+    baseUrl              CDATA #REQUIRED
+    timeZone             CDATA #REQUIRED
+    issueTrackerBaseUrl  CDATA #REQUIRED
+    minRefresh           CDATA #IMPLIED
+    defaultRefresh       CDATA #IMPLIED
+    roQueryPart          CDATA #IMPLIED
+    killStatement        CDATA #IMPLIED
+    showSlaveStatement   CDATA #IMPLIED
+    globalStatusDb       CDATA #IMPLIED
+>
+
+<!-- Local authentication (mutually exclusive with LDAP) -->
+<!ELEMENT authentication EMPTY>
+<!ATTLIST authentication
+    adminPassword CDATA #IMPLIED
+>
+
+<!-- LDAP authentication settings -->
+<!ELEMENT ldap EMPTY>
+<!ATTLIST ldap
+    enabled         (true|false) #IMPLIED
+    host            CDATA #IMPLIED
+    domainName      CDATA #IMPLIED
+    userGroup       CDATA #IMPLIED
+    userDomain      CDATA #IMPLIED
+    verifyCert      (true|false) #IMPLIED
+    debugConnection (true|false) #IMPLIED
+>
+
+<!-- Jira integration (optional) -->
+<!ELEMENT jira EMPTY>
+<!ATTLIST jira
+    enabled            (true|false) #IMPLIED
+    projectId          CDATA #IMPLIED
+    issueTypeId        CDATA #IMPLIED
+    queryHashFieldId   CDATA #IMPLIED
+>
+
+<!-- Environment type definitions -->
+<!ELEMENT environment_types (environment_type+)>
+
+<!ELEMENT environment_type EMPTY>
+<!ATTLIST environment_type
+    name       CDATA #REQUIRED
+    default    (true|false) #IMPLIED
+    sort_order CDATA #IMPLIED
+>
+
+<!-- Redis connection tuning (separate from dbtype enable/disable) -->
+<!ELEMENT redis EMPTY>
+<!ATTLIST redis
+    user           CDATA #IMPLIED
+    password       CDATA #IMPLIED
+    connectTimeout CDATA #IMPLIED
+    database       CDATA #IMPLIED
+>
+
+<!-- Feature toggles -->
+<!ELEMENT features EMPTY>
+<!ATTLIST features
+    enableMaintenanceWindows (true|false) #IMPLIED
+    dbaSessionTimeout        CDATA #IMPLIED
+    enableSpeechAlerts       (true|false) #IMPLIED
+>
+
+<!-- Test harness settings (optional) -->
+<!ELEMENT testing EMPTY>
+<!ATTLIST testing
+    dbUser CDATA #IMPLIED
+    dbPass CDATA #IMPLIED
+    dbName CDATA #IMPLIED
 >
