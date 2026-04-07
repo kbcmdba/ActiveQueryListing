@@ -188,6 +188,13 @@ When modifying config parsing, always test all three steps:
 - **LDAP off**: Authenticates via `adminPassword` in config. Any username accepted (tracked in session for audit).
 - These are mutually exclusive — `verifyAQLConfiguration.php` warns if both are configured.
 - **index.php graceful error**: If DB connection fails, shows a friendly error page with links to `verifyAQLConfiguration.php` and `deployDDL.php` instead of a raw 500.
+- **Only manageData.php requires login** — index.php (main dashboard) has no auth check
+- **Debug gotcha**: `ldapDebugConnection=true` only produces output on the LDAP code path. If `ldap enabled="false"`, the local auth path is taken and debug code is never reached — no output at all, silently.
+- **Samba AD requires strong auth**: Plain `ldap://` bind fails with "Strong(er) authentication required". Options:
+  1. Use `ldaps://` (requires TLS cert on Samba AD)
+  2. Add StartTLS support to LDAP.php (`ldap_start_tls()` on port 389)
+  3. Disable on Samba: `ldap server require strong auth = no` in smb.conf (lab only, not production)
+- **AJAXKillProc.php is MySQL-only**: PG handler emits kill buttons but they route to MySQL-specific kill code. Needs dbtype-aware dispatch (see @todo 24).
 
 ### Environment System
 - `environment` table with TINYINT UNSIGNED PK, name, sort_order

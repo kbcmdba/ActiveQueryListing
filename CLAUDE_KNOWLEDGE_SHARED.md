@@ -179,6 +179,10 @@ When modifying config parsing, always test all three steps:
 - **LDAP on**: Authenticates via Active Directory. `adminPassword` is ignored.
 - **LDAP off**: Authenticates via `adminPassword` in config. Any username accepted (tracked in session for audit).
 - These are mutually exclusive — `verifyAQLConfiguration.php` warns if both are configured.
+- **Only manageData.php requires login** — index.php (main dashboard) has no auth check
+- **Debug gotcha**: `ldapDebugConnection=true` only works on the LDAP code path. If `ldap enabled="false"`, local auth runs and debug code is never reached — no output, silently.
+- **Samba AD requires strong auth**: Plain `ldap://` bind fails with "Strong(er) authentication required". Need `ldaps://`, StartTLS, or Samba config override.
+- **AJAXKillProc.php is MySQL-only**: PG handler emits kill buttons but they call MySQL kill code. Needs dbtype dispatch (@todo 24).
 
 ### PostgreSQL/pg_connect Patterns
 - `pg_connect()` uses space-delimited connection strings — passwords with spaces must be single-quoted: `password='my pass'`
