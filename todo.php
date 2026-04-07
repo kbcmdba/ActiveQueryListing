@@ -109,6 +109,34 @@ namespace com\kbcmdba\aql ;
 //          - handleMySQLHost(), handleRedisHost(), and handlePostgreSQLHost() now implemented
 //          - Future: Use dispatch array: $handlers[$dbType]($hostname, $hostId, ...)
 //          - Future: Split into separate files (AJAXgetmysqlDB.php, AJAXgetredisDB.php, AJAXgetpgsqlDB.php)
+// @todo 25 Move hardcoded values to config (parent - see subtasks)
+// @todo 25-10 Blocking cache settings (AJAXgetaql.php lines 79-82)
+//          - BLOCKING_CACHE_REDIS_HOST (127.0.0.1), BLOCKING_CACHE_REDIS_PORT (6379)
+//          - BLOCKING_CACHE_TTL (60 seconds), BLOCKING_CACHE_REDIS_PREFIX ('aql:blocking:')
+//          - Add <blockingCache> element or attributes on <redis>
+// @todo 25-20 Timeout values
+//          - DB connection timeout (DBConnection.php: 4 seconds)
+//          - DB read timeout (DBConnection.php: 8 seconds)
+//          - AJAX execution limit (AJAXgetaql.php: 10 seconds)
+//          - LDAP timeout (LDAP.php: 10 seconds)
+//          - PG connection timeout (AJAXgetaql.php: 4 seconds)
+//          - Redis blocking cache connect timeout (AJAXgetaql.php: 0.5 seconds)
+//          - Add <timeouts> element or per-group timeout attributes
+// @todo 25-30 Redis alert thresholds (relates to @todo 40)
+//          - Memory critical (95%), warning (80%)
+//          - Fragmentation (100MB absolute)
+//          - Blocked clients (5)
+//          - Hit ratio (90% with >1000 requests)
+//          - Replication lag (10 seconds)
+//          - Slowlog duration thresholds (10/50/100/1000 ms)
+// @todo 25-40 Display and query limits
+//          - Redis command stats top N (10)
+//          - Redis slowlog entries (10)
+//          - Redis SCAN limit for streams (100)
+//          - Redis command truncation (500 chars)
+//          - Blocking history query limit (100 rows)
+//          - Blocking history query preview truncation (80 chars)
+// @todo 25-50 Maintenance window max duration (AJAXsilenceHost.php: 7 days)
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
