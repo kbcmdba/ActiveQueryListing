@@ -121,7 +121,7 @@ class HostModel extends ModelBase
      */
     public function populateFromForm()
     {
-        $this->setHostId(Tools::param('id')) ;
+        $this->setId(Tools::param('id')) ;
         $this->setHostName(Tools::param('hostName')) ;
         $this->setPortNumber(Tools::param('portNumber')) ;
         $this->setDescription(Tools::param('description')) ;
