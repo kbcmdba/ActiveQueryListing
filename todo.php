@@ -32,11 +32,7 @@ namespace com\kbcmdba\aql ;
 // @todo 05 Adopt PHPUnit for incremental TDD (parent - see subtasks)
 //          The longer we delay, the harder full coverage gets.
 //          Start with isolated, well-defined classes and expand outward.
-// @todo 05-10 PHPUnit bootstrap
-//          - Add phpunit/phpunit to composer.json (dev dependency)
-//          - Create phpunit.xml config (test directory, bootstrap, coverage)
-//          - Create tests/ directory structure mirroring Libs/
-//          - Verify `composer test` or `vendor/bin/phpunit` runs clean
+//          Bootstrap: DONE. Run `composer test` or `composer test-coverage`.
 // @todo 05-20 Config.php unit tests (highest value - just refactored)
 //          - Test parseGroupedConfig() with v2 XML fixtures
 //          - Test parseFlatConfig() with v1 XML fixtures
