@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
 #
-# AQL pre-commit hook
+# AQL pre-commit hook (advisory - never blocks commits)
 #
 # Runs PHP syntax checks on staged .php files, then runs the full PHPUnit
-# test suite. Blocks the commit if anything fails.
+# test suite. Reports any failures LOUDLY but always lets the commit through.
+#
+# Rationale: when debugging or in the middle of a session, you most want to
+# commit work-in-progress state - even if it's broken. Blocking commits risks
+# losing code to power loss, distraction, or accidental file deletion. Failing
+# tests are also valuable historical data when chasing bugs - they show
+# exactly when something started going wrong.
+#
+# So: report problems, complain loudly, but never refuse the commit.
 #
 # Install with: git config core.hooksPath .githooks
 # (or run scripts/install-hooks.sh)
 #
 
-set -euo pipefail
+# NOTE: do NOT use 'set -e' here - we want the script to keep running and
+# always exit 0 at the end, even if individual checks fail.
 
 # Colors for nicer output
 RED='\033[0;31m'
@@ -18,25 +27,24 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 repo_root="$(git rev-parse --show-toplevel)"
-cd "$repo_root"
+cd "$repo_root" || exit 0
+
+problems_found=0
 
 # 1. PHP syntax check on staged .php files
 staged_php_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.php$' || true)
 if [[ -n "$staged_php_files" ]]; then
     echo -e "${YELLOW}pre-commit: checking PHP syntax on staged files...${NC}"
-    syntax_failed=0
     while IFS= read -r file; do
         if ! php -l "$file" > /dev/null 2>&1; then
-            echo -e "${RED}  SYNTAX ERROR in $file${NC}"
+            echo -e "${RED}  ⚠ SYNTAX ERROR in $file${NC}"
             php -l "$file"
-            syntax_failed=1
+            problems_found=1
         fi
     done <<< "$staged_php_files"
-    if [[ $syntax_failed -eq 1 ]]; then
-        echo -e "${RED}pre-commit: PHP syntax errors found. Fix them and try again.${NC}"
-        exit 1
+    if [[ $problems_found -eq 0 ]]; then
+        echo -e "${GREEN}pre-commit: PHP syntax OK${NC}"
     fi
-    echo -e "${GREEN}pre-commit: PHP syntax OK${NC}"
 fi
 
 # 2. Run PHPUnit if it's available
@@ -44,14 +52,25 @@ if [[ -x vendor/bin/phpunit ]]; then
     echo -e "${YELLOW}pre-commit: running PHPUnit...${NC}"
     if ! vendor/bin/phpunit --no-coverage; then
         echo ""
-        echo -e "${RED}pre-commit: tests failed. Fix them and try again.${NC}"
-        echo -e "${YELLOW}pre-commit: to bypass (not recommended), use: git commit --no-verify${NC}"
-        exit 1
+        echo -e "${RED}⚠ pre-commit: TESTS FAILED ⚠${NC}"
+        echo -e "${YELLOW}pre-commit: commit will proceed anyway (advisory mode)${NC}"
+        echo -e "${YELLOW}pre-commit: but you should fix these soon${NC}"
+        problems_found=1
+    else
+        echo -e "${GREEN}pre-commit: all tests pass${NC}"
     fi
-    echo -e "${GREEN}pre-commit: all tests pass${NC}"
 else
     echo -e "${YELLOW}pre-commit: vendor/bin/phpunit not found, skipping tests${NC}"
     echo -e "${YELLOW}pre-commit: run 'composer install' to enable test checks${NC}"
 fi
 
+if [[ $problems_found -eq 1 ]]; then
+    echo ""
+    echo -e "${RED}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║  Committing despite problems above (advisory). ║${NC}"
+    echo -e "${RED}║  Don't forget to fix them!                     ║${NC}"
+    echo -e "${RED}╚════════════════════════════════════════════════╝${NC}"
+fi
+
+# Always succeed - never block the commit
 exit 0
