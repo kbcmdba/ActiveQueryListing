@@ -18,4 +18,8 @@ vendor/
 cache/
 temp.sql
 CLAUDE.md
+CLAUDE_KNOWLEDGE_SHARED.md
 .claude
+vision.md
+*.bk
+*.xml.tmp
