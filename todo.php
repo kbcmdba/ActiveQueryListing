@@ -62,13 +62,12 @@ namespace com\kbcmdba\aql ;
 //            - Libs/Models/HostGroupModel.php
 //            - Libs/Models/HostModel.php
 //            - Libs/Models/ModelBase.php
+//            - Libs/Tools.php       — 99% lines, only exit() branches left
 //            - Libs/Exceptions/ConfigurationException.php  (no statements)
 //            - Libs/Exceptions/ControllerException.php     (no statements)
 //            - Libs/Exceptions/DaoException.php            (no statements)
 //            - Libs/Exceptions/WebPageException.php        (no statements)
 //          [PARTIAL]
-//            - Libs/Tools.php       — 93.53% lines, 68.42% methods
-//                Remaining: pr/vd $die=true paths (untestable - exit())
 //            - Libs/WebPage.php     — 95.83% lines, 91.67% methods
 //                Remaining: getNavBar() and bits that need a real Config
 //            - Libs/Config.php      — 86.35% lines, 81.97% methods
