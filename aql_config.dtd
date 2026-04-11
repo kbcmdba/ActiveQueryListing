@@ -70,6 +70,7 @@
     userDomain      CDATA #IMPLIED
     verifyCert      (true|false) #IMPLIED
     debugConnection (true|false) #IMPLIED
+    startTls        (true|false) #IMPLIED
 >
 
 <!-- Jira integration (optional) -->

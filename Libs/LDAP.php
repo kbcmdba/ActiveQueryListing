@@ -103,6 +103,17 @@ class LDAP
             ldap_set_option( null, LDAP_OPT_X_TLS_REQUIRE_CERT, LDAP_OPT_X_TLS_NEVER ) ;
             $debug( "SSL certificate verification disabled" ) ;
         }
+        // StartTLS: upgrade plain ldap:// to encrypted on port 389.
+        // Required for Samba AD and other servers that reject plaintext bind.
+        if ( $oConfig->getLDAPStartTls() ) {
+            $debug( "Attempting StartTLS upgrade..." ) ;
+            if ( ! @ldap_start_tls( $ldap ) ) {
+                $debug( "ldap_start_tls() FAILED - " . ldap_error( $ldap ) ) ;
+                ldap_unbind( $ldap ) ;
+                return false ;
+            }
+            $debug( "StartTLS OK - connection is now encrypted" ) ;
+        }
         $bind = @ldap_bind( $ldap, $adUser, $password ) ;
         if ( false === $bind ) {
             $debug( "ldap_bind() FAILED - " . ldap_error( $ldap ) ) ;

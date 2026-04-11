@@ -86,6 +86,7 @@ if ( file_exists( $configFile ) && is_readable( $configFile ) ) {
                     'domainName' => 'ldapDomainName', 'userGroup' => 'ldapUserGroup',
                     'userDomain' => 'ldapUserDomain', 'verifyCert' => 'ldapVerifyCert',
                     'debugConnection' => 'ldapDebugConnection',
+                    'startTls' => 'ldapStartTls',
                 ],
                 'jira' => [
                     'enabled' => 'jiraEnabled', 'projectId' => 'jiraProjectId',

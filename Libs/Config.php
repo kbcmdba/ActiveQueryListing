@@ -79,6 +79,7 @@ class Config
     private $ldapUserDomain = null;
     private $ldapVerifyCert = null;
     private $ldapDebugConnection = null;
+    private $ldapStartTls = null;
     private $globalStatusDb = null;
     private $jiraEnabled = null;
     private $jiraProjectId = null;
@@ -138,6 +139,7 @@ class Config
             'globalStatusDb' => 'performance_schema',
             'ldapVerifyCert' => 'true',
             'ldapDebugConnection' => 'false',
+            'ldapStartTls' => 'false',
             'jiraEnabled' => 'false',
             'jiraProjectId' => '',
             'jiraIssueTypeId' => '',
@@ -187,6 +189,7 @@ class Config
             'ldapUserDomain'       => [ 'isRequired' => 0, 'value' => 0 ],
             'ldapVerifyCert'       => [ 'isRequired' => 0, 'value' => 0 ],
             'ldapDebugConnection'  => [ 'isRequired' => 0, 'value' => 0 ],
+            'ldapStartTls'         => [ 'isRequired' => 0, 'value' => 0 ],
             'globalStatusDb'       => [ 'isRequired' => 0, 'value' => 0 ],
             'jiraEnabled'          => [ 'isRequired' => 0, 'value' => 0 ],
             'jiraProjectId'        => [ 'isRequired' => 0, 'value' => 0 ],
@@ -309,6 +312,7 @@ class Config
                 'userDomain'      => 'ldapUserDomain',
                 'verifyCert'      => 'ldapVerifyCert',
                 'debugConnection' => 'ldapDebugConnection',
+                'startTls'        => 'ldapStartTls',
             ],
             'jira' => [
                 'enabled'          => 'jiraEnabled',
@@ -530,6 +534,7 @@ class Config
         $this->ldapUserDomain = $cfgValues[ 'ldapUserDomain' ] ;
         $this->ldapVerifyCert = $cfgValues[ 'ldapVerifyCert' ] ?? 'true' ;
         $this->ldapDebugConnection = $cfgValues[ 'ldapDebugConnection' ] ?? 'false' ;
+        $this->ldapStartTls = $cfgValues[ 'ldapStartTls' ] ?? 'false' ;
         $this->globalStatusDb = $cfgValues[ 'globalStatusDb' ] ;
         $this->jiraEnabled = $cfgValues[ 'jiraEnabled' ] ?? 'false' ;
         $this->jiraProjectId = $cfgValues[ 'jiraProjectId' ] ?? '' ;
@@ -845,6 +850,14 @@ class Config
      */
     public function getLDAPDebugConnection() {
         return ( 'true' === $this->ldapDebugConnection ) ;
+    }
+
+    /**
+     * Return whether to upgrade the LDAP connection to TLS via StartTLS (defaults to false)
+     * Useful for Samba AD and other servers that require strong auth on port 389.
+     */
+    public function getLDAPStartTls() {
+        return ( 'true' === $this->ldapStartTls ) ;
     }
 
     /**
