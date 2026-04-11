@@ -226,4 +226,140 @@ class ToolsTest extends TestCase
         $this->expectExceptionMessageMatches('/Improper use/') ;
         new Tools() ;
     }
+
+    // ========================================================================
+    // nonBlankCell()
+    // ========================================================================
+
+    public function testNonBlankCellEmptyString() : void
+    {
+        $this->assertSame('&nbsp;', Tools::nonBlankCell('')) ;
+    }
+
+    public function testNonBlankCellNull() : void
+    {
+        $this->assertSame('&nbsp;', Tools::nonBlankCell(null)) ;
+    }
+
+    public function testNonBlankCellWithValue() : void
+    {
+        $this->assertSame('hello', Tools::nonBlankCell('hello')) ;
+        $this->assertSame('0', Tools::nonBlankCell('0')) ;
+    }
+
+    // ========================================================================
+    // currentTimestamp()
+    // ========================================================================
+
+    public function testCurrentTimestampWithEpoch() : void
+    {
+        // Use a known epoch and pin the timezone so the test is deterministic
+        $oldTz = date_default_timezone_get() ;
+        date_default_timezone_set('UTC') ;
+        try {
+            // 2024-01-15 12:30:45 UTC = 1705321845
+            $this->assertSame('2024-01-15 12:30:45', Tools::currentTimestamp(1705321845)) ;
+            // Epoch zero
+            $this->assertSame('1970-01-01 00:00:00', Tools::currentTimestamp(0)) ;
+        } finally {
+            date_default_timezone_set($oldTz) ;
+        }
+    }
+
+    public function testCurrentTimestampWithoutArgUsesNow() : void
+    {
+        $before = time() ;
+        $result = Tools::currentTimestamp() ;
+        $after = time() ;
+        // Just verify the format and that it's within the test window
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result) ;
+        $resultEpoch = strtotime($result) ;
+        $this->assertGreaterThanOrEqual($before - 1, $resultEpoch) ;
+        $this->assertLessThanOrEqual($after + 1, $resultEpoch) ;
+    }
+
+    // ========================================================================
+    // friendlyTime()
+    // ========================================================================
+
+    public function testFriendlyTimeSecondsOnly() : void
+    {
+        $this->assertSame('0s', Tools::friendlyTime(0)) ;
+        $this->assertSame('1s', Tools::friendlyTime(1)) ;
+        $this->assertSame('59s', Tools::friendlyTime(59)) ;
+    }
+
+    public function testFriendlyTimeMinutesAndSeconds() : void
+    {
+        $this->assertSame('1m,0s', Tools::friendlyTime(60)) ;
+        $this->assertSame('1m,30s', Tools::friendlyTime(90)) ;
+        $this->assertSame('59m,59s', Tools::friendlyTime(3599)) ;
+    }
+
+    public function testFriendlyTimeHoursMinutesSeconds() : void
+    {
+        $this->assertSame('1h,0m,0s', Tools::friendlyTime(3600)) ;
+        $this->assertSame('1h,30m,0s', Tools::friendlyTime(5400)) ;
+        $this->assertSame('23h,59m,59s', Tools::friendlyTime(86399)) ;
+    }
+
+    public function testFriendlyTimeDaysHoursMinutesSeconds() : void
+    {
+        // 1 day exactly
+        $this->assertSame('1d,0h,0m,0s', Tools::friendlyTime(86400)) ;
+        // 1 day, 1 hour
+        $this->assertSame('1d,1h,0m,0s', Tools::friendlyTime(86400 + 3600)) ;
+        // The example from CLAUDE.md user preferences: "34052 (9h,27m,32s)"
+        $this->assertSame('9h,27m,32s', Tools::friendlyTime(34052)) ;
+    }
+
+    public function testFriendlyTimeWithStringInput() : void
+    {
+        // friendlyTime accepts numeric strings
+        $this->assertSame('1m,0s', Tools::friendlyTime('60')) ;
+    }
+
+    public function testFriendlyTimeWithNonNumericReturnsInput() : void
+    {
+        // Non-numeric returns the input unchanged (defensive behavior)
+        $this->assertSame('not a number', Tools::friendlyTime('not a number')) ;
+        $this->assertNull(Tools::friendlyTime(null)) ;
+    }
+
+    // ========================================================================
+    // makeQuotedStringPIISafe() — query normalization for blocking_history
+    // ========================================================================
+
+    public function testMakeQuotedStringPIISafeReplacesIntegers() : void
+    {
+        $sql = "SELECT * FROM users WHERE id = 12345" ;
+        $result = Tools::makeQuotedStringPIISafe($sql) ;
+        $this->assertStringNotContainsString('12345', $result) ;
+        $this->assertStringContainsString('N', $result) ;
+    }
+
+    public function testMakeQuotedStringPIISafeReplacesQuotedStrings() : void
+    {
+        $sql = "SELECT * FROM users WHERE name = 'kbenton'" ;
+        $result = Tools::makeQuotedStringPIISafe($sql) ;
+        $this->assertStringNotContainsString('kbenton', $result) ;
+    }
+
+    public function testMakeQuotedStringPIISafePreservesStructure() : void
+    {
+        // The query should still have the SELECT and WHERE keywords
+        $sql = "SELECT id, name FROM users WHERE active = 1 AND created > '2024-01-01'" ;
+        $result = Tools::makeQuotedStringPIISafe($sql) ;
+        $this->assertStringContainsString('SELECT', $result) ;
+        $this->assertStringContainsString('FROM users', $result) ;
+        $this->assertStringContainsString('WHERE', $result) ;
+        $this->assertStringContainsString('AND created >', $result) ;
+    }
+
+    public function testMakeQuotedStringPIISafeHandlesHexLiterals() : void
+    {
+        $sql = "SELECT * FROM t WHERE blob_col = 0xDEADBEEF" ;
+        $result = Tools::makeQuotedStringPIISafe($sql) ;
+        $this->assertStringNotContainsString('DEADBEEF', $result) ;
+    }
 }

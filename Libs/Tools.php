@@ -278,15 +278,15 @@ class Tools
         if ($in_seconds < 60) {
             return "{$secs}s" ;
         }
-        $mins = ($in_seconds / 60) % 60 ;
+        $mins = intdiv($in_seconds, 60) % 60 ;
         if ($in_seconds < 3600) {
             return sprintf('%dm,%ds', $mins, $secs) ;
         }
-        $hrs = $in_seconds / 3600 ;
+        $hrs = intdiv($in_seconds, 3600) ;
         if ($hrs < 24) {
             return sprintf('%dh,%dm,%ds', $hrs, $mins, $secs) ;
         } else {
-            $days = $hrs / 24 ;
+            $days = intdiv($hrs, 24) ;
             $hrs = $hrs % 24 ;
             return sprintf('%dd,%dh,%dm,%ds', $days, $hrs, $mins, $secs) ;
         }
