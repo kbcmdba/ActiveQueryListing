@@ -255,4 +255,102 @@ class ConfigTest extends TestCase
         $this->expectExceptionMessageMatches( '/Invalid XML/' ) ;
         Config::parseConfigXml( '<config><not closed' ) ;
     }
+
+    // ========================================================================
+    // buildConfigValueArray() — the static helper used by getConfigValue()
+    // Tests the same parsing logic but through a different code path.
+    // ========================================================================
+
+    private function buildFromV1( array $extraParams = [], array $dbtypes = [] ) : array
+    {
+        $xml = simplexml_load_string( $this->v1Config( $extraParams, $dbtypes ) ) ;
+        return Config::buildConfigValueArray( $xml ) ;
+    }
+
+    private function buildFromV2( array $overrides = [], array $dbtypes = [] ) : array
+    {
+        $xml = simplexml_load_string( $this->v2Config( $overrides, $dbtypes ) ) ;
+        return Config::buildConfigValueArray( $xml ) ;
+    }
+
+    public function testGetConfigValueV1FlatFormat() : void
+    {
+        $cfg = $this->buildFromV1() ;
+        $this->assertSame( '127.0.0.1', $cfg['dbHost'] ) ;
+        $this->assertSame( 'aql_app', $cfg['dbUser'] ) ;
+    }
+
+    public function testGetConfigValueV2GroupedFormat() : void
+    {
+        $cfg = $this->buildFromV2() ;
+        $this->assertSame( '127.0.0.1', $cfg['dbHost'] ) ;
+        $this->assertSame( 'aql_app', $cfg['dbUser'] ) ;
+        $this->assertSame( 'aql_mon', $cfg['monitorUser'] ) ;
+    }
+
+    public function testGetConfigValueV2EnvironmentTypesParsing() : void
+    {
+        // Build a v2 config with explicit environment_types
+        $xml = "<?xml version=\"1.0\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"localhost\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"u\" password=\"p\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" />\n"
+             . "    <environment_types>\n"
+             . "        <environment_type name=\"dev\" />\n"
+             . "        <environment_type name=\"qa\" />\n"
+             . "        <environment_type name=\"prod\" default=\"true\" />\n"
+             . "    </environment_types>\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        $cfg = Config::buildConfigValueArray( simplexml_load_string( $xml ) ) ;
+        $this->assertSame( 'dev,qa,prod', $cfg['environments'] ) ;
+        $this->assertSame( 'prod', $cfg['defaultEnvironment'] ) ;
+    }
+
+    public function testGetConfigValueRedisRegression() : void
+    {
+        // Same regression as parseConfigXml tests, but through the
+        // buildConfigValueArray code path used by getConfigValue().
+        $cfg = $this->buildFromV2( [
+            'monitor_pass' => 'super_secret_monitor_password',
+        ], [
+            [ 'name' => 'redis', 'enabled' => 'true' ],
+        ] ) ;
+        $this->assertSame( '', $cfg['redisUser'] ?? '',
+            'getConfigValue path: Redis must NOT inherit monitor user' ) ;
+        $this->assertSame( '', $cfg['redisPassword'] ?? '',
+            'getConfigValue path: Redis must NOT inherit monitor password' ) ;
+    }
+
+    public function testGetConfigValueRedisExplicitCredsSetRedisUserKey() : void
+    {
+        $cfg = $this->buildFromV2( [], [
+            [ 'name' => 'redis', 'enabled' => 'true',
+              'username' => 'aql_redis', 'password' => 'redis_pass' ],
+        ] ) ;
+        $this->assertSame( 'aql_redis', $cfg['redisUser'],
+            '<dbtype name="redis" username="..."> must set redisUser key' ) ;
+        $this->assertSame( 'redis_pass', $cfg['redisPassword'],
+            '<dbtype name="redis" password="..."> must set redisPassword key' ) ;
+    }
+
+    public function testGetConfigValueDbtypeEnabledFlags() : void
+    {
+        $cfg = $this->buildFromV2( [], [
+            [ 'name' => 'redis', 'enabled' => 'true' ],
+            [ 'name' => 'postgresql', 'enabled' => 'false' ],
+        ] ) ;
+        $this->assertSame( 'true', $cfg['mysqlEnabled'] ) ;
+        $this->assertSame( 'true', $cfg['redisEnabled'] ) ;
+        $this->assertSame( 'false', $cfg['postgresqlEnabled'] ) ;
+    }
+
+    public function testGetConfigValueMissingKeyReturnsNullOrDefault() : void
+    {
+        // buildConfigValueArray returns the array; the default behavior is in getConfigValue.
+        // We verify that missing keys are simply absent from the array.
+        $cfg = $this->buildFromV2() ;
+        $this->assertArrayNotHasKey( 'totallyMadeUpKey', $cfg ) ;
+    }
 }

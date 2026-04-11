@@ -1069,6 +1069,105 @@ class Config
     }
 
     /**
+     * Build the flat config-value array used by getConfigValue() from a parsed
+     * SimpleXMLElement. Pure function — no file IO, no caching, no class state.
+     * This is what tests should call.
+     *
+     * @param \SimpleXMLElement $xml Parsed config XML
+     * @return array Flat key=>value array
+     */
+    public static function buildConfigValueArray( \SimpleXMLElement $xml ) : array
+    {
+        $cfgValues = [] ;
+        $isGrouped = self::isGroupedFormat( $xml ) ;
+
+        if ( $isGrouped ) {
+            // New grouped format
+            $mapping = self::getGroupedMapping() ;
+            foreach ( $mapping as $elementName => $attrMap ) {
+                if ( ! isset( $xml->$elementName ) ) {
+                    continue ;
+                }
+                $element = $xml->$elementName ;
+                foreach ( $attrMap as $xmlAttr => $flatKey ) {
+                    if ( isset( $element[ $xmlAttr ] ) ) {
+                        $cfgValues[ $flatKey ] = (string) $element[ $xmlAttr ] ;
+                    }
+                }
+            }
+            // Parse <user> elements
+            if ( isset( $xml->user ) ) {
+                foreach ( $xml->user as $userEl ) {
+                    $userType = (string) $userEl['type'] ;
+                    if ( $userType === 'admin' ) {
+                        $cfgValues['dbUser'] = (string) $userEl['name'] ;
+                        $cfgValues['dbPass'] = (string) $userEl['password'] ;
+                    } elseif ( $userType === 'monitor' ) {
+                        $cfgValues['monitorUser'] = (string) $userEl['name'] ;
+                        $cfgValues['monitorPassword'] = (string) $userEl['password'] ;
+                    }
+                }
+            }
+            // Parse <environment_types>
+            if ( isset( $xml->environment_types ) ) {
+                $envNames = [] ;
+                $defaultEnv = '' ;
+                foreach ( $xml->environment_types->environment_type as $envEl ) {
+                    $envNames[] = (string) $envEl['name'] ;
+                    if ( isset( $envEl['default'] ) && (string) $envEl['default'] === 'true' ) {
+                        $defaultEnv = (string) $envEl['name'] ;
+                    }
+                }
+                $cfgValues['environments'] = implode( ',', $envNames ) ;
+                if ( ! empty( $defaultEnv ) ) {
+                    $cfgValues['defaultEnvironment'] = $defaultEnv ;
+                }
+            }
+        } else {
+            // Legacy flat <param> format
+            foreach ( $xml->param as $v ) {
+                $cfgValues[ (string) $v['name'] ] = (string) $v ;
+            }
+        }
+
+        // Read <dbtype> elements and map to flat keys (shared by both formats)
+        if ( isset( $xml->dbtype ) ) {
+            foreach ( $xml->dbtype as $dt ) {
+                $typeName = (string) $dt['name'] ;
+                if ( empty( $typeName ) ) {
+                    continue ;
+                }
+                $lcType = strtolower( str_replace( [ '-', ' ' ], '', $typeName ) ) ;
+                if ( isset( $dt['enabled'] ) ) {
+                    $cfgValues[ $lcType . 'Enabled' ] = (string) $dt['enabled'] ;
+                }
+                $canFallback = $isGrouped && ! in_array( $lcType, self::$noMonitorFallbackTypes, true ) ;
+                if ( isset( $dt['username'] ) ) {
+                    $cfgValues[ $lcType . 'Username' ] = (string) $dt['username'] ;
+                } elseif ( $canFallback && ! empty( $cfgValues['monitorUser'] ) ) {
+                    $cfgValues[ $lcType . 'Username' ] = $cfgValues['monitorUser'] ;
+                }
+                if ( isset( $dt['password'] ) ) {
+                    $cfgValues[ $lcType . 'Password' ] = (string) $dt['password'] ;
+                } elseif ( $canFallback && ! empty( $cfgValues['monitorPassword'] ) ) {
+                    $cfgValues[ $lcType . 'Password' ] = $cfgValues['monitorPassword'] ;
+                }
+                // Redis handler reads redisUser/redisPassword (not redisUsername)
+                if ( $lcType === 'redis' ) {
+                    if ( isset( $dt['username'] ) ) {
+                        $cfgValues['redisUser'] = (string) $dt['username'] ;
+                    }
+                    if ( isset( $dt['password'] ) ) {
+                        $cfgValues['redisPassword'] = (string) $dt['password'] ;
+                    }
+                }
+            }
+        }
+
+        return $cfgValues ;
+    }
+
+    /**
      * Get a config value by key with default
      * Supports both legacy flat <param> format and new grouped element format
      *
@@ -1084,87 +1183,7 @@ class Config
             if ( file_exists( $configFile ) ) {
                 $xml = @simplexml_load_file( $configFile ) ;
                 if ( $xml ) {
-                    $cfgValues = [] ;
-
-                    if ( self::isGroupedFormat( $xml ) ) {
-                        // New grouped format
-                        $mapping = self::getGroupedMapping() ;
-                        foreach ( $mapping as $elementName => $attrMap ) {
-                            if ( ! isset( $xml->$elementName ) ) continue ;
-                            $element = $xml->$elementName ;
-                            foreach ( $attrMap as $xmlAttr => $flatKey ) {
-                                if ( isset( $element[ $xmlAttr ] ) ) {
-                                    $cfgValues[ $flatKey ] = (string) $element[ $xmlAttr ] ;
-                                }
-                            }
-                        }
-                        // Parse <user> elements
-                        if ( isset( $xml->user ) ) {
-                            foreach ( $xml->user as $userEl ) {
-                                $userType = (string) $userEl['type'] ;
-                                if ( $userType === 'admin' ) {
-                                    $cfgValues['dbUser'] = (string) $userEl['name'] ;
-                                    $cfgValues['dbPass'] = (string) $userEl['password'] ;
-                                } elseif ( $userType === 'monitor' ) {
-                                    $cfgValues['monitorUser'] = (string) $userEl['name'] ;
-                                    $cfgValues['monitorPassword'] = (string) $userEl['password'] ;
-                                }
-                            }
-                        }
-                        // Parse <environment_types>
-                        if ( isset( $xml->environment_types ) ) {
-                            $envNames = [] ;
-                            $defaultEnv = '' ;
-                            foreach ( $xml->environment_types->environment_type as $envEl ) {
-                                $envNames[] = (string) $envEl['name'] ;
-                                if ( isset( $envEl['default'] ) && (string) $envEl['default'] === 'true' ) {
-                                    $defaultEnv = (string) $envEl['name'] ;
-                                }
-                            }
-                            $cfgValues['environments'] = implode( ',', $envNames ) ;
-                            if ( ! empty( $defaultEnv ) ) {
-                                $cfgValues['defaultEnvironment'] = $defaultEnv ;
-                            }
-                        }
-                    } else {
-                        // Legacy flat <param> format
-                        foreach ( $xml->param as $v ) {
-                            $cfgValues[ (string) $v['name'] ] = (string) $v ;
-                        }
-                    }
-
-                    // Read <dbtype> elements and map to flat keys (shared by both formats)
-                    if ( isset( $xml->dbtype ) ) {
-                        $isGrouped = self::isGroupedFormat( $xml ) ;
-                        foreach ( $xml->dbtype as $dt ) {
-                            $typeName = (string) $dt['name'] ;
-                            if ( empty( $typeName ) ) continue ;
-                            $lcType = strtolower( str_replace( [ '-', ' ' ], '', $typeName ) ) ;
-                            if ( isset( $dt['enabled'] ) ) {
-                                $cfgValues[ $lcType . 'Enabled' ] = (string) $dt['enabled'] ;
-                            }
-                            $canFallback = $isGrouped && ! in_array( $lcType, self::$noMonitorFallbackTypes, true ) ;
-                            if ( isset( $dt['username'] ) ) {
-                                $cfgValues[ $lcType . 'Username' ] = (string) $dt['username'] ;
-                            } elseif ( $canFallback && ! empty( $cfgValues['monitorUser'] ) ) {
-                                $cfgValues[ $lcType . 'Username' ] = $cfgValues['monitorUser'] ;
-                            }
-                            if ( isset( $dt['password'] ) ) {
-                                $cfgValues[ $lcType . 'Password' ] = (string) $dt['password'] ;
-                            } elseif ( $canFallback && ! empty( $cfgValues['monitorPassword'] ) ) {
-                                $cfgValues[ $lcType . 'Password' ] = $cfgValues['monitorPassword'] ;
-                            }
-                            // Redis handler reads redisUser/redisPassword (not redisUsername)
-                            if ( $lcType === 'redis' ) {
-                                if ( isset( $dt['username'] ) ) {
-                                    $cfgValues['redisUser'] = (string) $dt['username'] ;
-                                }
-                                if ( isset( $dt['password'] ) ) {
-                                    $cfgValues['redisPassword'] = (string) $dt['password'] ;
-                                }
-                            }
-                        }
-                    }
+                    $cfgValues = self::buildConfigValueArray( $xml ) ;
                 }
             }
             if ( $cfgValues === null ) {
