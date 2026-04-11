@@ -256,17 +256,6 @@ namespace com\kbcmdba\aql ;
 //          known call sites (AJAXKillProc, AJAXsilenceHost, manageData,
 //          index, AJAXgetaql, blockingHistory). Defense-in-depth at PHP
 //          layer (not relying on web server).
-// @todo 28-50 Tools::makeQuotedStringPIISafe escaped-quote bug
-//          The function has a known issue with backslash-escaped quotes
-//          inside string literals. The escape stripping happens BEFORE
-//          the segmentation, but then the segmenter uses unescaped quote
-//          patterns, leaving the inner text exposed.
-//          Example: 'O\'Brien' becomes 'OBrien' which then segments wrong
-//          and leaves "Brien" in the output (PII leak).
-//          Caught by tests but not fixed yet - the function needs a more
-//          robust SQL tokenizer rather than nested regex passes.
-//          Real fix: switch to a state-machine SQL lexer or use an
-//          existing library like greenlion/PHP-SQL-Parser.
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs

@@ -294,9 +294,8 @@ class Tools
 
     /**
      * Change SQL constants (bare numbers and quoted strings) to a PII-safe
-     * obscured string using a small state-machine tokenizer. Replaces the
-     * old regex-based approach which had bugs around backslash-escaped
-     * quotes and other edge cases.
+     * obscured string using a small state-machine tokenizer that walks the
+     * input one byte at a time. UTF-8 safe.
      *
      * Output format (preserves LIKE pattern shape so analysts can still tell
      * `LIKE 'foo%'` from `LIKE '%foo%'`):
@@ -312,7 +311,7 @@ class Tools
      * @param string $str SQL Statement to be made safe
      * @return string Obscured SQL statement
      */
-    public static function makeQuotedStringPIISafeV2( $str )
+    public static function makeQuotedStringPIISafe( $str )
     {
         $len = strlen( $str ) ;
         $out = '' ;
@@ -539,66 +538,6 @@ class Tools
         }
         return 4 ;       // 4-byte sequence (U+10000 - U+10FFFF)
     }
-
-    /**
-     * @deprecated Use makeQuotedStringPIISafeV2() — has known bugs with
-     * backslash-escaped quotes and other edge cases. Kept temporarily for
-     * comparison and any callers that haven't migrated.
-     *
-     * @param string $str SQL Statement to be made safe
-     * @return string Obscured SQL statement
-     */
-    public static function makeQuotedStringPIISafe($str)
-    {
-        $regexes = [
-            '/\b\d+\b/' => 'N',
-            '/\b0x[0-9A-Fa-f]+\b/' => 'N',
-            "/''/" => "'S'",
-            '/""/' => '"S"',
-            "/(\\\\')/" => '',
-            '/(\\\\")/' => '',
-            "/'[^%']+'/" => "'S'",
-            '/"[^%"]+"/' => '"S"',
-            "/'[%]+([^'%]+[%]+)+[^'%]+[%]+'/" => "'%S%S%'",
-            "/'[%]+([^'%]+[%]+)+[^'%]+'/" => "'%S%S'",
-            "/'([^'%]+[%]+)+[^'%]+[%]+'/" => "'S%S%'",
-            "/'([^'%]+[%]+)+[^'%]+'/" => "'S%S'",
-            "/'[%]+[^'%]+[%]+'/" => "'%S%'",
-            "/'[%]+[^'%]+'/" => "'%S'",
-            "/'[^'%]+[%]+'/" => "'S%'",
-            "/'([^'%]+[%]+)+[^'%]+'/" => "'S%S'",
-            '/"[^"%]+"/' => '"S"',
-            '/"[%]+([^"%]+[%]+)+[^"%]+[%]+"/' => '"%S%S%"',
-            '/"[%]+([^"%]+[%]+)+[^"%]+"/' => '"%S%S"',
-            '/"([^"%]+[%]+)+[^"%]+[%]+"/' => '"S%S%"',
-            '/"([^"%]+[%]+)+[^"%]+"/' => '"S%S"',
-            '/"[%]+[^"[%]+]+[%]+"/' => '"%S%"',
-            '/"[%]+[^"%]+"/' => '"%S"',
-            '/"[^"%]+%"/' => '"S%"',
-            '/"([^"%]+[%]+)+[^"%]+"/' => '"S%S"'
-        ] ;
-
-        $delimPattern = "/('[^']*'|\"[^\"]*\")/" ;
-        $result_array = preg_split($delimPattern, $str, 0, PREG_SPLIT_DELIM_CAPTURE) ;
-        $newStr = '' ;
-        while (count($result_array)) {
-            $currStr = array_shift($result_array) ;
-            $matchFound = 0 ;
-            foreach ($regexes as $k => $v) {
-                if (!$matchFound) {
-                    $oldStr = $currStr ;
-                    $currStr = preg_replace($k, $v, $currStr, -1) ;
-                    if ($currStr !== $oldStr) {
-                        $matchFound = 1 ;
-                    }
-                }
-            }
-            $newStr .= $currStr ;
-        }
-        $str = $newStr ;
-        $str = preg_replace('/(\s{4,})/', "\n$1", $str, -1) ;
-        return $str ;
-    } // END OF function makeQuotedStringPIISafe( $str )
 
     /**
      * preformatted print_r back to a web page then maybe exit()
