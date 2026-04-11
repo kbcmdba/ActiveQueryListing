@@ -293,15 +293,260 @@ class Tools
     } // END OF function friendlyTime( $in_seconds )
 
     /**
+     * Change SQL constants (bare numbers and quoted strings) to a PII-safe
+     * obscured string using a small state-machine tokenizer. Replaces the
+     * old regex-based approach which had bugs around backslash-escaped
+     * quotes and other edge cases.
      *
-     * Change SQL constants (bare numbers and quoted strings) to a PII safe
-     * obscured string. Mimics functionality provided by mysqldumpslow but
-     * extends it by making it easier to figure out LIKE searches, treating
-     * all strings as a parameter to a LIKE clause.
+     * Output format (preserves LIKE pattern shape so analysts can still tell
+     * `LIKE 'foo%'` from `LIKE '%foo%'`):
+     * - Integer/hex literals: N
+     * - Empty string '' or "": 'S' / "S"
+     * - Plain string 'foo': 'S'
+     * - LIKE-pattern strings: 'foo%' -> 'S%', '%foo' -> '%S', '%foo%' -> '%S%',
+     *   'foo%bar' -> 'S%S', etc.
+     * - Backtick-quoted identifiers (MySQL): preserved as-is, never treated
+     *   as PII (they're column/table names, not user data)
+     * - Comments (-- ... \n, # ... \n, slash-star ... star-slash): preserved
      *
-     * @param String $str
-     *            SQL Statement to be made safe
-     * @return String Obscured SQL statement
+     * @param string $str SQL Statement to be made safe
+     * @return string Obscured SQL statement
+     */
+    public static function makeQuotedStringPIISafeV2( $str )
+    {
+        $len = strlen( $str ) ;
+        $out = '' ;
+        $i = 0 ;
+        while ( $i < $len ) {
+            $ch = $str[ $i ] ;
+            $next = ( $i + 1 < $len ) ? $str[ $i + 1 ] : '' ;
+
+            // Backtick identifier (MySQL): copy through unchanged
+            if ( $ch === '`' ) {
+                $out .= '`' ;
+                $i++ ;
+                while ( $i < $len && $str[ $i ] !== '`' ) {
+                    $out .= $str[ $i ] ;
+                    $i++ ;
+                }
+                if ( $i < $len ) {
+                    $out .= '`' ;
+                    $i++ ;
+                }
+                continue ;
+            }
+
+            // Block comment: /* ... */
+            if ( $ch === '/' && $next === '*' ) {
+                $out .= '/*' ;
+                $i += 2 ;
+                while ( $i + 1 < $len && ! ( $str[ $i ] === '*' && $str[ $i + 1 ] === '/' ) ) {
+                    $out .= $str[ $i ] ;
+                    $i++ ;
+                }
+                if ( $i + 1 < $len ) {
+                    $out .= '*/' ;
+                    $i += 2 ;
+                }
+                continue ;
+            }
+
+            // Line comment: -- ... newline
+            if ( $ch === '-' && $next === '-' ) {
+                while ( $i < $len && $str[ $i ] !== "\n" ) {
+                    $out .= $str[ $i ] ;
+                    $i++ ;
+                }
+                continue ;
+            }
+
+            // Line comment: # ... newline (MySQL)
+            if ( $ch === '#' ) {
+                while ( $i < $len && $str[ $i ] !== "\n" ) {
+                    $out .= $str[ $i ] ;
+                    $i++ ;
+                }
+                continue ;
+            }
+
+            // Single-quoted string literal
+            if ( $ch === "'" ) {
+                [ $sanitized, $consumed ] = self::sanitizeStringLiteral( $str, $i, "'" ) ;
+                $out .= $sanitized ;
+                $i += $consumed ;
+                continue ;
+            }
+
+            // Double-quoted string literal
+            if ( $ch === '"' ) {
+                [ $sanitized, $consumed ] = self::sanitizeStringLiteral( $str, $i, '"' ) ;
+                $out .= $sanitized ;
+                $i += $consumed ;
+                continue ;
+            }
+
+            // Hex literal: 0x[0-9a-fA-F]+ (only at word boundary)
+            if ( $ch === '0' && ( $next === 'x' || $next === 'X' )
+                && ( $i === 0 || ! self::isWordChar( $str[ $i - 1 ] ) ) ) {
+                $j = $i + 2 ;
+                $hexStart = $j ;
+                while ( $j < $len && ctype_xdigit( $str[ $j ] ) ) {
+                    $j++ ;
+                }
+                if ( $j > $hexStart ) {
+                    $out .= 'N' ;
+                    $i = $j ;
+                    continue ;
+                }
+            }
+
+            // Integer literal at word boundary
+            if ( ctype_digit( $ch )
+                && ( $i === 0 || ! self::isWordChar( $str[ $i - 1 ] ) ) ) {
+                $j = $i ;
+                while ( $j < $len && ctype_digit( $str[ $j ] ) ) {
+                    $j++ ;
+                }
+                // Only treat as a number if not followed by an identifier char
+                // (so 'col1' stays 'col1', not 'colN')
+                if ( $j === $len || ! self::isWordChar( $str[ $j ] ) ) {
+                    $out .= 'N' ;
+                    $i = $j ;
+                    continue ;
+                }
+            }
+
+            // Default: copy character through
+            $out .= $ch ;
+            $i++ ;
+        }
+        return $out ;
+    }
+
+    /**
+     * Sanitize a single string literal starting at $start in $str.
+     * Returns [sanitized_replacement, characters_consumed_including_quotes].
+     * Handles backslash escapes (\' \" \\ etc.) and SQL doubled-quote escape ('').
+     * Preserves the % positions for LIKE-pattern shape recognition.
+     * UTF-8 safe: backslash-escape correctly skips multi-byte characters.
+     */
+    private static function sanitizeStringLiteral( string $str, int $start, string $quote ) : array
+    {
+        $len = strlen( $str ) ;
+        $i = $start + 1 ;
+
+        // Build a sequence of tokens as we walk: each token is either "S"
+        // (a run of one or more non-% characters) or "%" (a literal percent).
+        // Consecutive runs of non-% chars collapse into a single "S".
+        $tokens = [] ;
+        $inRun = false ;  // Are we currently inside a run of non-% chars?
+
+        while ( $i < $len ) {
+            $c = $str[ $i ] ;
+
+            // Backslash escape: skip the next FULL UTF-8 character (1-4 bytes).
+            // Treat as one "content" character (extends the current run).
+            if ( $c === '\\' && $i + 1 < $len ) {
+                $i += 1 + self::utf8CharLength( $str, $i + 1 ) ;
+                if ( ! $inRun ) {
+                    $tokens[] = 'S' ;
+                    $inRun = true ;
+                }
+                continue ;
+            }
+
+            // SQL doubled-quote escape: '' or "" inside the same quote type.
+            if ( $c === $quote && $i + 1 < $len && $str[ $i + 1 ] === $quote ) {
+                $i += 2 ;
+                if ( ! $inRun ) {
+                    $tokens[] = 'S' ;
+                    $inRun = true ;
+                }
+                continue ;
+            }
+
+            // End of literal
+            if ( $c === $quote ) {
+                $i++ ;
+                break ;
+            }
+
+            // Literal % - emit as its own token, breaking any current run
+            if ( $c === '%' ) {
+                $tokens[] = '%' ;
+                $inRun = false ;
+                $i++ ;
+                continue ;
+            }
+
+            // Any other byte (ASCII or part of a multi-byte UTF-8 char):
+            // extends the current run if we're in one, else starts a new S.
+            if ( ! $inRun ) {
+                $tokens[] = 'S' ;
+                $inRun = true ;
+            }
+            $i++ ;
+        }
+
+        $consumed = $i - $start ;
+
+        // Empty string: '' or ""
+        if ( empty( $tokens ) ) {
+            return [ $quote . 'S' . $quote, $consumed ] ;
+        }
+
+        return [ $quote . implode( '', $tokens ) . $quote, $consumed ] ;
+    }
+
+    /**
+     * True if a byte is part of an SQL identifier — ASCII alnum/underscore
+     * OR any non-ASCII byte (0x80+). The non-ASCII catch-all means UTF-8
+     * multi-byte characters are treated as identifier continuations, so an
+     * identifier like `é1` is correctly NOT treated as having a digit
+     * literal at the end.
+     */
+    private static function isWordChar( string $c ) : bool
+    {
+        if ( ctype_alnum( $c ) || $c === '_' ) {
+            return true ;
+        }
+        // Any non-ASCII byte (0x80+) is part of a UTF-8 multi-byte sequence
+        // and should be treated as identifier content.
+        return ord( $c ) >= 0x80 ;
+    }
+
+    /**
+     * Return the byte length of the UTF-8 character starting at byte $i.
+     * Returns 1 for ASCII or invalid lead bytes, 2-4 for multi-byte sequences.
+     */
+    private static function utf8CharLength( string $str, int $i ) : int
+    {
+        if ( $i >= strlen( $str ) ) {
+            return 0 ;
+        }
+        $byte = ord( $str[ $i ] ) ;
+        if ( $byte < 0x80 ) {
+            return 1 ;  // ASCII
+        }
+        if ( $byte < 0xC0 ) {
+            return 1 ;  // Stray continuation byte (invalid UTF-8); skip 1
+        }
+        if ( $byte < 0xE0 ) {
+            return 2 ;  // 2-byte sequence (U+0080 - U+07FF)
+        }
+        if ( $byte < 0xF0 ) {
+            return 3 ;  // 3-byte sequence (U+0800 - U+FFFF)
+        }
+        return 4 ;       // 4-byte sequence (U+10000 - U+10FFFF)
+    }
+
+    /**
+     * @deprecated Use makeQuotedStringPIISafeV2() — has known bugs with
+     * backslash-escaped quotes and other edge cases. Kept temporarily for
+     * comparison and any callers that haven't migrated.
+     *
+     * @param string $str SQL Statement to be made safe
+     * @return string Obscured SQL statement
      */
     public static function makeQuotedStringPIISafe($str)
     {

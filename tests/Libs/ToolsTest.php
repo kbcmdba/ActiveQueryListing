@@ -506,4 +506,262 @@ class ToolsTest extends TestCase
         $output = ob_get_clean() ;
         $this->assertStringContainsString('NULL', $output) ;
     }
+
+    // ========================================================================
+    // makeQuotedStringPIISafeV2() — state-machine tokenizer replacement
+    // ========================================================================
+
+    public function testV2ReplacesIntegerLiteral() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM users WHERE id = 12345") ;
+        $this->assertStringNotContainsString('12345', $result) ;
+        $this->assertStringContainsString(' = N', $result) ;
+        $this->assertStringContainsString('FROM users', $result) ;
+    }
+
+    public function testV2ReplacesHexLiteral() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE col = 0xDEADBEEF") ;
+        $this->assertStringNotContainsString('DEADBEEF', $result) ;
+        $this->assertStringContainsString(' = N', $result) ;
+    }
+
+    public function testV2DoesNotReplaceDigitsInIdentifiers() : void
+    {
+        // 'col1' should stay as 'col1', not 'colN'
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT col1, col2 FROM t") ;
+        $this->assertStringContainsString('col1', $result) ;
+        $this->assertStringContainsString('col2', $result) ;
+    }
+
+    public function testV2ReplacesPlainSingleQuotedString() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = 'kbenton'") ;
+        $this->assertStringNotContainsString('kbenton', $result) ;
+        $this->assertStringContainsString("'S'", $result) ;
+    }
+
+    public function testV2ReplacesEmptyString() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = ''") ;
+        $this->assertStringContainsString("'S'", $result) ;
+    }
+
+    public function testV2ReplacesPlainDoubleQuotedString() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2('SELECT * FROM t WHERE name = "secret"') ;
+        $this->assertStringNotContainsString('secret', $result) ;
+        $this->assertStringContainsString('"S"', $result) ;
+    }
+
+    public function testV2HandlesBackslashEscapedQuoteInString() : void
+    {
+        // The big bug from the old version: 'O\'Brien' leaked "Brien"
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = 'O\\'Brien'") ;
+        $this->assertStringNotContainsString('Brien', $result, 'must not leak text after escaped quote') ;
+        $this->assertStringNotContainsString("O\\'", $result) ;
+    }
+
+    public function testV2HandlesDoubledQuoteEscapeInString() : void
+    {
+        // SQL standard: 'O''Brien' is the escape form
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = 'O''Brien'") ;
+        $this->assertStringNotContainsString('Brien', $result) ;
+        $this->assertStringNotContainsString("O''", $result) ;
+        $this->assertStringContainsString("'S'", $result) ;
+    }
+
+    public function testV2PreservesLikePatternLeadingPercent() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name LIKE '%foo'") ;
+        $this->assertStringNotContainsString('foo', $result) ;
+        $this->assertStringContainsString("'%S'", $result) ;
+    }
+
+    public function testV2PreservesLikePatternTrailingPercent() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name LIKE 'foo%'") ;
+        $this->assertStringNotContainsString('foo', $result) ;
+        $this->assertStringContainsString("'S%'", $result) ;
+    }
+
+    public function testV2PreservesLikePatternBothEnds() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name LIKE '%foo%'") ;
+        $this->assertStringNotContainsString('foo', $result) ;
+        $this->assertStringContainsString("'%S%'", $result) ;
+    }
+
+    public function testV2PreservesLikePatternInternalPercent() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name LIKE 'foo%bar'") ;
+        $this->assertStringNotContainsString('foo', $result) ;
+        $this->assertStringNotContainsString('bar', $result) ;
+        $this->assertStringContainsString("'S%S'", $result) ;
+    }
+
+    public function testV2PreservesBacktickIdentifiers() : void
+    {
+        // MySQL allows quoting identifiers with backticks - these are NOT
+        // user data and should NOT be sanitized
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT `user_id`, `name` FROM `users` WHERE `id` = 5") ;
+        $this->assertStringContainsString('`user_id`', $result) ;
+        $this->assertStringContainsString('`name`', $result) ;
+        $this->assertStringContainsString('`users`', $result) ;
+        $this->assertStringContainsString('`id`', $result) ;
+        $this->assertStringContainsString(' = N', $result) ;
+    }
+
+    public function testV2BacktickContainingQuoteCharacter() : void
+    {
+        // Backtick identifier containing an apostrophe should be preserved
+        // as-is and not start a string-literal scan
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT `O'Brien_users` FROM t WHERE id = 1") ;
+        $this->assertStringContainsString("`O'Brien_users`", $result) ;
+        $this->assertStringContainsString(' = N', $result) ;
+    }
+
+    public function testV2PreservesBlockComments() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT /* hint: use_index */ * FROM t WHERE id = 1") ;
+        $this->assertStringContainsString('/* hint: use_index */', $result) ;
+        $this->assertStringContainsString(' = N', $result) ;
+    }
+
+    public function testV2PreservesLineCommentsDashDash() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t -- this is a comment\nWHERE id = 1") ;
+        $this->assertStringContainsString('-- this is a comment', $result) ;
+    }
+
+    public function testV2PreservesLineCommentsHash() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t # MySQL comment\nWHERE id = 1") ;
+        $this->assertStringContainsString('# MySQL comment', $result) ;
+    }
+
+    public function testV2HandlesMultipleStringsInOneQuery() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2(
+            "SELECT * FROM t WHERE name = 'kbenton' AND email = 'k@example.com'"
+        ) ;
+        $this->assertStringNotContainsString('kbenton', $result) ;
+        $this->assertStringNotContainsString('@example.com', $result) ;
+        $this->assertSame(2, substr_count($result, "'S'")) ;
+    }
+
+    // ========================================================================
+    // UTF-8 handling — the bane of every parser
+    // ========================================================================
+
+    public function testV2UTF8StringContentDoesNotCorruptOutput() : void
+    {
+        // String literal with UTF-8 content - the entire thing should be
+        // sanitized, not partially leaked
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = 'résumé'") ;
+        $this->assertStringNotContainsString('résumé', $result) ;
+        $this->assertStringContainsString("'S'", $result) ;
+        // Output should still be valid UTF-8 (just an ASCII subset really)
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8')) ;
+    }
+
+    public function testV2UTF8WithBackslashEscape() : void
+    {
+        // Backslash followed by a multi-byte UTF-8 char - must skip the
+        // entire char (1-4 bytes), not just the first byte. Otherwise we
+        // leave a stray continuation byte in the output.
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = 'foo\\é bar'") ;
+        $this->assertStringNotContainsString('foo', $result) ;
+        $this->assertStringNotContainsString('bar', $result) ;
+        // Output is still valid UTF-8 (no orphaned continuation bytes)
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8'),
+            'Output must remain valid UTF-8 after sanitization') ;
+    }
+
+    public function testV2UTF8IdentifierWithDigit() : void
+    {
+        // An unquoted identifier like 'café1' (column or table name with
+        // unicode and a trailing digit) should NOT have the '1' replaced
+        // with N. The trailing digit is part of the identifier.
+        // Note: in real SQL these usually need backticks, but the function
+        // shouldn't break if they don't have them.
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT café1 FROM t") ;
+        $this->assertStringContainsString('café1', $result) ;
+    }
+
+    public function testV2UTF8MultiByteCharsCommonLatin() : void
+    {
+        // Various 2-byte UTF-8 characters in a string literal
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = 'Müller-Schäfer'") ;
+        $this->assertStringNotContainsString('Müller', $result) ;
+        $this->assertStringNotContainsString('Schäfer', $result) ;
+        $this->assertStringContainsString("'S'", $result) ;
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8')) ;
+    }
+
+    public function testV2UTF8MultiByteChars3Byte() : void
+    {
+        // 3-byte UTF-8 characters (CJK)
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = '中文测试'") ;
+        $this->assertStringNotContainsString('中文', $result) ;
+        $this->assertStringContainsString("'S'", $result) ;
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8')) ;
+    }
+
+    public function testV2UTF8MultiByteChars4Byte() : void
+    {
+        // 4-byte UTF-8 characters (emoji, supplementary plane)
+        $result = Tools::makeQuotedStringPIISafeV2("INSERT INTO t (msg) VALUES ('hello 🎉 world')") ;
+        $this->assertStringNotContainsString('🎉', $result) ;
+        $this->assertStringNotContainsString('hello', $result) ;
+        $this->assertStringContainsString("'S'", $result) ;
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8')) ;
+    }
+
+    public function testV2UTF8WithLikePattern() : void
+    {
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name LIKE '%résumé%'") ;
+        $this->assertStringNotContainsString('résumé', $result) ;
+        $this->assertStringContainsString("'%S%'", $result) ;
+    }
+
+    // ========================================================================
+    // Edge cases and integration
+    // ========================================================================
+
+    public function testV2EmptyInput() : void
+    {
+        $this->assertSame('', Tools::makeQuotedStringPIISafeV2('')) ;
+    }
+
+    public function testV2OnlyWhitespace() : void
+    {
+        $this->assertSame('   ', Tools::makeQuotedStringPIISafeV2('   ')) ;
+    }
+
+    public function testV2UnclosedString() : void
+    {
+        // Truncated query with an unclosed string - should not crash, should
+        // sanitize what it can
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT * FROM t WHERE name = 'foo") ;
+        $this->assertStringNotContainsString('foo', $result) ;
+    }
+
+    public function testV2UnclosedBacktick() : void
+    {
+        // Truncated identifier - should not crash
+        $result = Tools::makeQuotedStringPIISafeV2("SELECT `col FROM t") ;
+        // No assertion about specific output - just verify it doesn't crash
+        $this->assertIsString($result) ;
+    }
+
+    public function testV2QueryWithMixedNumbersAndStrings() : void
+    {
+        $sql = "INSERT INTO orders (user_id, amount, note) VALUES (12345, 99.99, 'rush order')" ;
+        $result = Tools::makeQuotedStringPIISafeV2($sql) ;
+        $this->assertStringNotContainsString('12345', $result) ;
+        $this->assertStringNotContainsString('99', $result) ;
+        $this->assertStringNotContainsString('rush', $result) ;
+        $this->assertStringContainsString('INSERT INTO orders', $result) ;
+    }
 }
