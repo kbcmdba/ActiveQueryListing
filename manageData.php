@@ -240,6 +240,32 @@ $page->setTop( "<h2>AQL: Manage Data</h2>\n"
              .  "<p />\n"
              ) ;
 doLoginOrDie( $page ) ;
+
+// Auto-logout timer: fire when session expires so users don't sit on a stale page
+try {
+    $tmpConfig = new \com\kbcmdba\aql\Libs\Config() ;
+    $sessionTimeoutSecs = $tmpConfig->getDbaSessionTimeout() ;
+    $loginTime = $_SESSION[ 'AuthLoginTime' ] ?? time() ;
+    $remainingMs = max( 0, ( $loginTime + $sessionTimeoutSecs - time() ) ) * 1000 ;
+    $page->setTop( $page->getTop() . <<<HTML
+<script>
+(function() {
+    var msUntilLogout = $remainingMs ;
+    if ( msUntilLogout <= 0 ) {
+        window.location.href = './manageData.php?logout=logout' ;
+        return ;
+    }
+    setTimeout( function() {
+        alert( 'Your session has expired. You will be returned to the login page.' ) ;
+        window.location.href = './manageData.php?logout=logout' ;
+    }, msUntilLogout ) ;
+})();
+</script>
+HTML
+    ) ;
+} catch ( \Exception $e ) {
+    // Config load failed - skip auto-logout timer (auth check still works on next request)
+}
 switch ( Tools::param( 'data' ) ) {
     case 'Hosts':
         // Create DB connection early so we can fetch ENUM values for validation
