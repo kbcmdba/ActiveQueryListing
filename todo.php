@@ -247,21 +247,11 @@ namespace com\kbcmdba\aql ;
 // @todo 28 Input size limits / DOS protection (parent - see subtasks)
 //          Prevent attackers from using AQL parameters to waste CPU/memory
 //          or generate oversized SQL that could DOS the monitored databases.
-//          DONE: 8KB default cap on all Tools::param/get/post via DEFAULT_MAX_INPUT_LENGTH.
-//          Defense-in-depth at PHP layer (not relying on web server).
-// @todo 28-30 Audit existing pages for unbounded user input
-//          - kill reason in AJAXKillProc.php (currently TEXT in DB) - cap at 4096?
-//          - silence reason in AJAXsilenceHost.php - cap at 1024?
-//          - description in manageData.php host form (maxlength=65535 - reduce?)
-//          - hostname fields - cap at 255 (DNS limit)
-//          - port fields - cap at 5 chars (numeric, max 65535)
-//          - Apply Tools::param('field', '', 0, $cap) to all of these
-// @todo 28-40 Tighten per-field caps where 8KB is too generous
-//          - Hostnames: 255
-//          - Ports: 5
-//          - Passwords: 256
-//          - Usernames: 64
-//          - Descriptions: 1024 short / 8192 long
+//          DONE: 8KB default cap on all Tools::param/get/post via
+//          DEFAULT_MAX_INPUT_LENGTH. Per-field tighter caps applied to all
+//          known call sites (AJAXKillProc, AJAXsilenceHost, manageData,
+//          index, AJAXgetaql, blockingHistory). Defense-in-depth at PHP
+//          layer (not relying on web server).
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
