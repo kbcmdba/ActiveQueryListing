@@ -33,15 +33,13 @@ namespace com\kbcmdba\aql ;
 //          The longer we delay, the harder full coverage gets.
 //          Start with isolated, well-defined classes and expand outward.
 //          Bootstrap: DONE. Run `composer test` or `composer test-coverage`.
-// @todo 05-20 Config.php unit tests (partial - 13 tests, 46% coverage)
-//          DONE: parseGroupedConfig, parseFlatConfig, parseDbTypes, credential
-//                resolution, dbtype name normalization, format detection,
-//                Redis auth regression, required param validation
-//          TODO:
-//          - Test getConfigValue() static method (separate code path)
-//          - Test environment_types parsing (document order, explicit sort_order)
-//          - Test all-or-nothing sort_order rule (mixed = error)
-//          - Test integer field casting (minRefresh, redisDatabase, etc.)
+// @todo 05-20 Config.php unit tests
+//          DONE: 29 tests, 62% line coverage on Config.php.
+//          Covers parseGroupedConfig, parseFlatConfig, parseDbTypes, credential
+//          resolution, dbtype name normalization, format detection, Redis auth
+//          regression, required param validation, buildConfigValueArray,
+//          environment_types parsing, sort_order all-or-nothing rule, integer
+//          field casting. Remaining 38% is mostly trivial getters.
 // @todo 05-30 upgradeConfig.php tests
 //          - Test v1→v2 conversion with various input configs
 //          - Test idempotence (already v2 = no-op)
