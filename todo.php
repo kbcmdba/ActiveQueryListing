@@ -207,6 +207,52 @@ namespace com\kbcmdba\aql ;
 //          - Blocking history query limit (100 rows)
 //          - Blocking history query preview truncation (80 chars)
 // @todo 25-50 Maintenance window max duration (AJAXsilenceHost.php: 7 days)
+// @todo 27 Auto-populated host groups with color badges (parent - see subtasks)
+//          Extend host_group with auto_query (SQL WHERE clause) and per-mode colors.
+//          Lets companies tag hosts dynamically without explicit membership management.
+//          Use cases: backup window monitoring, revenue-impacting hosts, PCI scope,
+//          reporting replicas, ETL targets, etc. - whatever each company needs.
+// @todo 27-10 Schema migration (deployDDL.php)
+//          - ALTER TABLE host_group ADD auto_query TEXT NULL
+//                COMMENT 'SQL WHERE clause for automatic membership'
+//          - ALTER TABLE host_group ADD color_dark VARCHAR(7) NULL
+//                COMMENT 'Hex color for badge in dark mode'
+//          - ALTER TABLE host_group ADD color_light VARCHAR(7) NULL
+//                COMMENT 'Hex color for badge in light mode'
+//          - Migration: existing groups have NULL auto_query (manual membership only)
+// @todo 27-20 manageData.php CRUD for new fields
+//          - Add color pickers (dark + light) to host_group form
+//          - Add auto_query textarea with SQL safety warning
+//          - Validate auto_query is a valid WHERE clause (no INSERT/UPDATE/DELETE)
+//          - Live preview: show count of matching hosts as user types the query
+// @todo 27-30 Auto-population logic
+//          - On host save in manageData.php: re-evaluate all auto_query groups
+//          - On group save with auto_query: populate/refresh host_host_group entries
+//          - Periodic refresh? Or trigger-based? (probably on host changes)
+//          - Avoid SQL injection: parameterize or whitelist columns/operators
+// @todo 27-40 Badge rendering on dashboard
+//          - Render badges next to hostname in main dashboard table
+//          - CSS: use inline custom properties for per-group colors
+//            <span class="host-badge" style="--badge-color-dark: #d32f2f;
+//                                            --badge-color-light: #b71c1c;">
+//          - .host-badge { background: var(--badge-color-dark); ... }
+//          - .theme-light .host-badge { background: var(--badge-color-light); }
+//          - Badge text color: contrast against badge bg (auto-calculate or use --bg-body)
+//          - Sort badges by group sort_order or name
+//          - Truncate long group names? Tooltip on hover?
+// @todo 27-50 Migrate boolean columns to seeded auto-groups
+//          - Create seeded groups: "RevenueImpacting", "ShouldBackup", "SchemaSpy"
+//          - auto_query examples:
+//            - "WHERE revenue_impacting = 1"
+//            - "WHERE should_backup = 1"
+//            - "WHERE should_schemaspy = 1"
+//          - Default colors: red (revenue), blue (backup), green (schemaspy)
+//          - Eventually deprecate the boolean columns? Or keep them as backing fields?
+//          - Document migration in CLAUDE.md
+// @todo 27-60 Group selection UI improvements
+//          - Show badges in the group selection dropdown
+//          - Distinguish manual groups from auto-populated visually (icon? italics?)
+//          - Quick filter: "show only revenue impacting" as one click
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
