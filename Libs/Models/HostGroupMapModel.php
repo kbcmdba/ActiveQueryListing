@@ -56,11 +56,10 @@ class HostGroupMapModel extends ModelBase
                && (! Tools::isNullOrEmptyString(Tools::param('hostId')))
                && (Tools::isNumeric(Tools::param('hostId')))
                && (
-                   (
-                   Tools::isNullOrEmptyString('lastAudited')
+                   // lastAudited is optional - missing OR valid date/timestamp
+                   Tools::isNullOrEmptyString(Tools::param('lastAudited'))
                     || $this->validateDate(Tools::param('lastAudited'))
                     || $this->validateTimestamp(Tools::param('lastAudited'))
-                     )
                   )
                 ) ;
     }
