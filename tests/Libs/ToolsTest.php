@@ -362,4 +362,148 @@ class ToolsTest extends TestCase
         $result = Tools::makeQuotedStringPIISafe($sql) ;
         $this->assertStringNotContainsString('DEADBEEF', $result) ;
     }
+
+    // NOTE: makeQuotedStringPIISafe has a known issue with backslash-escaped
+    // quotes inside string literals - the segmentation strips the backslash
+    // but then leaves the inner text exposed. See @todo 28-50 for the fix.
+
+    public function testMakeQuotedStringPIISafeHandlesEmptyQuotes() : void
+    {
+        // Empty single quotes get replaced with 'S'
+        $sql = "SELECT * FROM t WHERE name = ''" ;
+        $result = Tools::makeQuotedStringPIISafe($sql) ;
+        $this->assertStringContainsString("'S'", $result) ;
+    }
+
+    public function testMakeQuotedStringPIISafeHandlesDoubleQuotedStrings() : void
+    {
+        $sql = 'SELECT * FROM t WHERE name = "secret_user"' ;
+        $result = Tools::makeQuotedStringPIISafe($sql) ;
+        $this->assertStringNotContainsString('secret_user', $result) ;
+    }
+
+    public function testMakeQuotedStringPIISafeWrapsLikePatterns() : void
+    {
+        // LIKE patterns get wrapped in % markers
+        $sql = "SELECT * FROM t WHERE name LIKE '%foo%'" ;
+        $result = Tools::makeQuotedStringPIISafe($sql) ;
+        $this->assertStringNotContainsString('foo', $result) ;
+    }
+
+    // ========================================================================
+    // params() / gets() / posts() — debug-mode and oversized variants
+    // (closes coverage gaps in the array variants)
+    // ========================================================================
+
+    public function testParamsReturnsDefaultWhenAbsent() : void
+    {
+        $this->assertSame([], Tools::params('missing')) ;
+        $this->assertSame(['a'], Tools::params('missing', ['a'])) ;
+    }
+
+    public function testGetsReturnsDefaultWhenAbsent() : void
+    {
+        $this->assertSame([], Tools::gets('missing')) ;
+    }
+
+    public function testGetsRejectsOversizedElement() : void
+    {
+        $_GET['hosts'] = ['ok', str_repeat('X', 9000)] ;
+        $this->assertSame([], Tools::gets('hosts')) ;
+    }
+
+    public function testGetsDebugModeReadsFromRequest() : void
+    {
+        $_REQUEST['ids'] = ['1', '2'] ;
+        $_GET['ids'] = ['x', 'y'] ;
+        $this->assertSame(['1', '2'], Tools::gets('ids', [], 1)) ;
+    }
+
+    public function testPostsReturnsDefaultWhenAbsent() : void
+    {
+        $this->assertSame([], Tools::posts('missing')) ;
+    }
+
+    public function testPostsRejectsOversizedElement() : void
+    {
+        $_POST['names'] = ['ok', str_repeat('Y', 8500)] ;
+        $this->assertSame([], Tools::posts('names')) ;
+    }
+
+    public function testPostsDebugModeReadsFromRequest() : void
+    {
+        $_REQUEST['names'] = ['from_request'] ;
+        $_POST['names'] = ['from_post'] ;
+        $this->assertSame(['from_request'], Tools::posts('names', [], 1)) ;
+    }
+
+    public function testPostDebugModeReadsFromRequest() : void
+    {
+        // Currently covered by ToolsTest::testGetDebugModeReadsFromRequest pattern,
+        // but post() debug branch is its own line
+        $_REQUEST['x'] = 'from_request' ;
+        $_POST['x'] = 'from_post' ;
+        $this->assertSame('from_request', Tools::post('x', '', 1)) ;
+    }
+
+    // ========================================================================
+    // pr() — preformatted print_r helper
+    // ========================================================================
+
+    public function testPrEchoesPreformattedDataWithoutDie() : void
+    {
+        ob_start() ;
+        Tools::pr(['key' => 'value']) ;
+        $output = ob_get_clean() ;
+        $this->assertStringStartsWith('<pre>', $output) ;
+        $this->assertStringEndsWith('</pre>', $output) ;
+        $this->assertStringContainsString('key', $output) ;
+        $this->assertStringContainsString('value', $output) ;
+    }
+
+    public function testPrHandlesScalarInput() : void
+    {
+        ob_start() ;
+        Tools::pr('hello world') ;
+        $output = ob_get_clean() ;
+        $this->assertStringContainsString('hello world', $output) ;
+    }
+
+    public function testPrHandlesNullInput() : void
+    {
+        ob_start() ;
+        Tools::pr(null) ;
+        $output = ob_get_clean() ;
+        $this->assertStringContainsString('<pre>', $output) ;
+        $this->assertStringContainsString('</pre>', $output) ;
+    }
+
+    // ========================================================================
+    // vd() — var_dump helper
+    // ========================================================================
+
+    public function testVdEchoesVarDumpWithoutDie() : void
+    {
+        ob_start() ;
+        Tools::vd(['key' => 'value']) ;
+        $output = ob_get_clean() ;
+        $this->assertStringContainsString('key', $output) ;
+        $this->assertStringContainsString('value', $output) ;
+    }
+
+    public function testVdHandlesScalarInput() : void
+    {
+        ob_start() ;
+        Tools::vd(42) ;
+        $output = ob_get_clean() ;
+        $this->assertStringContainsString('42', $output) ;
+    }
+
+    public function testVdHandlesNullInput() : void
+    {
+        ob_start() ;
+        Tools::vd(null) ;
+        $output = ob_get_clean() ;
+        $this->assertStringContainsString('NULL', $output) ;
+    }
 }
