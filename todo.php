@@ -247,20 +247,21 @@ namespace com\kbcmdba\aql ;
 // @todo 28 Input size limits / DOS protection (parent - see subtasks)
 //          Prevent attackers from using AQL parameters to waste CPU/memory
 //          or generate oversized SQL that could DOS the monitored databases.
-// @todo 28-10 Per-parameter size caps in Tools::param() / Tools::post()
-//          - Add optional max-length parameter (e.g., Tools::param('host', null, 1, 255))
-//          - Reject inputs that exceed the cap (return null + log)
-//          - Sensible defaults: hostnames 255, descriptions 1024, reasons 4096
-// @todo 28-20 Reject oversized request bodies/URIs at PHP level
-//          - Already handled by web server (nginx large_client_header_buffers,
-//            Apache LimitRequestLine = 8190 default)
-//          - But add a defense-in-depth check in Tools::param() for any single
-//            input > 8K - return error and log
+//          DONE: 8KB default cap on all Tools::param/get/post via DEFAULT_MAX_INPUT_LENGTH.
+//          Defense-in-depth at PHP layer (not relying on web server).
 // @todo 28-30 Audit existing pages for unbounded user input
-//          - kill reason in AJAXKillProc.php (currently TEXT in DB)
-//          - silence reason in AJAXsilenceHost.php
-//          - description in manageData.php host form (already maxlength=65535 - too big?)
-//          - Any other free-form fields
+//          - kill reason in AJAXKillProc.php (currently TEXT in DB) - cap at 4096?
+//          - silence reason in AJAXsilenceHost.php - cap at 1024?
+//          - description in manageData.php host form (maxlength=65535 - reduce?)
+//          - hostname fields - cap at 255 (DNS limit)
+//          - port fields - cap at 5 chars (numeric, max 65535)
+//          - Apply Tools::param('field', '', 0, $cap) to all of these
+// @todo 28-40 Tighten per-field caps where 8KB is too generous
+//          - Hostnames: 255
+//          - Ports: 5
+//          - Passwords: 256
+//          - Usernames: 64
+//          - Descriptions: 1024 short / 8192 long
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
