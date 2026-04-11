@@ -444,7 +444,7 @@ $fullRedisDebugBuffersHeaderFooter = <<<HTML
     $redisDebugBuffersHeaderFooterCols
 HTML;
 
-$muted = Tools::param('mute') === "1" ;
+$muted = Tools::param('mute', '', 0, 4) === "1" ;
 try {
     $page = new WebPage('Active Queries List');
     $config = new Config();
@@ -482,7 +482,8 @@ try {
 
 // Debug mode - single param: debug=MySQL,Redis,AQL (AQL means all)
 // Backward compat: debug=1 maps to debug=AQL
-$debugParam = Tools::param('debug') ;
+// Cap at 256 - comma-separated dbtype names, never that long
+$debugParam = Tools::param('debug', '', 0, 256) ;
 $debugTypes = [] ;
 $debugAQL = false ;
 if ( $debugParam === "1" || $debugParam === "AQL" ) {
@@ -500,10 +501,10 @@ if ( $debugParam === "1" || $debugParam === "AQL" ) {
 // Legacy $debug for backward compat with existing code
 $debug = $debugAQL ;
 // Scoreboard debug - separate from DBType debug
-$debugScoreboard = Tools::param('debugScoreboard') === '1' ;
+$debugScoreboard = Tools::param('debugScoreboard', '', 0, 4) === '1' ;
 $defaultRefresh = $config->getDefaultRefresh() ;
 $minRefresh = $config->getMinRefresh() ;
-$reloadSeconds = Tools::param('refresh', $defaultRefresh) ;
+$reloadSeconds = Tools::param('refresh', $defaultRefresh, 0, 8) ;
 if ( $reloadSeconds < $minRefresh ) {
     $reloadSeconds = $minRefresh ;
 }

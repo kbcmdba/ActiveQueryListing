@@ -50,12 +50,12 @@ try {
     $dbh = $dbc->getConnection() ;
     $dbh->set_charset( 'utf8' ) ;
 
-    // Get filter parameters
-    $filterHostId = Tools::param( 'hostId' ) ;
-    $filterUser = Tools::param( 'user' ) ;
-    $filterQuery = Tools::param( 'query' ) ;
-    $filterDateFrom = Tools::param( 'dateFrom' ) ;
-    $filterDateTo = Tools::param( 'dateTo' ) ;
+    // Get filter parameters (with per-field length caps)
+    $filterHostId   = Tools::param( 'hostId',   '', 0,   16 ) ;
+    $filterUser     = Tools::param( 'user',     '', 0,   64 ) ;
+    $filterQuery    = Tools::param( 'query',    '', 0, 1024 ) ;
+    $filterDateFrom = Tools::param( 'dateFrom', '', 0,   32 ) ;
+    $filterDateTo   = Tools::param( 'dateTo',   '', 0,   32 ) ;
 
     // Build host dropdown
     $hostOptions = "<option value=\"\">-- All Hosts --</option>\n" ;

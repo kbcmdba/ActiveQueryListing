@@ -31,11 +31,12 @@ use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\Exceptions\ConfigurationException ;
 use com\kbcmdba\aql\Libs\Tools ;
 
-$login    = Tools::param( 'login' ) ;
-$password = Tools::param( 'password' ) ;
-$pid      = Tools::param( 'pid' ) ;
-$reason   = Tools::param( 'reason' ) ;
-$server   = Tools::param( 'server' ) ;
+// Per-field length caps (in bytes) - tighter than the 8KB default
+$login    = Tools::param( 'login',    '', 0,   64 ) ;
+$password = Tools::param( 'password', '', 0,  256 ) ;
+$pid      = Tools::param( 'pid',      '', 0,   16 ) ;
+$reason   = Tools::param( 'reason',   '', 0, 4096 ) ;
+$server   = Tools::param( 'server',   '', 0,  255 ) ;
 
 if  ( ( strlen( $login ) < 2 )
    || ( strlen( $password ) < 2 )

@@ -995,7 +995,8 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
 }
 
 // Get hostname early so we can look up hostId before connection attempt
-$hostname = Tools::param('hostname') ;
+// Cap: 261 chars = DNS limit (255) + ":" + port (5)
+$hostname = Tools::param('hostname', '', 0, 261) ;
 
 // Look up host ID and db_type early (needed for Redis vs MySQL handling)
 $hostId = null ;
@@ -1063,7 +1064,7 @@ if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {
 
 // Debug param: debug=MySQL,Redis,AQL (AQL means all, or comma-separated types)
 // Backward compat: debug=1 treated as debug=AQL
-$debugParam = Tools::param('debug') ?? '' ;
+$debugParam = Tools::param('debug', '', 0, 256) ?? '' ;
 $debugTypes = [] ;
 $debugAQL = false ;
 if ( $debugParam === '1' || $debugParam === 'AQL' ) {
@@ -1137,10 +1138,10 @@ function handlePostgreSQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo
     $longestRunning = -1 ;
 
 try {
-    $alertCritSecs = Tools::param('alertCritSecs') ;
-    $alertWarnSecs = Tools::param('alertWarnSecs') ;
-    $alertInfoSecs = Tools::param('alertInfoSecs') ;
-    $alertLowSecs  = Tools::param('alertLowSecs') ;
+    $alertCritSecs = Tools::param('alertCritSecs', '', 0, 16) ;
+    $alertWarnSecs = Tools::param('alertWarnSecs', '', 0, 16) ;
+    $alertInfoSecs = Tools::param('alertInfoSecs', '', 0, 16) ;
+    $alertLowSecs  = Tools::param('alertLowSecs',  '', 0, 16) ;
 
     // Parse hostname and port
     $parts = explode( ':', $hostname ) ;
@@ -1396,11 +1397,11 @@ function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
 try {
     $roQueryPart   = $config->getRoQueryPart() ;
     // $debug is now passed as parameter
-    $debugLocks    = Tools::param('debugLocks') === "1" ;
-    $alertCritSecs = Tools::param('alertCritSecs') ;
-    $alertWarnSecs = Tools::param('alertWarnSecs') ;
-    $alertInfoSecs = Tools::param('alertInfoSecs') ;
-    $alertLowSecs  = Tools::param('alertLowSecs') ;
+    $debugLocks    = Tools::param('debugLocks',    '', 0,  4) === "1" ;
+    $alertCritSecs = Tools::param('alertCritSecs', '', 0, 16) ;
+    $alertWarnSecs = Tools::param('alertWarnSecs', '', 0, 16) ;
+    $alertInfoSecs = Tools::param('alertInfoSecs', '', 0, 16) ;
+    $alertLowSecs  = Tools::param('alertLowSecs',  '', 0, 16) ;
     $phaseStart    = microtime( true ) ;
     $monUser = $config->getConfigValue('mysqlUsername', $config->getDbUser()) ;
     $monPass = $config->getConfigValue('mysqlPassword', $config->getDbPass()) ;

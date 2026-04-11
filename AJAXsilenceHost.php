@@ -45,11 +45,11 @@ try {
         throw new \Exception( 'Maintenance windows feature is not enabled' ) ;
     }
 
-    // Get parameters
-    $targetType = Tools::param( 'targetType' ) ;  // 'host' or 'group'
-    $targetId = Tools::param( 'targetId' ) ;
-    $duration = Tools::param( 'duration' ) ;      // minutes
-    $description = Tools::param( 'description' ) ;
+    // Get parameters (with per-field length caps)
+    $targetType  = Tools::param( 'targetType',  '', 0,   16 ) ;  // 'host' or 'group'
+    $targetId    = Tools::param( 'targetId',    '', 0,   16 ) ;
+    $duration    = Tools::param( 'duration',    '', 0,   16 ) ;  // minutes
+    $description = Tools::param( 'description', '', 0, 4096 ) ;
 
     // Validate parameters
     if ( ! in_array( $targetType, [ 'host', 'group' ] ) ) {

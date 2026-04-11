@@ -225,10 +225,13 @@ HTML;
         }
     }
     if ( ! isset( $_SESSION[ 'AuthUser' ] ) || ( ! isset( $_SESSION[ 'AuthCanAccess' ] ) ) ) {
-        if  ( !Tools::isNullOrEmptyString( Tools::post( 'user', null, 1 ) )
-        && !Tools::isNullOrEmptyString( Tools::post( 'password', null, 1 ) )
+        // Login form: tighter caps on credentials than the 8KB default
+        $postUser = Tools::post( 'user',     null, 1,  64 ) ;
+        $postPass = Tools::post( 'password', null, 1, 256 ) ;
+        if  ( !Tools::isNullOrEmptyString( $postUser )
+        && !Tools::isNullOrEmptyString( $postPass )
             ) {
-            if ( LDAP::authenticate( Tools::post( 'user', null, 1 ), Tools::post( 'password', null, 1 ) ) ) {
+            if ( LDAP::authenticate( $postUser, $postPass ) ) {
                 return ; // User was successfully logged in.
             }
             echo "Login failed: Incorrect user name, password, or access.<br />" ;
@@ -291,22 +294,23 @@ switch ( Tools::param( 'data' ) ) {
         $body = '' ;
         $links = '' ;
         $errors = '' ;
-        $action = Tools::param( 'action' ) ;
-        $hostId = Tools::param( 'hostId' ) ;
-        $hostName = Tools::param( 'hostName' ) ;
-        $portNumber = Tools::param( 'portNumber') ;
-        $description = Tools::param( 'description' ) ;
-        $shouldMonitor = Tools::param( 'shouldMonitor' ) ;
-        $shouldBackup = Tools::param( 'shouldBackup' ) ;
-        $shouldSchemaspy = Tools::param( 'shouldSchemaspy' ) ;
-        $revenueImpacting = Tools::param('revenueImpacting' ) ;
-        $decommissioned = Tools::param( 'decommissioned' ) ;
-        $alertCritSecs = Tools::param( 'alertCritSecs' ) ;
-        $alertWarnSecs = Tools::param( 'alertWarnSecs' ) ;
-        $alertInfoSecs = Tools::param( 'alertInfoSecs' ) ;
-        $alertLowSecs = Tools::param( 'alertLowSecs' ) ;
-        $dbType = Tools::param( 'dbType' ) ;
-        $environmentId = Tools::param( 'environmentId' ) ;
+        // Per-field length caps - tighter than 8KB default
+        $action           = Tools::param( 'action',           '', 0,   32 ) ;
+        $hostId           = Tools::param( 'hostId',           '', 0,   16 ) ;
+        $hostName         = Tools::param( 'hostName',         '', 0,  255 ) ;
+        $portNumber       = Tools::param( 'portNumber',       '', 0,    5 ) ;
+        $description      = Tools::param( 'description',      '', 0, 4096 ) ;
+        $shouldMonitor    = Tools::param( 'shouldMonitor',    '', 0,    1 ) ;
+        $shouldBackup     = Tools::param( 'shouldBackup',     '', 0,    1 ) ;
+        $shouldSchemaspy  = Tools::param( 'shouldSchemaspy',  '', 0,    1 ) ;
+        $revenueImpacting = Tools::param( 'revenueImpacting', '', 0,    1 ) ;
+        $decommissioned   = Tools::param( 'decommissioned',   '', 0,    1 ) ;
+        $alertCritSecs    = Tools::param( 'alertCritSecs',    '', 0,   16 ) ;
+        $alertWarnSecs    = Tools::param( 'alertWarnSecs',    '', 0,   16 ) ;
+        $alertInfoSecs    = Tools::param( 'alertInfoSecs',    '', 0,   16 ) ;
+        $alertLowSecs     = Tools::param( 'alertLowSecs',     '', 0,   16 ) ;
+        $dbType           = Tools::param( 'dbType',           '', 0,   32 ) ;
+        $environmentId    = Tools::param( 'environmentId',    '', 0,   16 ) ;
         if ( $environmentId === '' || $environmentId === null ) { $environmentId = null ; }
 
         if (  ( ( 'Update' === $action ) || ( 'Delete' === $action ) )
@@ -620,12 +624,12 @@ HTML;
         break ;
     case 'Groups':
         $body = $links = $errors = '' ;
-        $action = Tools::param( 'action' ) ;
-        $groupId = Tools::param( 'groupId' ) ;
-        $groupTag = Tools::param( 'groupTag' ) ;
-        $shortDesc = Tools::param( 'shortDescription' ) ;
-        $fullDesc = Tools::param( 'fullDescription' ) ;
-        $groupSelection = Tools::params( 'groupSelect' ) ;
+        $action         = Tools::param(  'action',           '', 0,   32 ) ;
+        $groupId        = Tools::param(  'groupId',          '', 0,   16 ) ;
+        $groupTag       = Tools::param(  'groupTag',         '', 0,   64 ) ;
+        $shortDesc      = Tools::param(  'shortDescription', '', 0,  255 ) ;
+        $fullDesc       = Tools::param(  'fullDescription',  '', 0, 4096 ) ;
+        $groupSelection = Tools::params( 'groupSelect',      [], 0,   16 ) ;
 
         if (  ( ( 'Update' === $action ) || ( 'Delete' === $action ) )
             && ! Tools::isNumeric( $groupId )
@@ -861,22 +865,22 @@ HTML;
         $dbh->set_charset('utf8');
 
         $body = $links = $errors = '' ;
-        $action = Tools::param( 'action' ) ;
-        $windowId = Tools::param( 'windowId' ) ;
-        $windowType = Tools::param( 'windowType' ) ;
-        $scheduleType = Tools::param( 'scheduleType' ) ;
-        $targetType = Tools::param( 'targetType' ) ;  // 'host' or 'group'
-        $targetId = Tools::param( 'targetId' ) ;
-        $daysOfWeek = Tools::params( 'daysOfWeek' ) ;  // array
-        $dayOfMonth = Tools::param( 'dayOfMonth' ) ;
-        $monthOfYear = Tools::param( 'monthOfYear' ) ;
-        $periodDays = Tools::param( 'periodDays' ) ;
-        $periodStartDate = Tools::param( 'periodStartDate' ) ;
-        $startTime = Tools::param( 'startTime' ) ;
-        $endTime = Tools::param( 'endTime' ) ;
-        $timezone = Tools::param( 'timezone' ) ;
-        $silenceUntil = Tools::param( 'silenceUntil' ) ;
-        $description = Tools::param( 'description' ) ;
+        $action          = Tools::param(  'action',          '', 0,   32 ) ;
+        $windowId        = Tools::param(  'windowId',        '', 0,   16 ) ;
+        $windowType      = Tools::param(  'windowType',      '', 0,   32 ) ;
+        $scheduleType    = Tools::param(  'scheduleType',    '', 0,   32 ) ;
+        $targetType      = Tools::param(  'targetType',      '', 0,   16 ) ;  // 'host' or 'group'
+        $targetId        = Tools::param(  'targetId',        '', 0,   16 ) ;
+        $daysOfWeek      = Tools::params( 'daysOfWeek',      [], 0,    8 ) ;  // array of day names
+        $dayOfMonth      = Tools::param(  'dayOfMonth',      '', 0,    4 ) ;
+        $monthOfYear     = Tools::param(  'monthOfYear',     '', 0,    4 ) ;
+        $periodDays      = Tools::param(  'periodDays',      '', 0,    8 ) ;
+        $periodStartDate = Tools::param(  'periodStartDate', '', 0,   32 ) ;
+        $startTime       = Tools::param(  'startTime',       '', 0,   16 ) ;
+        $endTime         = Tools::param(  'endTime',         '', 0,   16 ) ;
+        $timezone        = Tools::param(  'timezone',        '', 0,   64 ) ;
+        $silenceUntil    = Tools::param(  'silenceUntil',    '', 0,   32 ) ;
+        $description     = Tools::param(  'description',     '', 0, 4096 ) ;
 
         // Validation
         if ( ( ( 'Update' === $action ) || ( 'Delete' === $action ) )
