@@ -40,10 +40,6 @@ namespace com\kbcmdba\aql ;
 //          regression, required param validation, buildConfigValueArray,
 //          environment_types parsing, sort_order all-or-nothing rule, integer
 //          field casting. Remaining 38% is mostly trivial getters.
-// @todo 05-30 upgradeConfig.php tests
-//          - Test v1→v2 conversion with various input configs
-//          - Test idempotence (already v2 = no-op)
-//          - Test edge cases (empty values, special chars in passwords, missing optional params)
 // @todo 05-40 Tools.php / utility.php unit tests
 //          - Test friendlyTime(), param(), query normalization
 //          - These are pure functions — easiest to test
@@ -248,6 +244,23 @@ namespace com\kbcmdba\aql ;
 //          - Show badges in the group selection dropdown
 //          - Distinguish manual groups from auto-populated visually (icon? italics?)
 //          - Quick filter: "show only revenue impacting" as one click
+// @todo 28 Input size limits / DOS protection (parent - see subtasks)
+//          Prevent attackers from using AQL parameters to waste CPU/memory
+//          or generate oversized SQL that could DOS the monitored databases.
+// @todo 28-10 Per-parameter size caps in Tools::param() / Tools::post()
+//          - Add optional max-length parameter (e.g., Tools::param('host', null, 1, 255))
+//          - Reject inputs that exceed the cap (return null + log)
+//          - Sensible defaults: hostnames 255, descriptions 1024, reasons 4096
+// @todo 28-20 Reject oversized request bodies/URIs at PHP level
+//          - Already handled by web server (nginx large_client_header_buffers,
+//            Apache LimitRequestLine = 8190 default)
+//          - But add a defense-in-depth check in Tools::param() for any single
+//            input > 8K - return error and log
+// @todo 28-30 Audit existing pages for unbounded user input
+//          - kill reason in AJAXKillProc.php (currently TEXT in DB)
+//          - silence reason in AJAXsilenceHost.php
+//          - description in manageData.php host form (already maxlength=65535 - too big?)
+//          - Any other free-form fields
 // @todo 30 MS-SQL Server support (Large effort: 9-13 weeks full, 4-5 weeks MVP)
 //          - Implement sqlsrv connection in DBConnection.php
 //          - Rewrite AJAXgetaql.php queries using sys.dm_exec_* DMVs
