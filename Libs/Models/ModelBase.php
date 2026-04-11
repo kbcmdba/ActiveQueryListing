@@ -59,7 +59,10 @@ abstract class ModelBase
      */
     public function validateId($id)
     {
-        return (1 === preg_match('/^[1-9]([0-9]*)$/', $id)) ;
+        if (null === $id) {
+            return false ;
+        }
+        return (1 === preg_match('/^[1-9]([0-9]*)$/', (string) $id)) ;
     }
 
     /**
@@ -69,7 +72,10 @@ abstract class ModelBase
      */
     public function validateDate($date)
     {
-        return (1 === preg_match('/^20[123][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[01])$/', $date)) ;
+        if (null === $date) {
+            return false ;
+        }
+        return (1 === preg_match('/^20[123][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[01])$/', (string) $date)) ;
     }
 
     /**
@@ -79,8 +85,11 @@ abstract class ModelBase
      */
     public function validateTimestamp($timestamp)
     {
+        if (null === $timestamp) {
+            return false ;
+        }
         $tstamp_regex = '/^20[123][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[01]) ([0-5][0-9][:]){2}[0-5][0-9]$/';
-        return (1 === preg_match($tstamp_regex, $timestamp));
+        return (1 === preg_match($tstamp_regex, (string) $timestamp));
     }
     /**#@-*/
 
