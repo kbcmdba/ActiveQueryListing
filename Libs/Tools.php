@@ -549,9 +549,11 @@ class Tools
         echo '<pre>';
         print_r( $data );
         echo '</pre>';
+        // @codeCoverageIgnoreStart
         if ($die) {
             exit();
         }
+        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -562,9 +564,11 @@ class Tools
      */
     public static function vd( $data, $die = false) {
         var_dump( $data );
+        // @codeCoverageIgnoreStart
         if ($die) {
             exit();
         }
+        // @codeCoverageIgnoreEnd
     }
 
 }

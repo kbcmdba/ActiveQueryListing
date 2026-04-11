@@ -62,7 +62,7 @@ namespace com\kbcmdba\aql ;
 //            - Libs/Models/HostGroupModel.php
 //            - Libs/Models/HostModel.php
 //            - Libs/Models/ModelBase.php
-//            - Libs/Tools.php       — 99% lines, only exit() branches left
+//            - Libs/Tools.php       — 100% lines, 100% methods
 //            - Libs/Exceptions/ConfigurationException.php  (no statements)
 //            - Libs/Exceptions/ControllerException.php     (no statements)
 //            - Libs/Exceptions/DaoException.php            (no statements)

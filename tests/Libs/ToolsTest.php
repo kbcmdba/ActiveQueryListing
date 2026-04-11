@@ -812,8 +812,8 @@ class ToolsTest extends TestCase
     }
 
     // NOTE: Tools::pr() and Tools::vd() each have a `if ($die) exit();`
-    // branch that cannot be tested in-process - calling exit() would
-    // terminate the test runner. These two lines will always show as
-    // uncovered. Leaving them this way is the right call - refactoring to
-    // inject the exit function would add complexity for no real benefit.
+    // branch wrapped in @codeCoverageIgnore markers. exit() is a language
+    // construct (not a function) that cannot be safely called in-process,
+    // and adding a closure-injection seam for one line of unreachable
+    // language construct adds complexity for no real benefit.
 }
