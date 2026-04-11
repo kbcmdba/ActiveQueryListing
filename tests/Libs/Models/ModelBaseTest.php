@@ -133,6 +133,13 @@ class ModelBaseTest extends TestCase
         $this->assertFalse( $m->validateDate( '2024-1-1' ) ) ;    // missing zero pad
     }
 
+    public function testValidateDateRejectsNull() : void
+    {
+        $m = new TestableModel() ;
+        // Null guard - protects against PHP 8.x preg_match(null) deprecation
+        $this->assertFalse( $m->validateDate( null ) ) ;
+    }
+
     // ========================================================================
     // validateTimestamp() — date + time
     // ========================================================================
@@ -167,6 +174,13 @@ class ModelBaseTest extends TestCase
         $m = new TestableModel() ;
         $this->assertFalse( $m->validateTimestamp( '2024-01-15T12:30:45' ) ) ;  // ISO 8601 with T
         $this->assertFalse( $m->validateTimestamp( 'garbage' ) ) ;
+    }
+
+    public function testValidateTimestampRejectsNull() : void
+    {
+        $m = new TestableModel() ;
+        // Null guard - protects against PHP 8.x preg_match(null) deprecation
+        $this->assertFalse( $m->validateTimestamp( null ) ) ;
     }
 
     // ========================================================================
