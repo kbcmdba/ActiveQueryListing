@@ -701,4 +701,119 @@ class ToolsTest extends TestCase
         $this->assertStringNotContainsString('rush', $result) ;
         $this->assertStringContainsString('INSERT INTO orders', $result) ;
     }
+
+    // ========================================================================
+    // Coverage gap closers — the last few branches not yet exercised
+    // ========================================================================
+
+    public function testCheckLengthPassesNonScalarNonArrayThrough() : void
+    {
+        // checkLength's final branch: input is neither scalar nor array
+        // (objects, resources). Returns the value unchanged.
+        // We exercise this via $_REQUEST containing an object - unusual but
+        // possible if a caller poked it directly.
+        $_REQUEST['weird'] = new \stdClass() ;
+        $result = Tools::param('weird', 'fallback') ;
+        // Object passes through checkLength unchanged, but param() then
+        // returns it directly (or trims it if string). For objects, it
+        // skips the trim branch since !is_string(). It just returns the value.
+        $this->assertInstanceOf(\stdClass::class, $result) ;
+    }
+
+    public function testPostKeyMissingDebugMode() : void
+    {
+        // post() debug=1 branch when key isn't set in $_REQUEST either
+        $this->assertSame('default_val', Tools::post('totally_missing', 'default_val', 1)) ;
+    }
+
+    public function testPIISafeBackslashAtStartOfString() : void
+    {
+        // sanitizeStringLiteral: the !$inRun branch in the backslash-escape
+        // path - backslash is the first thing inside the quote
+        $result = Tools::makeQuotedStringPIISafe("SELECT * FROM t WHERE name = '\\nfoo'") ;
+        $this->assertStringNotContainsString('foo', $result) ;
+        $this->assertStringContainsString("'S'", $result) ;
+    }
+
+    public function testPIISafeDoubledQuoteAtStartOfString() : void
+    {
+        // sanitizeStringLiteral: the !$inRun branch in the doubled-quote path -
+        // doubled quote is the first thing inside the literal
+        $result = Tools::makeQuotedStringPIISafe("SELECT * FROM t WHERE name = ''''") ;
+        // 4 single quotes = '' (doubled escape) inside '...' literal = string
+        // containing one literal apostrophe
+        $this->assertStringContainsString("'S'", $result) ;
+    }
+
+    public function testPIISafeBackslashAtVeryEndOfString() : void
+    {
+        // utf8CharLength: the $i >= strlen branch - backslash is the very
+        // last char before EOF (no closing quote, no char to escape)
+        $result = Tools::makeQuotedStringPIISafe("SELECT 'foo\\") ;
+        // No crash; output is a string
+        $this->assertIsString($result) ;
+    }
+
+    public function testPIISafeBackslashEscapingTwoByteUtf8() : void
+    {
+        // utf8CharLength returns 2 for 0xC0-0xDF lead byte
+        $result = Tools::makeQuotedStringPIISafe("SELECT 'a\\é b'") ;
+        $this->assertStringNotContainsString('foo', $result) ;
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8')) ;
+    }
+
+    public function testPIISafeBackslashEscapingThreeByteUtf8() : void
+    {
+        // utf8CharLength returns 3 for 0xE0-0xEF lead byte (CJK)
+        $result = Tools::makeQuotedStringPIISafe("SELECT 'a\\中 b'") ;
+        $this->assertStringContainsString("'S'", $result) ;
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8')) ;
+    }
+
+    public function testPIISafeBackslashEscapingFourByteUtf8() : void
+    {
+        // utf8CharLength returns 4 for 0xF0+ lead byte (emoji, supplementary plane)
+        $result = Tools::makeQuotedStringPIISafe("SELECT 'a\\🎉 b'") ;
+        $this->assertStringContainsString("'S'", $result) ;
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8')) ;
+    }
+
+    public function testPIISafeStrayContinuationByte() : void
+    {
+        // utf8CharLength: the 0x80-0xBF "stray continuation byte" branch
+        // Construct a string with a backslash followed by an isolated
+        // continuation byte (invalid UTF-8 but should not crash)
+        $strayByte = chr(0x80) ; // continuation byte alone
+        $result = Tools::makeQuotedStringPIISafe("SELECT 'a\\" . $strayByte . "b'") ;
+        $this->assertIsString($result) ;
+    }
+
+    public function testUtf8CharLengthPastEnd() : void
+    {
+        // utf8CharLength: the $i >= strlen branch (return 0)
+        // Only reachable via direct call - the public callers always check
+        // bounds first. Test via reflection to lock in the contract.
+        $ref = new \ReflectionMethod(Tools::class, 'utf8CharLength') ;
+        $ref->setAccessible(true) ;
+        $this->assertSame(0, $ref->invoke(null, 'abc', 3)) ; // index == length
+        $this->assertSame(0, $ref->invoke(null, 'abc', 99)) ; // index past length
+    }
+
+    public function testUtf8CharLengthAllBranches() : void
+    {
+        // Lock in the byte-length contract for every UTF-8 sequence type.
+        $ref = new \ReflectionMethod(Tools::class, 'utf8CharLength') ;
+        $ref->setAccessible(true) ;
+        $this->assertSame(1, $ref->invoke(null, 'A', 0), 'ASCII = 1 byte') ;
+        $this->assertSame(2, $ref->invoke(null, 'é', 0), '2-byte UTF-8') ;
+        $this->assertSame(3, $ref->invoke(null, '中', 0), '3-byte UTF-8') ;
+        $this->assertSame(4, $ref->invoke(null, '🎉', 0), '4-byte UTF-8') ;
+        $this->assertSame(1, $ref->invoke(null, chr(0x80), 0), 'stray continuation byte = 1') ;
+    }
+
+    // NOTE: Tools::pr() and Tools::vd() each have a `if ($die) exit();`
+    // branch that cannot be tested in-process - calling exit() would
+    // terminate the test runner. These two lines will always show as
+    // uncovered. Leaving them this way is the right call - refactoring to
+    // inject the exit function would add complexity for no real benefit.
 }
