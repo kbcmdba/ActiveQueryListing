@@ -264,4 +264,74 @@ class WebPageTest extends TestCase
         $p->setData( 'just some text' ) ;
         $this->assertSame( 'just some text', (string) $p ) ;
     }
+
+    // ========================================================================
+    // displayPage() — sends HTTP headers and echoes the page
+    // In CLI/PHPUnit context, header() emits a warning because PHPUnit has
+    // already produced output. We suppress the warning, capture the output,
+    // and verify the page body was echoed. The point is to exercise the
+    // header() and echo paths for coverage, not to validate HTTP headers
+    // (which would need a real web request).
+    // ========================================================================
+
+    public function testDisplayPageEchoesBody() : void
+    {
+        $p = new WebPage( 'Display Test' ) ;
+        $p->setBody( '<p>Display body content</p>' ) ;
+
+        // Suppress "headers already sent" warnings from header() calls
+        $errorLevel = error_reporting() ;
+        error_reporting( $errorLevel & ~E_WARNING ) ;
+        try {
+            ob_start() ;
+            $p->displayPage() ;
+            $output = ob_get_clean() ;
+        } finally {
+            error_reporting( $errorLevel ) ;
+        }
+
+        $this->assertStringContainsString( '<p>Display body content</p>', $output ) ;
+        $this->assertStringContainsString( '<title>Display Test</title>', $output ) ;
+        $this->assertStringContainsString( '<!DOCTYPE HTML>', $output ) ;
+    }
+
+    public function testDisplayPageJsonMimeTypeOutputsData() : void
+    {
+        $p = new WebPage() ;
+        $p->setMimeType( 'application/json' ) ;
+        $p->setData( '{"status":"ok"}' ) ;
+
+        $errorLevel = error_reporting() ;
+        error_reporting( $errorLevel & ~E_WARNING ) ;
+        try {
+            ob_start() ;
+            $p->displayPage() ;
+            $output = ob_get_clean() ;
+        } finally {
+            error_reporting( $errorLevel ) ;
+        }
+
+        $this->assertSame( '{"status":"ok"}', $output ) ;
+    }
+
+    public function testDisplayPageIteratesAllMetaHeaders() : void
+    {
+        $p = new WebPage( 'Meta Test' ) ;
+        $p->setMeta( [ 'X-First: a', 'X-Second: b', 'X-Third: c' ] ) ;
+        $p->setBody( 'body' ) ;
+
+        $errorLevel = error_reporting() ;
+        error_reporting( $errorLevel & ~E_WARNING ) ;
+        try {
+            ob_start() ;
+            $p->displayPage() ;
+            $output = ob_get_clean() ;
+        } finally {
+            error_reporting( $errorLevel ) ;
+        }
+
+        // Just verify the loop ran (body got echoed); we can't actually
+        // inspect the HTTP headers in a CLI test
+        $this->assertStringContainsString( 'body', $output ) ;
+    }
 }

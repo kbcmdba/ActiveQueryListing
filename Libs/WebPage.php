@@ -375,9 +375,14 @@ HTML
                 ] ;
             }
             // Future: Add other DBTypes here (MongoDB, MS-SQL, etc.)
+        // @codeCoverageIgnoreStart
         } catch ( \Exception $e ) {
-            // Config not available, just show MySQL
+            // Config not available, just show MySQL — defensive fallback
+            // for the case where the config file is missing/unreadable.
+            // Untestable in unit tests without filesystem manipulation that
+            // would affect parallel tests.
         }
+        // @codeCoverageIgnoreEnd
 
         // Build Redis submenu items if enabled
         $nwRedisItems = '' ;

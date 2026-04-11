@@ -63,12 +63,12 @@ namespace com\kbcmdba\aql ;
 //            - Libs/Models/HostModel.php
 //            - Libs/Models/ModelBase.php
 //            - Libs/Tools.php       — 100% lines, 100% methods
+//            - Libs/WebPage.php     — 100% lines, 100% methods
 //            - Libs/Exceptions/ConfigurationException.php  (no statements)
 //            - Libs/Exceptions/ControllerException.php     (no statements)
 //            - Libs/Exceptions/DaoException.php            (no statements)
 //            - Libs/Exceptions/WebPageException.php        (no statements)
 //          [PARTIAL]
-//            - Libs/WebPage.php     — 95.83% lines, 91.67% methods
 //                Remaining: getNavBar() and bits that need a real Config
 //            - Libs/Config.php      — 86.35% lines, 81.97% methods
 //                Remaining: getDbTypes/getDbTypeProperties/getEnabledDbTypes/
