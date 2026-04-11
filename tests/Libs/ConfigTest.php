@@ -353,4 +353,155 @@ class ConfigTest extends TestCase
         $cfg = $this->buildFromV2() ;
         $this->assertArrayNotHasKey( 'totallyMadeUpKey', $cfg ) ;
     }
+
+    // ========================================================================
+    // environment_types parsing — through parseConfigXml (parser code path)
+    // ========================================================================
+
+    /**
+     * Build a v2 config with custom environment_types XML (raw, so we can
+     * test edge cases like missing default, mixed sort_order, etc.).
+     */
+    private function v2ConfigWithEnvs( string $envXml ) : string
+    {
+        return "<?xml version=\"1.0\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"localhost\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"u\" password=\"p\" />\n"
+             . "    <user type=\"monitor\" name=\"m\" password=\"mp\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" />\n"
+             . "    $envXml\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+    }
+
+    public function testEnvironmentTypesPreservesDocumentOrder() : void
+    {
+        $cfg = Config::parseConfigXml( $this->v2ConfigWithEnvs(
+            "<environment_types>\n"
+            . "        <environment_type name=\"sandbox\" />\n"
+            . "        <environment_type name=\"dev\" />\n"
+            . "        <environment_type name=\"qa\" />\n"
+            . "        <environment_type name=\"staging\" />\n"
+            . "        <environment_type name=\"prod\" default=\"true\" />\n"
+            . "    </environment_types>"
+        ) ) ;
+        $this->assertSame( 'sandbox,dev,qa,staging,prod', $cfg['environments'] ) ;
+        $this->assertSame( 'prod', $cfg['defaultEnvironment'] ) ;
+    }
+
+    public function testEnvironmentTypesDefaultMarkerWorksOnAnyPosition() : void
+    {
+        // default="true" on the first element (not the typical case)
+        $cfg = Config::parseConfigXml( $this->v2ConfigWithEnvs(
+            "<environment_types>\n"
+            . "        <environment_type name=\"prod\" default=\"true\" />\n"
+            . "        <environment_type name=\"dev\" />\n"
+            . "    </environment_types>"
+        ) ) ;
+        $this->assertSame( 'prod', $cfg['defaultEnvironment'] ) ;
+    }
+
+    public function testEnvironmentTypesWithoutDefault() : void
+    {
+        // No default attribute on any environment_type
+        $cfg = Config::parseConfigXml( $this->v2ConfigWithEnvs(
+            "<environment_types>\n"
+            . "        <environment_type name=\"dev\" />\n"
+            . "        <environment_type name=\"prod\" />\n"
+            . "    </environment_types>"
+        ) ) ;
+        $this->assertSame( 'dev,prod', $cfg['environments'] ) ;
+        // No default was set, so the key may not exist or may be empty
+        $this->assertEmpty( $cfg['defaultEnvironment'] ?? '' ) ;
+    }
+
+    public function testEnvironmentTypesAllOrNothingSortOrderEnforced() : void
+    {
+        // Mixing explicit and implicit sort_order should error out
+        $this->expectException( \Exception::class ) ;
+        $this->expectExceptionMessageMatches( '/sort_order/' ) ;
+        Config::parseConfigXml( $this->v2ConfigWithEnvs(
+            "<environment_types>\n"
+            . "        <environment_type name=\"dev\" sort_order=\"10\" />\n"
+            . "        <environment_type name=\"qa\" />\n"
+            . "        <environment_type name=\"prod\" sort_order=\"30\" default=\"true\" />\n"
+            . "    </environment_types>"
+        ) ) ;
+    }
+
+    public function testEnvironmentTypesAllExplicitSortOrderAllowed() : void
+    {
+        // All-explicit is fine
+        $cfg = Config::parseConfigXml( $this->v2ConfigWithEnvs(
+            "<environment_types>\n"
+            . "        <environment_type name=\"dev\" sort_order=\"10\" />\n"
+            . "        <environment_type name=\"qa\" sort_order=\"20\" />\n"
+            . "        <environment_type name=\"prod\" sort_order=\"30\" default=\"true\" />\n"
+            . "    </environment_types>"
+        ) ) ;
+        $this->assertSame( 'dev,qa,prod', $cfg['environments'] ) ;
+        $this->assertSame( 'prod', $cfg['defaultEnvironment'] ) ;
+    }
+
+    public function testEnvironmentTypesAllImplicitSortOrderAllowed() : void
+    {
+        // All-implicit is fine (the default case)
+        $cfg = Config::parseConfigXml( $this->v2ConfigWithEnvs(
+            "<environment_types>\n"
+            . "        <environment_type name=\"dev\" />\n"
+            . "        <environment_type name=\"qa\" />\n"
+            . "        <environment_type name=\"prod\" default=\"true\" />\n"
+            . "    </environment_types>"
+        ) ) ;
+        $this->assertSame( 'dev,qa,prod', $cfg['environments'] ) ;
+    }
+
+    // ========================================================================
+    // Integer field casting — minRefresh, defaultRefresh, redisConnectTimeout, redisDatabase
+    // v1 format casts via parseFlatConfig; v2 via parseGroupedConfig.
+    // ========================================================================
+
+    public function testV1IntegerFieldsAreCastToInt() : void
+    {
+        $cfg = Config::parseConfigXml( $this->v1Config( [
+            'minRefresh' => '20',
+            'defaultRefresh' => '90',
+            'redisConnectTimeout' => '5',
+            'redisDatabase' => '3',
+        ] ) ) ;
+        $this->assertSame( 20, $cfg['minRefresh'], 'minRefresh should be int' ) ;
+        $this->assertSame( 90, $cfg['defaultRefresh'], 'defaultRefresh should be int' ) ;
+        $this->assertSame( 5, $cfg['redisConnectTimeout'], 'redisConnectTimeout should be int' ) ;
+        $this->assertSame( 3, $cfg['redisDatabase'], 'redisDatabase should be int' ) ;
+    }
+
+    public function testV2IntegerFieldsAreCastToInt() : void
+    {
+        // v2: minRefresh and defaultRefresh on <monitoring>, redis* on <redis>
+        $xml = "<?xml version=\"1.0\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"localhost\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"u\" password=\"p\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" "
+             . "minRefresh=\"30\" defaultRefresh=\"120\" />\n"
+             . "    <redis connectTimeout=\"7\" database=\"4\" />\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        $cfg = Config::parseConfigXml( $xml ) ;
+        $this->assertSame( 30, $cfg['minRefresh'] ) ;
+        $this->assertSame( 120, $cfg['defaultRefresh'] ) ;
+        $this->assertSame( 7, $cfg['redisConnectTimeout'] ) ;
+        $this->assertSame( 4, $cfg['redisDatabase'] ) ;
+    }
+
+    public function testIntegerFieldDefaultsArePreserved() : void
+    {
+        // No min/defaultRefresh in config — should fall through to defaults (15, 60)
+        $cfg = Config::parseConfigXml( $this->v1Config() ) ;
+        $this->assertSame( 15, $cfg['minRefresh'] ) ;
+        $this->assertSame( 60, $cfg['defaultRefresh'] ) ;
+        $this->assertSame( 2, $cfg['redisConnectTimeout'] ) ;
+        $this->assertSame( 0, $cfg['redisDatabase'] ) ;
+    }
 }
