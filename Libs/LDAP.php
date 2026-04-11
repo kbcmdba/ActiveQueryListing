@@ -89,6 +89,16 @@ class LDAP
         $adUser = $oConfig->getLDAPUserDomain() . '\\' . $user ;
         $debug( "Connecting to: $adServer" ) ;
         $debug( "Binding as: $adUser" ) ;
+        // CRITICAL: TLS cert verification options must be set as GLOBAL options
+        // (with null handle) BEFORE ldap_connect() so they apply to the new
+        // connection. Setting them after on the connection handle is too late
+        // for ldap_start_tls() and ldaps:// to honor them.
+        if ( ! $oConfig->getLDAPVerifyCert() ) {
+            ldap_set_option( null, LDAP_OPT_X_TLS_REQUIRE_CERT, LDAP_OPT_X_TLS_NEVER ) ;
+            ldap_set_option( null, LDAP_OPT_X_TLS_CACERTDIR, '' ) ;
+            ldap_set_option( null, LDAP_OPT_X_TLS_CACERTFILE, '' ) ;
+            $debug( "SSL certificate verification disabled (global)" ) ;
+        }
         $ldap = ldap_connect( $adServer ) ;
         if ( false === $ldap ) {
             $debug( "ldap_connect() failed" ) ;
@@ -99,10 +109,6 @@ class LDAP
         ldap_set_option( $ldap, LDAP_OPT_PROTOCOL_VERSION, 3 ) ;
         ldap_set_option( $ldap, LDAP_OPT_REFERRALS, 0 ) ;
         ldap_set_option( $ldap, LDAP_OPT_NETWORK_TIMEOUT, 10 ) ;
-        if ( ! $oConfig->getLDAPVerifyCert() ) {
-            ldap_set_option( null, LDAP_OPT_X_TLS_REQUIRE_CERT, LDAP_OPT_X_TLS_NEVER ) ;
-            $debug( "SSL certificate verification disabled" ) ;
-        }
         // StartTLS: upgrade plain ldap:// to encrypted on port 389.
         // Required for Samba AD and other servers that reject plaintext bind.
         if ( $oConfig->getLDAPStartTls() ) {
