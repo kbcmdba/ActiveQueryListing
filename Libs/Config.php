@@ -551,6 +551,48 @@ class Config
     }
 
     /**
+     * Parse a config XML string and return the flat-key value array.
+     * Used by both the constructor (for the real config file) and unit tests
+     * (which pass synthetic XML strings).
+     *
+     * @param string $xmlString Raw XML config content
+     * @return array Flat key=>value array of parsed config values
+     * @throws \Exception When XML is invalid or required params are missing
+     */
+    public static function parseConfigXml( string $xmlString ) : array
+    {
+        $xml = @simplexml_load_string( $xmlString ) ;
+        if ( false === $xml ) {
+            throw new \Exception( "Invalid XML in config string" ) ;
+        }
+        $errors = "" ;
+        $cfgValues = self::getDefaults() ;
+        $paramList = self::getParamList() ;
+
+        // Use a temporary instance for the parsing methods (which currently
+        // operate as instance methods but don't actually use $this).
+        $instance = ( new \ReflectionClass( self::class ) )->newInstanceWithoutConstructor() ;
+
+        $isGrouped = self::isGroupedFormat( $xml ) ;
+        if ( $isGrouped ) {
+            $instance->parseGroupedConfig( $xml, $cfgValues, $paramList, $errors ) ;
+        } else {
+            $instance->parseFlatConfig( $xml, $cfgValues, $paramList, $errors ) ;
+        }
+        $instance->parseDbTypes( $xml, $cfgValues, $paramList, $errors, $isGrouped ) ;
+
+        foreach ( $paramList as $key => $x ) {
+            if ( ( 1 === $x[ 'isRequired' ] ) && ( 0 === $x[ 'value' ] ) ) {
+                $errors .= "Missing parameter: " . $key . "\n" ;
+            }
+        }
+        if ( $errors !== '' ) {
+            throw new \Exception( "\nConfiguration problem!\n\n" . $errors . "\n" ) ;
+        }
+        return $cfgValues ;
+    }
+
+    /**
      * Class Constructor
      *
      * @param string $dbHost
