@@ -470,6 +470,147 @@ class ConfigTest extends TestCase
     }
 
     // ========================================================================
+    // isGroupedFormat() — covered indirectly elsewhere, but exercise edge cases
+    // ========================================================================
+
+    public function testIsGroupedFormatViaVersionAttribute() : void
+    {
+        // version="2" alone (no grouped elements) should still be detected
+        $xml = simplexml_load_string(
+            "<?xml version=\"1.0\"?>\n<config version=\"2\"></config>\n"
+        ) ;
+        $ref = new \ReflectionMethod( Config::class, 'isGroupedFormat' ) ;
+        $ref->setAccessible( true ) ;
+        $this->assertTrue( $ref->invoke( null, $xml ) ) ;
+    }
+
+    public function testIsGroupedFormatVersion1NoGroupedElements() : void
+    {
+        $xml = simplexml_load_string(
+            "<?xml version=\"1.0\"?>\n<config>"
+            . "<param name=\"x\">y</param>"
+            . "</config>\n"
+        ) ;
+        $ref = new \ReflectionMethod( Config::class, 'isGroupedFormat' ) ;
+        $ref->setAccessible( true ) ;
+        $this->assertFalse( $ref->invoke( null, $xml ) ) ;
+    }
+
+    public function testIsGroupedFormatDetectsConfigdbElement() : void
+    {
+        $xml = simplexml_load_string(
+            "<?xml version=\"1.0\"?>\n<config>"
+            . "<configdb host=\"x\" port=\"1\" name=\"y\" />"
+            . "</config>\n"
+        ) ;
+        $ref = new \ReflectionMethod( Config::class, 'isGroupedFormat' ) ;
+        $ref->setAccessible( true ) ;
+        $this->assertTrue( $ref->invoke( null, $xml ) ) ;
+    }
+
+    public function testIsGroupedFormatDetectsMonitoringElement() : void
+    {
+        $xml = simplexml_load_string(
+            "<?xml version=\"1.0\"?>\n<config><monitoring baseUrl=\"x\" /></config>\n"
+        ) ;
+        $ref = new \ReflectionMethod( Config::class, 'isGroupedFormat' ) ;
+        $ref->setAccessible( true ) ;
+        $this->assertTrue( $ref->invoke( null, $xml ) ) ;
+    }
+
+    public function testIsGroupedFormatDetectsUserElement() : void
+    {
+        $xml = simplexml_load_string(
+            "<?xml version=\"1.0\"?>\n<config>"
+            . "<user type=\"admin\" name=\"x\" password=\"y\" />"
+            . "</config>\n"
+        ) ;
+        $ref = new \ReflectionMethod( Config::class, 'isGroupedFormat' ) ;
+        $ref->setAccessible( true ) ;
+        $this->assertTrue( $ref->invoke( null, $xml ) ) ;
+    }
+
+    // ========================================================================
+    // parseFlatConfig branches
+    // ========================================================================
+
+    public function testFlatConfigRejectsUnknownParameter() : void
+    {
+        $this->expectException( \Exception::class ) ;
+        $this->expectExceptionMessageMatches( '/Unknown parameter/' ) ;
+        $xml = $this->v1Config( [ 'totallyMadeUpKey' => 'oops' ] ) ;
+        Config::parseConfigXml( $xml ) ;
+    }
+
+    public function testFlatConfigDetectsDuplicateParameter() : void
+    {
+        $this->expectException( \Exception::class ) ;
+        $this->expectExceptionMessageMatches( '/Multiply set parameter/' ) ;
+        // Hand-build XML with two dbHost entries
+        $xml = "<?xml version=\"1.0\"?>\n<config>\n"
+             . "    <param name=\"baseUrl\">https://x/y</param>\n"
+             . "    <param name=\"dbHost\">a</param>\n"
+             . "    <param name=\"dbHost\">b</param>\n"
+             . "    <param name=\"dbName\">d</param>\n"
+             . "    <param name=\"dbPort\">3306</param>\n"
+             . "    <param name=\"dbUser\">u</param>\n"
+             . "    <param name=\"dbPass\">p</param>\n"
+             . "    <param name=\"timeZone\">UTC</param>\n"
+             . "    <param name=\"issueTrackerBaseUrl\">https://x/</param>\n"
+             . "    <param name=\"roQueryPart\">@@global.read_only</param>\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        Config::parseConfigXml( $xml ) ;
+    }
+
+    public function testFlatConfigDetectsDuplicateDbtype() : void
+    {
+        $this->expectException( \Exception::class ) ;
+        $this->expectExceptionMessageMatches( '/Multiply defined dbtype/' ) ;
+        $xml = $this->v1Config( [], [
+            [ 'name' => 'redis', 'enabled' => 'true' ],
+            [ 'name' => 'redis', 'enabled' => 'false' ],
+        ] ) ;
+        Config::parseConfigXml( $xml ) ;
+    }
+
+    public function testDbtypeMissingNameAttributeReportsError() : void
+    {
+        $this->expectException( \Exception::class ) ;
+        $this->expectExceptionMessageMatches( '/dbtype element missing name attribute/' ) ;
+        $xml = "<?xml version=\"1.0\"?>\n<config>\n"
+             . "    <param name=\"baseUrl\">https://x/y</param>\n"
+             . "    <param name=\"dbHost\">a</param>\n"
+             . "    <param name=\"dbName\">d</param>\n"
+             . "    <param name=\"dbPort\">3306</param>\n"
+             . "    <param name=\"dbUser\">u</param>\n"
+             . "    <param name=\"dbPass\">p</param>\n"
+             . "    <param name=\"timeZone\">UTC</param>\n"
+             . "    <param name=\"issueTrackerBaseUrl\">https://x/</param>\n"
+             . "    <param name=\"roQueryPart\">@@global.read_only</param>\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "    <dbtype enabled=\"false\" />\n"  // missing name
+             . "</config>\n" ;
+        Config::parseConfigXml( $xml ) ;
+    }
+
+    public function testFlatConfigUnknownUserType() : void
+    {
+        // Note: this is technically a v2-format test since <user> is grouped
+        $this->expectException( \Exception::class ) ;
+        $this->expectExceptionMessageMatches( '/Unknown user type/' ) ;
+        $xml = "<?xml version=\"1.0\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"localhost\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"a\" password=\"p\" />\n"
+             . "    <user type=\"superduper\" name=\"x\" password=\"y\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" />\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        Config::parseConfigXml( $xml ) ;
+    }
+
+    // ========================================================================
     // buildConfigValueArray() — the static helper used by getConfigValue()
     // Tests the same parsing logic but through a different code path.
     // ========================================================================
