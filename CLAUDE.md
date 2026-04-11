@@ -196,6 +196,13 @@ When modifying config parsing, always test all three steps:
   3. Disable on Samba: `ldap server require strong auth = no` in smb.conf (lab only, not production)
 - **AJAXKillProc.php is MySQL-only**: PG handler emits kill buttons but they route to MySQL-specific kill code. Needs dbtype-aware dispatch (see @todo 24).
 
+### Session Timeout (manageData.php)
+- **Three session keys required**: `AuthUser`, `AuthCanAccess`, `AuthLoginTime` — all set on login (LDAP success path AND local auth path)
+- **`dbaSessionTimeout` config value** controls timeout (was previously ONLY used for `dba_auth` maintenance windows; now also gates the main login)
+- **Server-side check**: `doLoginOrDie()` in manageData.php checks `time() - AuthLoginTime > sessionTimeout` and clears the session if expired
+- **Pre-fix session handling**: If `AuthUser` is set but `AuthLoginTime` is missing (legacy session before the timeout fix, or external session manipulation), the session is treated as expired and force-cleaned
+- **Auto-logout JS timer pattern**: PHP calculates `remainingMs = (loginTime + timeout - now) * 1000`, JS `setTimeout()` fires when expired, alerts user, redirects to `?logout=logout`. If `remainingMs <= 0` at page load, redirects immediately. Handles the "user sat on page for hours" case so they don't discover the timeout on next click.
+
 ### Environment System
 - `environment` table with TINYINT UNSIGNED PK, name, sort_order
 - `host.environment_id` nullable FK (ON DELETE SET NULL)

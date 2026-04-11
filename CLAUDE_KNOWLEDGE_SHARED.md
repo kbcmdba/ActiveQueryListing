@@ -184,6 +184,13 @@ When modifying config parsing, always test all three steps:
 - **Samba AD requires strong auth**: Plain `ldap://` bind fails with "Strong(er) authentication required". Need `ldaps://`, StartTLS, or Samba config override.
 - **AJAXKillProc.php is MySQL-only**: PG handler emits kill buttons but they call MySQL kill code. Needs dbtype dispatch (@todo 24).
 
+### Session Timeout (manageData.php)
+- **Three session keys required**: `AuthUser`, `AuthCanAccess`, `AuthLoginTime` — all set on login (LDAP success path AND local auth path)
+- **`dbaSessionTimeout` config** controls timeout for the main login (previously only used for `dba_auth` maintenance windows)
+- **Server-side check**: `doLoginOrDie()` checks `time() - AuthLoginTime > sessionTimeout`, clears expired sessions
+- **Pre-fix sessions** (`AuthUser` set but `AuthLoginTime` missing) are force-cleaned on next request
+- **Auto-logout JS timer**: PHP calculates remaining ms, JS `setTimeout()` alerts and redirects to `?logout=logout` so users on idle pages don't discover the timeout on next click
+
 ### PostgreSQL/pg_connect Patterns
 - `pg_connect()` uses space-delimited connection strings — passwords with spaces must be single-quoted: `password='my pass'`
 - Escape single quotes and backslashes in passwords before embedding in connection string
