@@ -33,18 +33,16 @@ namespace com\kbcmdba\aql ;
 //          The longer we delay, the harder full coverage gets.
 //          Start with isolated, well-defined classes and expand outward.
 //          Bootstrap: DONE. Run `composer test` or `composer test-coverage`.
-// @todo 05-20 Config.php unit tests
-//          DONE: 29 tests, 62% line coverage on Config.php.
-//          Covers parseGroupedConfig, parseFlatConfig, parseDbTypes, credential
-//          resolution, dbtype name normalization, format detection, Redis auth
-//          regression, required param validation, buildConfigValueArray,
-//          environment_types parsing, sort_order all-or-nothing rule, integer
-//          field casting. Remaining 38% is mostly trivial getters.
-// @todo 05-40 Tools.php / utility.php unit tests
-//          DONE for Tools.php: 90% line coverage. Caught a real PHP 8.x
-//          deprecation in friendlyTime() that's now fixed.
-//          TODO: utility.php functions (processHost, etc.) — harder because
-//          they interact with web request context
+//          Currently: 320 tests / 584 assertions / 53.94% project line coverage
+//          Bugs caught and fixed during the initial sweep:
+//            - friendlyTime() PHP 8.x intdiv deprecation
+//            - ModelBase::validateId(null) preg_match deprecation
+//            - HostGroupMapModel::validateForAdd literal-string check broke
+//              host-to-group mapping (silent failure for years)
+//            - HostModel::populateFromForm called non-existent setHostId
+//            - Config::assignProperties missing 5 LDAP ?? defaults
+//            - Tools::makeQuotedStringPIISafe escaped-quote PII leak
+//          (See @todo 05-90 for the per-class coverage matrix.)
 // @todo 05-50 AJAXgetaql.php handler tests (requires mocking DB connections)
 //          - Test JSON output shape for each handler
 //          - Test alert level thresholds
@@ -54,6 +52,42 @@ namespace com\kbcmdba\aql ;
 //          DONE: .githooks/pre-commit runs PHP -l on staged files and full
 //          PHPUnit suite. ADVISORY mode - reports failures loudly but never
 //          blocks the commit (so WIP can always be saved).
+// @todo 05-90 Per-class coverage matrix for Libs/ — drive each to 100%
+//          Updated as classes get to 100%. Goal: every Libs/ class fully
+//          covered. Order is "easy first then hard" — pure functions before
+//          DB-bound code. Mocking strategy still TBD for the DB-bound classes.
+//          [DONE - 100%]
+//            - Libs/ConfigUpgrader.php
+//            - Libs/Models/HostGroupMapModel.php
+//            - Libs/Models/HostGroupModel.php
+//            - Libs/Models/HostModel.php
+//            - Libs/Models/ModelBase.php
+//            - Libs/Exceptions/ConfigurationException.php  (no statements)
+//            - Libs/Exceptions/ControllerException.php     (no statements)
+//            - Libs/Exceptions/DaoException.php            (no statements)
+//            - Libs/Exceptions/WebPageException.php        (no statements)
+//          [PARTIAL]
+//            - Libs/Tools.php       — 93.53% lines, 68.42% methods
+//                Remaining: pr/vd $die=true paths (untestable - exit())
+//            - Libs/WebPage.php     — 95.83% lines, 91.67% methods
+//                Remaining: getNavBar() and bits that need a real Config
+//            - Libs/Config.php      — 86.35% lines, 81.97% methods
+//                Remaining: getDbTypes/getDbTypeProperties/getEnabledDbTypes/
+//                getDbTypesInUse - all need a real mysqli connection
+//            - Libs/MaintenanceWindow.php — 29.91% lines, 38.89% methods
+//                Remaining: 4 public methods that take a mysqli (need mocking
+//                or integration test setup), formatMaintenanceInfo helper
+//          [TODO - 0%]
+//            - Libs/DBConnection.php (231 lines, needs DB mocking)
+//            - Libs/LDAP.php (171 lines, needs LDAP mocking or integration test)
+//            - Libs/Controllers/ControllerBase.php (165 lines, DB-bound)
+//            - Libs/Controllers/HostController.php (442 lines, DB-bound)
+//            - Libs/Controllers/HostGroupController.php (312 lines, DB-bound)
+//            - Libs/Controllers/HostGroupMapController.php (354 lines, DB-bound)
+// @todo 05-95 utility.php tests
+//          Standalone procedural functions in utility.php (processHost, etc.)
+//          interact with web request context. Need separate test fixture
+//          setup. Currently 0% covered.
 //          Install per-clone via scripts/install-hooks.sh.
 //          TODO: Optionally add phpstan/psalm static analysis to the same hook
 // @todo 15 Per-tab vs per-browser silencing behavior (UNDER CONSIDERATION)
