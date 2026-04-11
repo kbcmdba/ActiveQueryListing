@@ -204,17 +204,24 @@ HTML;
         $page->displayPage() ;
         die() ;
     }
-    // Enforce session timeout based on dbaSessionTimeout config
-    if ( isset( $_SESSION[ 'AuthLoginTime' ] ) ) {
-        try {
-            $config = new \com\kbcmdba\aql\Libs\Config() ;
-            $sessionTimeout = $config->getDbaSessionTimeout() ;
-            if ( ( time() - $_SESSION[ 'AuthLoginTime' ] ) > $sessionTimeout ) {
-                unset( $_SESSION[ 'AuthUser' ], $_SESSION[ 'AuthCanAccess' ], $_SESSION[ 'AuthLoginTime' ] ) ;
-                echo "Session expired. Please log in again.<br />\n" ;
+    // Enforce session timeout based on dbaSessionTimeout config.
+    // If AuthUser is set but AuthLoginTime is missing, the session predates
+    // the timeout fix - treat it as expired so it gets cleaned up.
+    if ( isset( $_SESSION[ 'AuthUser' ] ) ) {
+        if ( ! isset( $_SESSION[ 'AuthLoginTime' ] ) ) {
+            unset( $_SESSION[ 'AuthUser' ], $_SESSION[ 'AuthCanAccess' ] ) ;
+            echo "Session has no login timestamp. Please log in again.<br />\n" ;
+        } else {
+            try {
+                $config = new \com\kbcmdba\aql\Libs\Config() ;
+                $sessionTimeout = $config->getDbaSessionTimeout() ;
+                if ( ( time() - $_SESSION[ 'AuthLoginTime' ] ) > $sessionTimeout ) {
+                    unset( $_SESSION[ 'AuthUser' ], $_SESSION[ 'AuthCanAccess' ], $_SESSION[ 'AuthLoginTime' ] ) ;
+                    echo "Session expired. Please log in again.<br />\n" ;
+                }
+            } catch ( \Exception $e ) {
+                // If config can't be loaded, fall through and let auth check handle it
             }
-        } catch ( \Exception $e ) {
-            // If config can't be loaded, fall through and let auth check handle it
         }
     }
     if ( ! isset( $_SESSION[ 'AuthUser' ] ) || ( ! isset( $_SESSION[ 'AuthCanAccess' ] ) ) ) {
