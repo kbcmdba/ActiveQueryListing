@@ -548,12 +548,9 @@ namespace com\kbcmdba\aql ;
 //          - OAuth 2.0 / OpenID Connect
 //          - Integration with Okta, Azure AD, etc.
 //
-// @rfe 801a LDAP StartTLS support
-//          - Add ldap_start_tls() to LDAP.php after ldap_connect() on port 389
-//          - Upgrades plain ldap:// to encrypted without needing ldaps:// (port 636)
-//          - Solves Samba AD "Strong(er) authentication required" without full LDAPS setup
-//          - Config: add startTls attribute to <ldap> element (true/false)
-//          - Falls between ldap:// (insecure) and ldaps:// (requires cert listener)
+// @rfe 801a LDAP StartTLS support - DONE
+//          Implemented: <ldap startTls="true" /> in v2 config now upgrades
+//          ldap:// connections to TLS via ldap_start_tls() before binding.
 //
 // @rfe 802 Audit logging
 //          - Log who killed which query and when
