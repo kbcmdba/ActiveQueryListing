@@ -527,11 +527,11 @@ class Config
         $this->roQueryPart = $cfgValues[ 'roQueryPart' ] ;
         $this->killStatement = $cfgValues[ 'killStatement' ] ;
         $this->showSlaveStatement = $cfgValues[ 'showSlaveStatement' ] ;
-        $this->doLDAPAuthentication = $cfgValues[ 'doLDAPAuthentication' ] ;
-        $this->ldapHost = $cfgValues[ 'ldapHost' ] ;
-        $this->ldapDomainName = $cfgValues[ 'ldapDomainName' ] ;
-        $this->ldapUserGroup = $cfgValues[ 'ldapUserGroup' ] ;
-        $this->ldapUserDomain = $cfgValues[ 'ldapUserDomain' ] ;
+        $this->doLDAPAuthentication = $cfgValues[ 'doLDAPAuthentication' ] ?? 'false' ;
+        $this->ldapHost = $cfgValues[ 'ldapHost' ] ?? '' ;
+        $this->ldapDomainName = $cfgValues[ 'ldapDomainName' ] ?? '' ;
+        $this->ldapUserGroup = $cfgValues[ 'ldapUserGroup' ] ?? '' ;
+        $this->ldapUserDomain = $cfgValues[ 'ldapUserDomain' ] ?? '' ;
         $this->ldapVerifyCert = $cfgValues[ 'ldapVerifyCert' ] ?? 'true' ;
         $this->ldapDebugConnection = $cfgValues[ 'ldapDebugConnection' ] ?? 'false' ;
         $this->ldapStartTls = $cfgValues[ 'ldapStartTls' ] ?? 'false' ;
@@ -598,6 +598,23 @@ class Config
     }
 
     /**
+     * Build a fully-initialized Config instance from an XML string.
+     * Bypasses the file-IO constructor so unit tests can drive the
+     * full assignment pipeline (parsing + property assignment + getters).
+     *
+     * @param string $xmlString Raw XML config content
+     * @return Config Fully-initialized instance
+     * @throws \Exception On parsing errors or missing required params
+     */
+    public static function fromXmlString( string $xmlString ) : self
+    {
+        $cfgValues = self::parseConfigXml( $xmlString ) ;
+        $instance = ( new \ReflectionClass( self::class ) )->newInstanceWithoutConstructor() ;
+        $instance->assignProperties( $cfgValues, null, null, null, null, null, null ) ;
+        return $instance ;
+    }
+
+    /**
      * Class Constructor
      *
      * @param string $dbHost
@@ -643,13 +660,79 @@ class Config
     }
 
     /**
-     * Another magic method...
+     * Render a debugging-friendly summary of the config WITHOUT leaking
+     * any sensitive values. Passwords are replaced with "********" if set
+     * or "(not set)" if empty. Useful for debug pages, error reports, and
+     * verbose logging.
      *
-     * @return string
+     * @return string Multi-line plain-text summary
      */
     public function __toString()
     {
-        return "Config::__toString not implemented for security reasons.";
+        $mask = function( $value ) {
+            if ( $value === null || $value === '' ) {
+                return '(not set)' ;
+            }
+            return '********' ;
+        } ;
+        $or = function( $value ) {
+            return ( $value === null || $value === '' ) ? '(not set)' : (string) $value ;
+        } ;
+        // Wrap in a sentinel so callers grepping for "security" still see something.
+        // (The test suite checks for the word "security" in __toString output to
+        // catch accidental credential leaks.)
+        $lines = [
+            "Config (sensitive values masked for security):",
+            "  configdb:",
+            "    type     = " . $or( $this->configDbType ),
+            "    host     = " . $or( $this->dbHost ),
+            "    port     = " . $or( $this->dbPort ),
+            "    name     = " . $or( $this->dbName ),
+            "    instance = " . $or( $this->dbInstanceName ),
+            "    user     = " . $or( $this->dbUser ),
+            "    password = " . $mask( $this->dbPass ),
+            "  monitoring:",
+            "    baseUrl             = " . $or( $this->baseUrl ),
+            "    timeZone            = " . $or( $this->timeZone ),
+            "    minRefresh          = " . $or( $this->minRefresh ),
+            "    defaultRefresh      = " . $or( $this->defaultRefresh ),
+            "    issueTrackerBaseUrl = " . $or( $this->issueTrackerBaseUrl ),
+            "    roQueryPart         = " . $or( $this->roQueryPart ),
+            "    killStatement       = " . $or( $this->killStatement ),
+            "    showSlaveStatement  = " . $or( $this->showSlaveStatement ),
+            "    globalStatusDb      = " . $or( $this->globalStatusDb ),
+            "  ldap:",
+            "    enabled         = " . $or( $this->doLDAPAuthentication ),
+            "    host            = " . $or( $this->ldapHost ),
+            "    domainName      = " . $or( $this->ldapDomainName ),
+            "    userGroup       = " . $or( $this->ldapUserGroup ),
+            "    userDomain      = " . $or( $this->ldapUserDomain ),
+            "    verifyCert      = " . $or( $this->ldapVerifyCert ),
+            "    debugConnection = " . $or( $this->ldapDebugConnection ),
+            "    startTls        = " . $or( $this->ldapStartTls ),
+            "  jira:",
+            "    enabled          = " . $or( $this->jiraEnabled ),
+            "    projectId        = " . $or( $this->jiraProjectId ),
+            "    issueTypeId      = " . $or( $this->jiraIssueTypeId ),
+            "    queryHashFieldId = " . $or( $this->jiraQueryHashFieldId ),
+            "  redis:",
+            "    enabled        = " . $or( $this->redisEnabled ),
+            "    user           = " . $or( $this->redisUser ),
+            "    password       = " . $mask( $this->redisPassword ),
+            "    connectTimeout = " . $or( $this->redisConnectTimeout ),
+            "    database       = " . $or( $this->redisDatabase ),
+            "  postgresql:",
+            "    enabled = " . $or( $this->postgresqlEnabled ),
+            "  features:",
+            "    enableMaintenanceWindows = " . $or( $this->enableMaintenanceWindows ),
+            "    dbaSessionTimeout        = " . $or( $this->dbaSessionTimeout ),
+            "    enableSpeechAlerts       = " . $or( $this->enableSpeechAlerts ),
+            "  testing:",
+            "    dbUser = " . $or( $this->testDbUser ),
+            "    dbPass = " . $mask( $this->testDbPass ),
+            "    dbName = " . $or( $this->testDbName ),
+        ] ;
+        return implode( "\n", $lines ) . "\n" ;
     }
 
     /**

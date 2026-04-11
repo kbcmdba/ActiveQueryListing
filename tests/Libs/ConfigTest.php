@@ -257,6 +257,219 @@ class ConfigTest extends TestCase
     }
 
     // ========================================================================
+    // fromXmlString() — full-instance factory + getters
+    // Exercises the trivial passthrough getters in one shot.
+    // ========================================================================
+
+    public function testFromXmlStringReturnsConfigInstance() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertInstanceOf( Config::class, $config ) ;
+    }
+
+    public function testFromXmlStringPopulatesDatabaseGetters() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertSame( '127.0.0.1', $config->getDbHost() ) ;
+        $this->assertSame( '3306', $config->getDbPort() ) ;
+        $this->assertSame( 'aql_app', $config->getDbUser() ) ;
+        $this->assertSame( 'admin_secret', $config->getDbPass() ) ;
+        $this->assertSame( 'aql_db', $config->getDbName() ) ;
+    }
+
+    public function testFromXmlStringPopulatesMonitoringGetters() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertSame( 'https://localhost/aql/AJAXgetaql.php', $config->getBaseUrl() ) ;
+        $this->assertSame( 'America/Chicago', $config->getTimeZone() ) ;
+        $this->assertSame( 'https://example.atlassian.net/', $config->getIssueTrackerBaseUrl() ) ;
+        $this->assertSame( '@@global.read_only', $config->getRoQueryPart() ) ;
+    }
+
+    public function testFromXmlStringPopulatesIntegerDefaults() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        // Default values from getDefaults()
+        $this->assertSame( 15, $config->getMinRefresh() ) ;
+        $this->assertSame( 60, $config->getDefaultRefresh() ) ;
+    }
+
+    public function testFromXmlStringPopulatesDsn() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $dsn = $config->getDsn() ;
+        $this->assertStringContainsString( 'mysql:', $dsn ) ;
+        $this->assertStringContainsString( 'host=127.0.0.1', $dsn ) ;
+        $this->assertStringContainsString( '3306', $dsn ) ;
+        $this->assertStringContainsString( 'dbname=aql_db', $dsn ) ;
+    }
+
+    public function testFromXmlStringPopulatesDsnCustomDbType() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertStringStartsWith( 'pgsql:', $config->getDsn( 'pgsql' ) ) ;
+    }
+
+    public function testFromXmlStringDefaultLdapDisabled() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        // No <ldap> element means LDAP is disabled
+        $this->assertFalse( $config->getDoLDAPAuthentication() ) ;
+        $this->assertSame( '', $config->getLDAPHost() ) ;
+        $this->assertSame( '', $config->getLDAPDomainName() ) ;
+        $this->assertSame( '', $config->getLDAPUserGroup() ) ;
+        $this->assertSame( '', $config->getLDAPUserDomain() ) ;
+    }
+
+    public function testFromXmlStringLdapEnabled() : void
+    {
+        $xml = "<?xml version=\"1.0\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"localhost\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"u\" password=\"p\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" />\n"
+             . "    <ldap enabled=\"true\" host=\"ldap://ad1.hole\" "
+             . "domainName=\"DC=hole,DC=ad\" userGroup=\"AQL_Admins\" "
+             . "userDomain=\"HOLE\" verifyCert=\"false\" startTls=\"true\" />\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        $config = Config::fromXmlString( $xml ) ;
+        $this->assertTrue( $config->getDoLDAPAuthentication() ) ;
+        $this->assertSame( 'ldap://ad1.hole', $config->getLDAPHost() ) ;
+        $this->assertSame( 'DC=hole,DC=ad', $config->getLDAPDomainName() ) ;
+        $this->assertSame( 'AQL_Admins', $config->getLDAPUserGroup() ) ;
+        $this->assertSame( 'HOLE', $config->getLDAPUserDomain() ) ;
+        $this->assertFalse( $config->getLDAPVerifyCert() ) ;
+        $this->assertFalse( $config->getLDAPDebugConnection() ) ;
+        $this->assertTrue( $config->getLDAPStartTls() ) ;
+    }
+
+    public function testFromXmlStringDefaultJiraDisabled() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertFalse( $config->getJiraEnabled() ) ;
+        $this->assertSame( '', $config->getJiraProjectId() ) ;
+        $this->assertSame( '', $config->getJiraIssueTypeId() ) ;
+        $this->assertSame( '', $config->getJiraQueryHashFieldId() ) ;
+    }
+
+    public function testFromXmlStringFeatureDefaults() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        // No <features> element - all default to off (except enableSpeechAlerts)
+        $this->assertFalse( $config->getEnableMaintenanceWindows() ) ;
+        $this->assertSame( 86400, $config->getDbaSessionTimeout() ) ;
+        $this->assertTrue( $config->getEnableSpeechAlerts() ) ;
+    }
+
+    public function testFromXmlStringFeaturesExplicit() : void
+    {
+        $xml = "<?xml version=\"1.0\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"localhost\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"u\" password=\"p\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" />\n"
+             . "    <features enableMaintenanceWindows=\"true\" "
+             . "dbaSessionTimeout=\"3600\" enableSpeechAlerts=\"false\" />\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        $config = Config::fromXmlString( $xml ) ;
+        $this->assertTrue( $config->getEnableMaintenanceWindows() ) ;
+        $this->assertSame( 3600, $config->getDbaSessionTimeout() ) ;
+        $this->assertFalse( $config->getEnableSpeechAlerts() ) ;
+    }
+
+    public function testFromXmlStringRedisDisabled() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertFalse( $config->getRedisEnabled() ) ;
+        $this->assertSame( '', $config->getRedisUser() ) ;
+        $this->assertSame( '', $config->getRedisPassword() ) ;
+        $this->assertSame( 2, $config->getRedisConnectTimeout() ) ;
+        $this->assertSame( 0, $config->getRedisDatabase() ) ;
+    }
+
+    public function testFromXmlStringPostgresqlDisabled() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertFalse( $config->getPostgresqlEnabled() ) ;
+    }
+
+    public function testFromXmlStringTestDbDefaultsEmpty() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertSame( '', $config->getTestDbUser() ) ;
+        $this->assertSame( '', $config->getTestDbPass() ) ;
+        $this->assertSame( '', $config->getTestDbName() ) ;
+    }
+
+    public function testFromXmlStringConfigDbType() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertSame( 'mysql', $config->getConfigDbType() ) ;
+    }
+
+    public function testFromXmlStringMonitoringStringFields() : void
+    {
+        // The killStatement, showSlaveStatement, globalStatusDb default values
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertSame( 'kill :pid', $config->getKillStatement() ) ;
+        $this->assertSame( 'show slave status', $config->getShowSlaveStatement() ) ;
+        $this->assertSame( 'performance_schema', $config->getGlobalStatusDb() ) ;
+    }
+
+    public function testToStringDoesNotLeakAdminPassword() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $str = (string) $config ;
+        $this->assertStringNotContainsString( 'admin_secret', $str ) ;
+    }
+
+    public function testToStringDoesNotLeakMonitorPassword() : void
+    {
+        // Monitor user creds aren't exposed via getters but verify defense-in-depth
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $str = (string) $config ;
+        $this->assertStringNotContainsString( 'monitor_secret', $str ) ;
+    }
+
+    public function testToStringMasksPasswordsWithStars() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $str = (string) $config ;
+        // Set passwords show as ********, not the real value
+        $this->assertStringContainsString( 'password = ********', $str ) ;
+    }
+
+    public function testToStringIncludesNonSensitiveValues() : void
+    {
+        // The summary IS supposed to expose non-credential values for debugging
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $str = (string) $config ;
+        $this->assertStringContainsString( '127.0.0.1', $str, 'host should be visible' ) ;
+        $this->assertStringContainsString( '3306', $str, 'port should be visible' ) ;
+        $this->assertStringContainsString( 'aql_app', $str, 'username should be visible' ) ;
+        $this->assertStringContainsString( 'aql_db', $str, 'database name should be visible' ) ;
+        $this->assertStringContainsString( 'America/Chicago', $str, 'timezone should be visible' ) ;
+    }
+
+    public function testToStringMentionsSecurityMasking() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $str = (string) $config ;
+        $this->assertStringContainsString( 'security', $str ) ;
+    }
+
+    public function testToStringShowsNotSetForEmptyOptionalFields() : void
+    {
+        // Default v2 config has no <ldap> element
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $str = (string) $config ;
+        // ldap host should be (not set), not "(not set)" verbatim — at minimum show 'not set'
+        $this->assertStringContainsString( '(not set)', $str ) ;
+    }
+
+    // ========================================================================
     // buildConfigValueArray() — the static helper used by getConfigValue()
     // Tests the same parsing logic but through a different code path.
     // ========================================================================
