@@ -41,8 +41,10 @@ namespace com\kbcmdba\aql ;
 //          environment_types parsing, sort_order all-or-nothing rule, integer
 //          field casting. Remaining 38% is mostly trivial getters.
 // @todo 05-40 Tools.php / utility.php unit tests
-//          - Test friendlyTime(), param(), query normalization
-//          - These are pure functions — easiest to test
+//          DONE for Tools.php: 90% line coverage. Caught a real PHP 8.x
+//          deprecation in friendlyTime() that's now fixed.
+//          TODO: utility.php functions (processHost, etc.) — harder because
+//          they interact with web request context
 // @todo 05-50 AJAXgetaql.php handler tests (requires mocking DB connections)
 //          - Test JSON output shape for each handler
 //          - Test alert level thresholds
