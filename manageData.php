@@ -204,6 +204,19 @@ HTML;
         $page->displayPage() ;
         die() ;
     }
+    // Enforce session timeout based on dbaSessionTimeout config
+    if ( isset( $_SESSION[ 'AuthLoginTime' ] ) ) {
+        try {
+            $config = new \com\kbcmdba\aql\Libs\Config() ;
+            $sessionTimeout = $config->getDbaSessionTimeout() ;
+            if ( ( time() - $_SESSION[ 'AuthLoginTime' ] ) > $sessionTimeout ) {
+                unset( $_SESSION[ 'AuthUser' ], $_SESSION[ 'AuthCanAccess' ], $_SESSION[ 'AuthLoginTime' ] ) ;
+                echo "Session expired. Please log in again.<br />\n" ;
+            }
+        } catch ( \Exception $e ) {
+            // If config can't be loaded, fall through and let auth check handle it
+        }
+    }
     if ( ! isset( $_SESSION[ 'AuthUser' ] ) || ( ! isset( $_SESSION[ 'AuthCanAccess' ] ) ) ) {
         if  ( !Tools::isNullOrEmptyString( Tools::post( 'user', null, 1 ) )
         && !Tools::isNullOrEmptyString( Tools::post( 'password', null, 1 ) )

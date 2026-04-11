@@ -65,6 +65,7 @@ class LDAP
                 if ( $password === $adminPassword ) {
                     $_SESSION[ 'AuthUser' ] = $user ;
                     $_SESSION[ 'AuthCanAccess' ] = 1 ;
+                    $_SESSION[ 'AuthLoginTime' ] = time() ;
                     return true ;
                 }
                 return false ;
@@ -142,6 +143,7 @@ class LDAP
         if ( 1 === $canAccess) {
             $_SESSION[ 'AuthUser' ] = $user ;
             $_SESSION[ 'AuthCanAccess' ] = $canAccess ;
+            $_SESSION[ 'AuthLoginTime' ] = time() ;
             $debug( "SUCCESS - Access granted" ) ;
             return true ;
         }
