@@ -29,6 +29,13 @@ namespace com\kbcmdba\aql\Libs ;
 */
 class Tools
 {
+    /**
+     * Default maximum length for any single input parameter (in bytes).
+     * Inputs exceeding this are rejected (return the default value) and logged.
+     * 8KB matches the typical web server LimitRequestLine / large_client_header_buffers
+     * defaults, providing defense-in-depth for any URL-style input.
+     */
+    const DEFAULT_MAX_INPUT_LENGTH = 8192 ;
 
     /**
      * Class Constructor - never intended to be instantiated.
@@ -41,16 +48,70 @@ class Tools
     }
 
     /**
+     * Validate that an input value is within the maximum length.
+     * Returns the original value if OK, or null if it exceeds the limit
+     * (and logs a warning to the PHP error log).
+     *
+     * @param mixed $value     The input value to check
+     * @param int   $maxLength Maximum allowed byte length
+     * @param string $key      Parameter name (for logging only)
+     * @return mixed|null Returns $value if within limits, null if rejected
+     */
+    private static function checkLength($value, int $maxLength, string $key)
+    {
+        if (is_scalar($value)) {
+            if (strlen((string) $value) > $maxLength) {
+                error_log(sprintf(
+                    "AQL: rejected oversized input parameter '%s' (length=%d, max=%d) from %s",
+                    $key,
+                    strlen((string) $value),
+                    $maxLength,
+                    $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                )) ;
+                return null ;
+            }
+            return $value ;
+        }
+        if (is_array($value)) {
+            // For arrays, check each scalar element. Reject the whole thing
+            // if any element is too long.
+            foreach ($value as $item) {
+                if (is_scalar($item) && strlen((string) $item) > $maxLength) {
+                    error_log(sprintf(
+                        "AQL: rejected oversized array element in parameter '%s' (length=%d, max=%d) from %s",
+                        $key,
+                        strlen((string) $item),
+                        $maxLength,
+                        $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                    )) ;
+                    return null ;
+                }
+            }
+            return $value ;
+        }
+        return $value ;
+    }
+
+    /**
      * Return the value from $_REQUEST[ $key ] if available or the default value.
      * If not specified, the default value is an empty string.
      *
-     * @param String $key
-     * @param String $default
-     * @return String
+     * @param string $key
+     * @param string $default
+     * @param int    $debug
+     * @param int    $maxLength Maximum byte length (default: DEFAULT_MAX_INPUT_LENGTH)
+     * @return string
      */
-    public static function param($key, $default = '', $debug = 0)
+    public static function param($key, $default = '', $debug = 0, $maxLength = self::DEFAULT_MAX_INPUT_LENGTH)
     {
-        return (isset($key) && (isset($_REQUEST[ $key ]))) ? trim($_REQUEST[ $key ]) : $default ;
+        if (! isset($key) || ! isset($_REQUEST[ $key ])) {
+            return $default ;
+        }
+        $value = self::checkLength($_REQUEST[ $key ], $maxLength, $key) ;
+        if ($value === null) {
+            return $default ;
+        }
+        return is_string($value) ? trim($value) : $value ;
     }
 
     /**
@@ -58,28 +119,38 @@ class Tools
      * If not specified, the default value is an empty array.
      *
      * @param string $key
-     * @param array $default
+     * @param array  $default
+     * @param int    $debug
+     * @param int    $maxLength Maximum byte length per element
      * @return mixed
      */
-    public static function params($key, $default = [], $debug = 0)
+    public static function params($key, $default = [], $debug = 0, $maxLength = self::DEFAULT_MAX_INPUT_LENGTH)
     {
-        return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        if (! isset($key) || ! isset($_REQUEST[ $key ])) {
+            return $default ;
+        }
+        $value = self::checkLength($_REQUEST[ $key ], $maxLength, $key) ;
+        return $value === null ? $default : $value ;
     }
 
     /**
      * Return the value from $_GET[ $key ] if available or the default value.
      * If not specified, the default value is an empty string.
      *
-     * @param String $key
-     * @param String $default
-     * @return String
+     * @param string $key
+     * @param string $default
+     * @param int    $debug
+     * @param int    $maxLength Maximum byte length
+     * @return string
      */
-    public static function get($key, $default = '', $debug = 0)
+    public static function get($key, $default = '', $debug = 0, $maxLength = self::DEFAULT_MAX_INPUT_LENGTH)
     {
-        if (1 === $debug ) {
-            return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        $source = (1 === $debug) ? $_REQUEST : $_GET ;
+        if (! isset($key) || ! isset($source[ $key ])) {
+            return $default ;
         }
-        return (isset($key) && (isset($_GET[ $key ]))) ? $_GET[ $key ] : $default ;
+        $value = self::checkLength($source[ $key ], $maxLength, $key) ;
+        return $value === null ? $default : $value ;
     }
 
     /**
@@ -87,31 +158,39 @@ class Tools
      * If not specified, the default value is an empty array.
      *
      * @param string $key
-     * @param array $default
+     * @param array  $default
+     * @param int    $debug
+     * @param int    $maxLength Maximum byte length per element
      * @return mixed
      */
-    public static function gets($key, $default = [], $debug = 0)
+    public static function gets($key, $default = [], $debug = 0, $maxLength = self::DEFAULT_MAX_INPUT_LENGTH)
     {
-        if (1 === $debug ) {
-            return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        $source = (1 === $debug) ? $_REQUEST : $_GET ;
+        if (! isset($key) || ! isset($source[ $key ])) {
+            return $default ;
         }
-        return(isset($key) && isset($_GET[ $key ]) ? $_GET[ $key ] : $default) ;
+        $value = self::checkLength($source[ $key ], $maxLength, $key) ;
+        return $value === null ? $default : $value ;
     }
 
     /**
      * Return the value from $_POST[ $key ] if available or the default value.
      * If not specified, the default value is an empty string.
      *
-     * @param String $key
-     * @param String $default
-     * @return String
+     * @param string $key
+     * @param string $default
+     * @param int    $debug
+     * @param int    $maxLength Maximum byte length
+     * @return string
      */
-    public static function post($key, $default = '', $debug = 0)
+    public static function post($key, $default = '', $debug = 0, $maxLength = self::DEFAULT_MAX_INPUT_LENGTH)
     {
-        if (1 === $debug ) {
-            return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        $source = (1 === $debug) ? $_REQUEST : $_POST ;
+        if (! isset($key) || ! isset($source[ $key ])) {
+            return $default ;
         }
-        return (isset($key) && (isset($_POST[ $key ]))) ? $_POST[ $key ] : $default ;
+        $value = self::checkLength($source[ $key ], $maxLength, $key) ;
+        return $value === null ? $default : $value ;
     }
 
     /**
@@ -119,15 +198,19 @@ class Tools
      * If not specified, the default value is an empty array.
      *
      * @param string $key
-     * @param array $default
+     * @param array  $default
+     * @param int    $debug
+     * @param int    $maxLength Maximum byte length per element
      * @return mixed
      */
-    public static function posts($key, $default = [], $debug = 0)
+    public static function posts($key, $default = [], $debug = 0, $maxLength = self::DEFAULT_MAX_INPUT_LENGTH)
     {
-        if (1 === $debug ) {
-            return(isset($key) && isset($_REQUEST[ $key ]) ? $_REQUEST[ $key ] : $default) ;
+        $source = (1 === $debug) ? $_REQUEST : $_POST ;
+        if (! isset($key) || ! isset($source[ $key ])) {
+            return $default ;
         }
-        return(isset($key) && isset($_POST[ $key ]) ? $_POST[ $key ] : $default) ;
+        $value = self::checkLength($source[ $key ], $maxLength, $key) ;
+        return $value === null ? $default : $value ;
     }
 
     /**
