@@ -51,9 +51,11 @@ namespace com\kbcmdba\aql ;
 //          - Test blocking cache logic
 //          - May need to extract handler logic into testable classes first
 // @todo 05-60 Pre-commit hook integration
-//          - Run PHPUnit on changed files before allowing commit
-//          - Fast feedback loop — fail the commit if tests break
-//          - Consider phpstan/psalm for static analysis alongside tests
+//          DONE: .githooks/pre-commit runs PHP -l on staged files and full
+//          PHPUnit suite. ADVISORY mode - reports failures loudly but never
+//          blocks the commit (so WIP can always be saved).
+//          Install per-clone via scripts/install-hooks.sh.
+//          TODO: Optionally add phpstan/psalm static analysis to the same hook
 // @todo 15 Per-tab vs per-browser silencing behavior (UNDER CONSIDERATION)
 //          - Currently uses localStorage (shared across all tabs)
 //          - Question: Should silencing a host affect all tabs or just current tab?
