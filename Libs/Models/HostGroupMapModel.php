@@ -45,6 +45,18 @@ class HostGroupMapModel extends ModelBase
     }
 
     /**
+     * Validate model for delete — override base class because this model
+     * has a composite key (hostGroupId + hostId), not a single id column.
+     *
+     * @return boolean
+     */
+    public function validateForDelete()
+    {
+        return ( $this->validateId( $this->getHostGroupId() )
+              && $this->validateId( $this->getHostId() ) ) ;
+    }
+
+    /**
      * Validate model for insert
      *
      * @return boolean

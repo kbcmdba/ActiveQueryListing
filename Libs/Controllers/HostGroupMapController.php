@@ -108,12 +108,12 @@ SQL;
             throw new ControllerException('Failed to bind to result: (' . $this->dbh->error . ')') ;
         }
         if ($stmt->fetch()) {
-            $model = new HostGroupModel() ;
+            $model = new HostGroupMapModel() ;
             $model->setHostGroupId($hostGroupId) ;
             $model->setHostId($hostId) ;
             $model->setCreated($created) ;
             $model->setUpdated($updated) ;
-            $model->setLastUpdated($lastUpdated) ;
+            $model->setLastAudited($lastAudited) ;
         } else {
             $model = null ;
         }
