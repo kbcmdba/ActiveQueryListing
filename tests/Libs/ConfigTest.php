@@ -711,6 +711,103 @@ class ConfigTest extends TestCase
         }
     }
 
+    // ========================================================================
+    // getDbInstanceName — one remaining uncovered getter
+    // ========================================================================
+
+    public function testFromXmlStringDbInstanceNameDefaultsEmpty() : void
+    {
+        $config = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertSame( '', $config->getDbInstanceName() ) ;
+    }
+
+    // ========================================================================
+    // getEnvironmentTypes() — reads real aql_config.xml, returns structured data
+    // ========================================================================
+
+    public function testGetEnvironmentTypesReturnsStructuredArray() : void
+    {
+        $config = new Config() ;
+        $envTypes = $config->getEnvironmentTypes() ;
+        // Our live config has environment_types (v2 format)
+        $this->assertIsArray( $envTypes ) ;
+        $this->assertNotEmpty( $envTypes ) ;
+        // Each entry should have name, default, sort_order
+        foreach ( $envTypes as $env ) {
+            $this->assertArrayHasKey( 'name', $env ) ;
+            $this->assertArrayHasKey( 'default', $env ) ;
+            $this->assertArrayHasKey( 'sort_order', $env ) ;
+            $this->assertIsBool( $env['default'] ) ;
+            $this->assertIsInt( $env['sort_order'] ) ;
+        }
+    }
+
+    public function testGetEnvironmentTypesHasExactlyOneDefault() : void
+    {
+        $config = new Config() ;
+        $envTypes = $config->getEnvironmentTypes() ;
+        if ( $envTypes === null ) {
+            $this->markTestSkipped( 'Config is v1 format (no environment_types)' ) ;
+        }
+        $defaults = array_filter( $envTypes, fn( $e ) => $e['default'] === true ) ;
+        $this->assertCount( 1, $defaults, 'Exactly one environment should be marked as default' ) ;
+    }
+
+    public function testGetEnvironmentTypesSortOrderAutoAssigned() : void
+    {
+        $config = new Config() ;
+        $envTypes = $config->getEnvironmentTypes() ;
+        if ( $envTypes === null ) {
+            $this->markTestSkipped( 'Config is v1 format' ) ;
+        }
+        // Document-order sort: 10, 20, 30, ...
+        foreach ( $envTypes as $i => $env ) {
+            $this->assertSame( ( $i + 1 ) * 10, $env['sort_order'],
+                "Environment '{$env['name']}' at position $i should have sort_order " . ( ( $i + 1 ) * 10 ) ) ;
+        }
+    }
+
+    // ========================================================================
+    // parseFlatConfig: dynamic DB type param branch (e.g., <param name="redisEnabled">)
+    // This is the code path for DB type params in v1 format that AREN'T
+    // in the paramList but match the /^[a-z]+(?:Enabled|Username|Password)$/ pattern.
+    // ========================================================================
+
+    public function testV1FlatConfigDynamicDbTypeParam() : void
+    {
+        // cassandraEnabled is not in paramList but matches the dynamic pattern
+        $cfg = Config::parseConfigXml( $this->v1Config( [
+            'cassandraEnabled' => 'true',
+            'cassandraUsername' => 'cass_user',
+            'cassandraPassword' => 'cass_pass',
+        ] ) ) ;
+        $this->assertSame( 'true', $cfg['cassandraEnabled'] ) ;
+        $this->assertSame( 'cass_user', $cfg['cassandraUsername'] ) ;
+        $this->assertSame( 'cass_pass', $cfg['cassandraPassword'] ) ;
+    }
+
+    public function testV1FlatConfigDuplicateDynamicDbTypeParam() : void
+    {
+        // Two <param name="cassandraEnabled"> entries should error
+        $this->expectException( \Exception::class ) ;
+        $this->expectExceptionMessageMatches( '/Multiply set DB type parameter/' ) ;
+        $xml = "<?xml version=\"1.0\"?>\n<config>\n"
+             . "    <param name=\"baseUrl\">https://x/y</param>\n"
+             . "    <param name=\"dbHost\">a</param>\n"
+             . "    <param name=\"dbName\">d</param>\n"
+             . "    <param name=\"dbPort\">3306</param>\n"
+             . "    <param name=\"dbUser\">u</param>\n"
+             . "    <param name=\"dbPass\">p</param>\n"
+             . "    <param name=\"timeZone\">UTC</param>\n"
+             . "    <param name=\"issueTrackerBaseUrl\">https://x/</param>\n"
+             . "    <param name=\"roQueryPart\">@@global.read_only</param>\n"
+             . "    <param name=\"cassandraEnabled\">true</param>\n"
+             . "    <param name=\"cassandraEnabled\">false</param>\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        Config::parseConfigXml( $xml ) ;
+    }
+
     public function testFlatConfigUnknownUserType() : void
     {
         // Note: this is technically a v2-format test since <user> is grouped
