@@ -108,12 +108,12 @@ SELECT host_id
   FROM host
  WHERE host_id = ?
 SQL;
-        $stmt = $this->_dbh->prepare($sql) ;
+        $stmt = $this->dbh->prepare($sql) ;
         if ((! $stmt) || (! $stmt->bind_param('i', $id))) {
-            throw new ControllerException('Failed to prepare SELECT statement. (' . $this->_dbh->error . ')') ;
+            throw new ControllerException('Failed to prepare SELECT statement. (' . $this->dbh->error . ')') ;
         }
         if (! $stmt->execute()) {
-            throw new ControllerException('Failed to execute SELECT statement. (' . $this->_dbh->error . ')') ;
+            throw new ControllerException('Failed to execute SELECT statement. (' . $this->dbh->error . ')') ;
         }
         $id = $hostName = $portNumber = $description = $shouldMonitor = $shouldBackup = null ;
         $revenueImpacting = $decommissioned = $alertCritSecs = $alertWarnSecs = null ;
@@ -135,7 +135,7 @@ SQL;
             $updated,
             $lastAudited
         )) {
-            throw new ControllerException('Failed to bind to result: (' . $this->_dbh->error . ')') ;
+            throw new ControllerException('Failed to bind to result: (' . $this->dbh->error . ')') ;
         }
         if ($stmt->fetch()) {
             $model = new HostModel() ;
@@ -218,15 +218,15 @@ SELECT host_id
  WHERE $whereSQL
 
 SQL;
-        $stmt = $this->_dbh->prepare($sql) ;
+        $stmt = $this->dbh->prepare($sql) ;
         if (! $stmt) {
-            throw new ControllerException('Failed to prepare SELECT statement. (' . $this->_dbh->error . ')') ;
+            throw new ControllerException('Failed to prepare SELECT statement. (' . $this->dbh->error . ')') ;
         }
         if (!empty($bindValues)) {
             $stmt->bind_param($bindTypes, ...$bindValues) ;
         }
         if (! $stmt->execute()) {
-            throw new ControllerException('Failed to execute SELECT statement. (' . $this->_dbh->error . ')') ;
+            throw new ControllerException('Failed to execute SELECT statement. (' . $this->dbh->error . ')') ;
         }
         $id = $hostName = $portNumber = $description = $shouldMonitor = $shouldBackup = null ;
         $revenueImpacting = $decommissioned = $alertCritSecs = $alertWarnSecs = null ;
@@ -248,7 +248,7 @@ SQL;
             $updated,
             $lastAudited
         )) {
-            throw new ControllerException('Failed to bind to result: (' . $this->_dbh->error . ')') ;
+            throw new ControllerException('Failed to bind to result: (' . $this->dbh->error . ')') ;
         }
         $models = [] ;
         while ($stmt->fetch()) {
@@ -299,7 +299,7 @@ INSERT host
      , alert_warn_secs
      , alert_info_secs
      , alert_low_secs
-     , lastAudited
+     , last_audited
      )
 VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
 SQL;
@@ -315,15 +315,15 @@ SQL;
                 $alertInfoSecs    = $model->getAlertInfoSecs() ;
                 $alertLowSecs     = $model->getAlertLowSecs() ;
                 $lastAudited      = $model->getLastAudited() ;
-                $stmt             = $this->_dbh->prepare($query) ;
+                $stmt             = $this->dbh->prepare($query) ;
                 if (! $stmt) {
                     throw new ControllerException('Prepared statement failed for ' . $query) ;
                 }
                 if (! ($stmt->bind_param(
-                    'sisiiiiiiiis',
+                    'ssiiiiiiiiis',
                     $hostName,
-                    $portNumber,
                     $description,
+                    $portNumber,
                     $shouldMonitor,
                     $shouldBackup,
                     $revenueImpacting,
@@ -338,7 +338,7 @@ SQL;
                 }
                 if (! $stmt->execute()) {
                     throw new ControllerException('Failed to execute INSERT statement. ('
-                                                 . $this->_dbh->error .
+                                                 . $this->dbh->error .
                                                  ')') ;
                 }
                 $newId = $stmt->insert_id ;
@@ -379,8 +379,8 @@ UPDATE host
      , alert_warn_secs = ?
      , alert_info_secs = ?
      , alert_low_secs = ?
-     , lastAudited = ?
- WHERE id = ?
+     , last_audited = ?
+ WHERE host_id = ?
 SQL;
                 $id               = $model->getId() ;
                 $hostName         = $model->getHostName() ;
@@ -395,7 +395,7 @@ SQL;
                 $alertInfoSecs    = $model->getAlertInfoSecs() ;
                 $alertLowSecs     = $model->getAlertLowSecs() ;
                 $lastAudited      = $model->getLastAudited() ;
-                $stmt       = $this->_dbh->prepare($query) ;
+                $stmt       = $this->dbh->prepare($query) ;
                 if (! $stmt) {
                     throw new ControllerException('Prepared statement failed for ' . $query) ;
                 }
@@ -418,7 +418,7 @@ SQL;
                     throw new ControllerException('Binding parameters for prepared statement failed.') ;
                 }
                 if (!$stmt->execute()) {
-                    throw new ControllerException('Failed to execute UPDATE statement. (' . $this->_dbh->error . ')') ;
+                    throw new ControllerException('Failed to execute UPDATE statement. (' . $this->dbh->error . ')') ;
                 }
                 /**
                  * @SuppressWarnings checkAliases
@@ -437,6 +437,6 @@ SQL;
 
     public function delete($model)
     {
-        $this->deleteModelById("DELETE FROM host WHERE id = ?", $model) ;
+        $this->deleteModelById("DELETE FROM host WHERE host_id = ?", $model) ;
     }
 }
