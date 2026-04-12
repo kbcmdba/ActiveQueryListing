@@ -85,6 +85,18 @@ namespace com\kbcmdba\aql ;
 //          setup. Currently 0% covered.
 //          Install per-clone via scripts/install-hooks.sh.
 //          TODO: Optionally add phpstan/psalm static analysis to the same hook
+// @todo 06 Code efficiency review (after TDD coverage is solid)
+//          Review the codebase for performance inefficiencies now that
+//          tests are in place to catch regressions. TDD must come first
+//          so that optimization doesn't accidentally break behavior.
+//          Areas to review:
+//          - SQL queries: N+1 patterns, missing indexes, unnecessary joins
+//          - PHP: repeated Config construction, static cache effectiveness
+//          - AJAX: payload size, redundant data in JSON responses
+//          - JS: DOM manipulation, unnecessary re-renders, memory leaks
+//          - Caching: blocking cache TTL, Redis connection reuse
+//          - AJAXgetaql.php: per-host handler execution time (render times
+//            already track this — use the data to find outliers)
 // @todo 15 Per-tab vs per-browser silencing behavior (UNDER CONSIDERATION)
 //          - Currently uses localStorage (shared across all tabs)
 //          - Question: Should silencing a host affect all tabs or just current tab?
