@@ -311,4 +311,149 @@ class MaintenanceWindowTest extends TestCase
         $window = [ 'schedule_type' => 'monthly', 'day_of_month' => 15 ] ;
         $this->assertTrue( $this->callPrivate( 'isScheduleMatchingToday', [ $window, $now ] ) ) ;
     }
+
+    // ========================================================================
+    // formatMaintenanceInfo() — reshapes a DB row into the JSON-ready array
+    // ========================================================================
+
+    public function testFormatMaintenanceInfoBasicHostWindow() : void
+    {
+        $window = [
+            'window_id'   => '7',
+            'window_type' => 'adhoc',
+            'target_type' => 'host',
+            'description' => 'Quick silence for patching',
+            'group_name'  => null,
+            'schedule_type' => null,
+            'start_time'  => null,
+            'end_time'    => null,
+            'silence_until' => '2024-01-15 18:00:00',
+        ] ;
+        $info = $this->callPrivate( 'formatMaintenanceInfo', [ $window ] ) ;
+        $this->assertTrue( $info['active'] ) ;
+        $this->assertSame( 7, $info['windowId'] ) ;
+        $this->assertSame( 'adhoc', $info['windowType'] ) ;
+        $this->assertSame( 'host', $info['targetType'] ) ;
+        $this->assertSame( 'Quick silence for patching', $info['description'] ) ;
+        $this->assertSame( '2024-01-15 18:00:00', $info['expiresAt'] ) ;
+        $this->assertArrayNotHasKey( 'groupName', $info, 'host windows should not have groupName' ) ;
+        $this->assertArrayNotHasKey( 'scheduleType', $info, 'adhoc windows should not have scheduleType' ) ;
+    }
+
+    public function testFormatMaintenanceInfoGroupWindow() : void
+    {
+        $window = [
+            'window_id'   => '12',
+            'window_type' => 'adhoc',
+            'target_type' => 'group',
+            'description' => 'Deploy maintenance',
+            'group_name'  => 'Production MySQL',
+            'schedule_type' => null,
+            'start_time'  => null,
+            'end_time'    => null,
+            'silence_until' => '2024-01-16 06:00:00',
+        ] ;
+        $info = $this->callPrivate( 'formatMaintenanceInfo', [ $window ] ) ;
+        $this->assertSame( 'group', $info['targetType'] ) ;
+        $this->assertSame( 'Production MySQL', $info['groupName'] ) ;
+        $this->assertSame( '2024-01-16 06:00:00', $info['expiresAt'] ) ;
+    }
+
+    public function testFormatMaintenanceInfoScheduledWithTimeWindow() : void
+    {
+        $window = [
+            'window_id'   => '3',
+            'window_type' => 'scheduled',
+            'target_type' => 'host',
+            'description' => 'Weekly backup window',
+            'group_name'  => null,
+            'schedule_type' => 'weekly',
+            'start_time'  => '22:00:00',
+            'end_time'    => '06:00:00',
+            'silence_until' => null,
+        ] ;
+        $info = $this->callPrivate( 'formatMaintenanceInfo', [ $window ] ) ;
+        $this->assertSame( 'scheduled', $info['windowType'] ) ;
+        $this->assertSame( 'weekly', $info['scheduleType'] ) ;
+        $this->assertSame( '22:00 - 06:00', $info['timeWindow'] ) ;
+        $this->assertArrayNotHasKey( 'expiresAt', $info, 'scheduled windows should not have expiresAt' ) ;
+    }
+
+    public function testFormatMaintenanceInfoScheduledWithoutTimeWindow() : void
+    {
+        // Scheduled window with no time constraints — active all day on matching days
+        $window = [
+            'window_id'   => '5',
+            'window_type' => 'scheduled',
+            'target_type' => 'host',
+            'description' => 'Monthly patching day',
+            'group_name'  => null,
+            'schedule_type' => 'monthly',
+            'start_time'  => null,
+            'end_time'    => null,
+            'silence_until' => null,
+        ] ;
+        $info = $this->callPrivate( 'formatMaintenanceInfo', [ $window ] ) ;
+        $this->assertSame( 'monthly', $info['scheduleType'] ) ;
+        $this->assertArrayNotHasKey( 'timeWindow', $info, 'no time window when start/end not set' ) ;
+    }
+
+    public function testFormatMaintenanceInfoNullDescription() : void
+    {
+        $window = [
+            'window_id'   => '1',
+            'window_type' => 'adhoc',
+            'target_type' => 'host',
+            'description' => null,
+            'group_name'  => null,
+            'schedule_type' => null,
+            'start_time'  => null,
+            'end_time'    => null,
+            'silence_until' => '2024-01-15 18:00:00',
+        ] ;
+        $info = $this->callPrivate( 'formatMaintenanceInfo', [ $window ] ) ;
+        $this->assertSame( '', $info['description'], 'null description should become empty string' ) ;
+    }
+
+    public function testFormatMaintenanceInfoWindowIdCastToInt() : void
+    {
+        $window = [
+            'window_id'   => '42',
+            'window_type' => 'adhoc',
+            'target_type' => 'host',
+            'description' => '',
+            'group_name'  => null,
+            'schedule_type' => null,
+            'start_time'  => null,
+            'end_time'    => null,
+            'silence_until' => '2024-01-15 18:00:00',
+        ] ;
+        $info = $this->callPrivate( 'formatMaintenanceInfo', [ $window ] ) ;
+        $this->assertSame( 42, $info['windowId'], 'windowId should be cast to int from string DB result' ) ;
+    }
+
+    public function testFormatMaintenanceInfoScheduledGroupWithTimeWindow() : void
+    {
+        // Hit all branches: scheduled + group + time window
+        $window = [
+            'window_id'    => '99',
+            'window_type'  => 'scheduled',
+            'target_type'  => 'group',
+            'description'  => 'Quarterly maintenance',
+            'group_name'   => 'All Redis',
+            'schedule_type' => 'quarterly',
+            'start_time'   => '02:00:00',
+            'end_time'     => '05:30:00',
+            'silence_until' => null,
+        ] ;
+        $info = $this->callPrivate( 'formatMaintenanceInfo', [ $window ] ) ;
+        $this->assertTrue( $info['active'] ) ;
+        $this->assertSame( 99, $info['windowId'] ) ;
+        $this->assertSame( 'scheduled', $info['windowType'] ) ;
+        $this->assertSame( 'group', $info['targetType'] ) ;
+        $this->assertSame( 'All Redis', $info['groupName'] ) ;
+        $this->assertSame( 'quarterly', $info['scheduleType'] ) ;
+        $this->assertSame( '02:00 - 05:30', $info['timeWindow'] ) ;
+        $this->assertSame( 'Quarterly maintenance', $info['description'] ) ;
+    }
 }
