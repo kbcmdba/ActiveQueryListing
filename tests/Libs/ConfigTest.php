@@ -3,6 +3,7 @@
 namespace com\kbcmdba\aql\Tests\Libs ;
 
 use com\kbcmdba\aql\Libs\Config ;
+use com\kbcmdba\aql\Libs\DBConnection ;
 use PHPUnit\Framework\TestCase ;
 
 /**
@@ -592,6 +593,122 @@ class ConfigTest extends TestCase
              . "    <dbtype enabled=\"false\" />\n"  // missing name
              . "</config>\n" ;
         Config::parseConfigXml( $xml ) ;
+    }
+
+    // ========================================================================
+    // DB-backed methods — integration tests using the real aql_db.
+    // These require a running MySQL with the AQL schema deployed.
+    // If the DB is unavailable, the tests are skipped (not failed).
+    // ========================================================================
+
+    /**
+     * Helper: get a real mysqli connection to aql_db, or skip the test.
+     */
+    private function getDbhOrSkip() : \mysqli
+    {
+        try {
+            $dbc = new DBConnection() ;
+            $dbh = $dbc->getConnection() ;
+        } catch ( \Exception $e ) {
+            $this->markTestSkipped( 'Database not available: ' . $e->getMessage() ) ;
+        }
+        if ( ! ( $dbh instanceof \mysqli ) ) {
+            $this->markTestSkipped( 'DBConnection returned non-mysqli connection' ) ;
+        }
+        return $dbh ;
+    }
+
+    public function testGetDbTypesReturnsNonEmptyArray() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $types = $config->getDbTypes( $dbh ) ;
+        $this->assertIsArray( $types ) ;
+        $this->assertNotEmpty( $types, 'host table db_type ENUM should have at least one value' ) ;
+        $this->assertContains( 'MySQL', $types, 'MySQL should always be in the ENUM' ) ;
+    }
+
+    public function testGetDbTypesIncludesPostgreSQL() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $types = $config->getDbTypes( $dbh ) ;
+        $this->assertContains( 'PostgreSQL', $types, 'PostgreSQL should be in the ENUM' ) ;
+    }
+
+    public function testGetDbTypesIncludesRedis() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $types = $config->getDbTypes( $dbh ) ;
+        $this->assertContains( 'Redis', $types, 'Redis should be in the ENUM' ) ;
+    }
+
+    public function testGetDbTypePropertiesReturnsArrayKeyedByType() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $props = $config->getDbTypeProperties( $dbh ) ;
+        $this->assertIsArray( $props ) ;
+        $this->assertNotEmpty( $props ) ;
+        // Each type should have enabled/username/password keys
+        foreach ( $props as $type => $settings ) {
+            $this->assertArrayHasKey( 'enabled', $settings, "$type must have 'enabled' key" ) ;
+            $this->assertArrayHasKey( 'username', $settings, "$type must have 'username' key" ) ;
+            $this->assertArrayHasKey( 'password', $settings, "$type must have 'password' key" ) ;
+        }
+    }
+
+    public function testGetDbTypePropertiesMysqlIsEnabled() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $props = $config->getDbTypeProperties( $dbh ) ;
+        $this->assertArrayHasKey( 'MySQL', $props ) ;
+        $this->assertTrue( $props['MySQL']['enabled'], 'MySQL must always be enabled' ) ;
+    }
+
+    public function testGetEnabledDbTypesReturnsMysql() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $enabled = $config->getEnabledDbTypes( $dbh ) ;
+        $this->assertIsArray( $enabled ) ;
+        $this->assertContains( 'MySQL', $enabled, 'MySQL must always be enabled' ) ;
+    }
+
+    public function testGetEnabledDbTypesIsSubsetOfAllTypes() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $allTypes = $config->getDbTypes( $dbh ) ;
+        $enabled = $config->getEnabledDbTypes( $dbh ) ;
+        foreach ( $enabled as $type ) {
+            $this->assertContains( $type, $allTypes,
+                "Enabled type '$type' must exist in the ENUM" ) ;
+        }
+    }
+
+    public function testGetDbTypesInUseReturnsArray() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $inUse = $config->getDbTypesInUse( $dbh ) ;
+        $this->assertIsArray( $inUse ) ;
+        // May be empty if no hosts are configured with should_monitor=1
+        // but at minimum it should be an array
+    }
+
+    public function testGetDbTypesInUseIsSubsetOfAllTypes() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $config = new Config() ;
+        $allTypes = $config->getDbTypes( $dbh ) ;
+        $inUse = $config->getDbTypesInUse( $dbh ) ;
+        foreach ( $inUse as $type ) {
+            $this->assertContains( $type, $allTypes,
+                "In-use type '$type' must exist in the ENUM" ) ;
+        }
     }
 
     public function testFlatConfigUnknownUserType() : void
