@@ -190,6 +190,23 @@ class DBConnection
         }
     }
 
+    /**
+     * Intentionally suppresses PHP warnings during mysqli::real_connect().
+     *
+     * real_connect emits E_WARNING on failures (DNS resolution, connection
+     * refused, etc.) BEFORE returning false. Without this handler, those
+     * warnings pollute HTML output or error logs with raw PHP messages.
+     *
+     * We swallow the warning here and let the error-checking code after
+     * real_connect() handle the failure using $mysqli->connect_error, which
+     * contains the full, structured error message. This is more informative
+     * than the warning text, especially when real_connect emits multiple
+     * warnings (e.g., DNS failed AND connection refused).
+     *
+     * Throwing here would work (the catch block converts to DaoException)
+     * but would lose context from any subsequent warnings and skip the
+     * more descriptive connect_error path.
+     */
     public static function myErrorHandler()
     {
         return;
