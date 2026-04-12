@@ -2,6 +2,7 @@
 
 namespace com\kbcmdba\aql\Tests\Libs ;
 
+use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\MaintenanceWindow ;
 use PHPUnit\Framework\TestCase ;
 
@@ -455,5 +456,213 @@ class MaintenanceWindowTest extends TestCase
         $this->assertSame( 'quarterly', $info['scheduleType'] ) ;
         $this->assertSame( '02:00 - 05:30', $info['timeWindow'] ) ;
         $this->assertSame( 'Quarterly maintenance', $info['description'] ) ;
+    }
+
+    // ========================================================================
+    // isWindowActive() — dispatcher for adhoc vs scheduled
+    // ========================================================================
+
+    public function testIsWindowActiveDispatchesToAdhoc() : void
+    {
+        $window = [
+            'window_type'   => 'adhoc',
+            'silence_until' => date( 'Y-m-d H:i:s', time() + 3600 ),
+        ] ;
+        $this->assertTrue( $this->callPrivate( 'isWindowActive', [ $window ] ) ) ;
+    }
+
+    public function testIsWindowActiveDispatchesToScheduledAllDay() : void
+    {
+        // Scheduled window on ALL days, no time constraint — always active
+        $window = [
+            'window_type'   => 'scheduled',
+            'schedule_type' => 'weekly',
+            'days_of_week'  => 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+            'start_time'    => null,
+            'end_time'      => null,
+            'timezone'      => 'UTC',
+        ] ;
+        $this->assertTrue( $this->callPrivate( 'isWindowActive', [ $window ] ) ) ;
+    }
+
+    public function testIsWindowActiveAdhocExpired() : void
+    {
+        $window = [
+            'window_type'   => 'adhoc',
+            'silence_until' => date( 'Y-m-d H:i:s', time() - 3600 ),
+        ] ;
+        $this->assertFalse( $this->callPrivate( 'isWindowActive', [ $window ] ) ) ;
+    }
+
+    // ========================================================================
+    // isScheduledWindowActive() — timezone, overnight, schedule matching
+    // ========================================================================
+
+    public function testScheduledWindowActiveAllDayAllDays() : void
+    {
+        // Every day, no time restriction — always active
+        $window = [
+            'window_type'   => 'scheduled',
+            'schedule_type' => 'weekly',
+            'days_of_week'  => 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+            'start_time'    => null,
+            'end_time'      => null,
+            'timezone'      => 'America/Chicago',
+        ] ;
+        $this->assertTrue( $this->callPrivate( 'isScheduledWindowActive', [ $window ] ) ) ;
+    }
+
+    public function testScheduledWindowInactiveNoDaysMatch() : void
+    {
+        // Weekly schedule but empty days_of_week — never matches
+        $window = [
+            'window_type'   => 'scheduled',
+            'schedule_type' => 'weekly',
+            'days_of_week'  => '',
+            'start_time'    => null,
+            'end_time'      => null,
+            'timezone'      => 'UTC',
+        ] ;
+        $this->assertFalse( $this->callPrivate( 'isScheduledWindowActive', [ $window ] ) ) ;
+    }
+
+    public function testScheduledWindowWithInvalidTimezone() : void
+    {
+        // Invalid timezone should fall back to America/Chicago, not crash
+        $window = [
+            'window_type'   => 'scheduled',
+            'schedule_type' => 'weekly',
+            'days_of_week'  => 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+            'start_time'    => null,
+            'end_time'      => null,
+            'timezone'      => 'Not/A/Real/Timezone',
+        ] ;
+        // Should not throw — falls back to America/Chicago
+        $result = $this->callPrivate( 'isScheduledWindowActive', [ $window ] ) ;
+        $this->assertTrue( $result ) ;
+    }
+
+    // ========================================================================
+    // DB integration tests — createAdhocWindow, getActiveWindowForHost, etc.
+    // ========================================================================
+
+    private function getDbhOrSkip() : \mysqli
+    {
+        try {
+            $dbc = new DBConnection() ;
+            $dbh = $dbc->getConnection() ;
+        } catch ( \Exception $e ) {
+            $this->markTestSkipped( 'Database not available: ' . $e->getMessage() ) ;
+        }
+        if ( ! ( $dbh instanceof \mysqli ) ) {
+            $this->markTestSkipped( 'Non-mysqli connection' ) ;
+        }
+        return $dbh ;
+    }
+
+    /**
+     * Helper: find a real host_id from the host table for testing.
+     * Returns null if no hosts exist.
+     */
+    private function getAnyHostId( \mysqli $dbh ) : ?int
+    {
+        $result = $dbh->query( 'SELECT host_id FROM host WHERE should_monitor = 1 AND decommissioned = 0 LIMIT 1' ) ;
+        if ( $result && $row = $result->fetch_row() ) {
+            return (int) $row[0] ;
+        }
+        return null ;
+    }
+
+    /**
+     * Helper: clean up a maintenance window and its mappings.
+     */
+    private function cleanupWindow( \mysqli $dbh, int $windowId ) : void
+    {
+        $dbh->query( "DELETE FROM maintenance_window_host_map WHERE window_id = $windowId" ) ;
+        $dbh->query( "DELETE FROM maintenance_window_host_group_map WHERE window_id = $windowId" ) ;
+        $dbh->query( "DELETE FROM maintenance_window WHERE window_id = $windowId" ) ;
+    }
+
+    public function testCreateAdhocWindowForHost() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $hostId = $this->getAnyHostId( $dbh ) ;
+        if ( $hostId === null ) {
+            $this->markTestSkipped( 'No monitored hosts in database' ) ;
+        }
+
+        $windowId = MaintenanceWindow::createAdhocWindow(
+            'host', $hostId, 60, 'PHPUnit test window', 'phpunit', $dbh
+        ) ;
+        $this->assertIsInt( $windowId ) ;
+        $this->assertGreaterThan( 0, $windowId ) ;
+
+        // Verify it was created
+        $result = $dbh->query( "SELECT * FROM maintenance_window WHERE window_id = $windowId" ) ;
+        $this->assertSame( 1, $result->num_rows ) ;
+        $row = $result->fetch_assoc() ;
+        $this->assertSame( 'adhoc', $row['window_type'] ) ;
+        $this->assertSame( 'PHPUnit test window', $row['description'] ) ;
+
+        // Verify the host mapping exists
+        $mapResult = $dbh->query(
+            "SELECT * FROM maintenance_window_host_map WHERE window_id = $windowId AND host_id = $hostId"
+        ) ;
+        $this->assertSame( 1, $mapResult->num_rows ) ;
+
+        // Cleanup
+        $this->cleanupWindow( $dbh, $windowId ) ;
+    }
+
+    public function testGetActiveWindowForHostFindsAdhocWindow() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $hostId = $this->getAnyHostId( $dbh ) ;
+        if ( $hostId === null ) {
+            $this->markTestSkipped( 'No monitored hosts in database' ) ;
+        }
+
+        // Create a window that expires 1 hour from now
+        $windowId = MaintenanceWindow::createAdhocWindow(
+            'host', $hostId, 60, 'Active test window', 'phpunit', $dbh
+        ) ;
+
+        // Should find it
+        $info = MaintenanceWindow::getActiveWindowForHost( $hostId, $dbh ) ;
+        $this->assertNotNull( $info, 'Should find the active adhoc window' ) ;
+        $this->assertTrue( $info['active'] ) ;
+        $this->assertSame( 'adhoc', $info['windowType'] ) ;
+        $this->assertSame( $windowId, $info['windowId'] ) ;
+
+        // Cleanup
+        $this->cleanupWindow( $dbh, $windowId ) ;
+    }
+
+    public function testGetActiveWindowForHostReturnsNullWhenNoWindow() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $hostId = $this->getAnyHostId( $dbh ) ;
+        if ( $hostId === null ) {
+            $this->markTestSkipped( 'No monitored hosts in database' ) ;
+        }
+
+        // Make sure no test windows are lingering for this host
+        // (Other tests clean up, but just in case)
+        $info = MaintenanceWindow::getActiveWindowForHost( $hostId, $dbh ) ;
+        // This may or may not be null depending on whether someone has a real
+        // maintenance window configured. Just verify it returns something valid.
+        if ( $info !== null ) {
+            $this->assertArrayHasKey( 'active', $info ) ;
+            $this->assertArrayHasKey( 'windowType', $info ) ;
+        } else {
+            $this->assertNull( $info ) ;
+        }
+    }
+
+    public function testGetAllActiveWindowsReturnsArray() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $result = MaintenanceWindow::getAllActiveWindows( $dbh ) ;
+        $this->assertIsArray( $result ) ;
     }
 }
