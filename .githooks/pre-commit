@@ -20,10 +20,10 @@
 # NOTE: do NOT use 'set -e' here - we want the script to keep running and
 # always exit 0 at the end, even if individual checks fail.
 
-# Colors for nicer output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+# Colors for nicer output (avoid yellow-on-green contrast issues)
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+BOLD='\033[1;37m'
 NC='\033[0m' # No Color
 
 repo_root="$(git rev-parse --show-toplevel)"
@@ -34,7 +34,7 @@ problems_found=0
 # 1. PHP syntax check on staged .php files
 staged_php_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.php$' || true)
 if [[ -n "$staged_php_files" ]]; then
-    echo -e "${YELLOW}pre-commit: checking PHP syntax on staged files...${NC}"
+    echo -e "${BOLD}pre-commit: checking PHP syntax on staged files...${NC}"
     while IFS= read -r file; do
         if ! php -l "$file" > /dev/null 2>&1; then
             echo -e "${RED}  ⚠ SYNTAX ERROR in $file${NC}"
@@ -49,19 +49,19 @@ fi
 
 # 2. Run PHPUnit if it's available
 if [[ -x vendor/bin/phpunit ]]; then
-    echo -e "${YELLOW}pre-commit: running PHPUnit...${NC}"
+    echo -e "${BOLD}pre-commit: running PHPUnit...${NC}"
     if ! vendor/bin/phpunit --no-coverage; then
         echo ""
         echo -e "${RED}⚠ pre-commit: TESTS FAILED ⚠${NC}"
-        echo -e "${YELLOW}pre-commit: commit will proceed anyway (advisory mode)${NC}"
-        echo -e "${YELLOW}pre-commit: but you should fix these soon${NC}"
+        echo -e "${BOLD}pre-commit: commit will proceed anyway (advisory mode)${NC}"
+        echo -e "${BOLD}pre-commit: but you should fix these soon${NC}"
         problems_found=1
     else
         echo -e "${GREEN}pre-commit: all tests pass${NC}"
     fi
 else
-    echo -e "${YELLOW}pre-commit: vendor/bin/phpunit not found, skipping tests${NC}"
-    echo -e "${YELLOW}pre-commit: run 'composer install' to enable test checks${NC}"
+    echo -e "${BOLD}pre-commit: vendor/bin/phpunit not found, skipping tests${NC}"
+    echo -e "${BOLD}pre-commit: run 'composer install' to enable test checks${NC}"
 fi
 
 if [[ $problems_found -eq 1 ]]; then

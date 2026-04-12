@@ -53,7 +53,7 @@ CREATE TABLE host_group (
   host_group_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
 , tag               VARCHAR( 16 ) NOT NULL DEFAULT ''
 , short_description VARCHAR( 255 ) NOT NULL DEFAULT ''
-, full_descripton   TEXT NULL DEFAULT NULL
+, full_description   TEXT NULL DEFAULT NULL
 , created           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 , updated           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 , UNIQUE ux_tag ( tag )
@@ -106,6 +106,7 @@ SQL;
         if ($stmt->fetch()) {
             $model = new HostGroupModel() ;
             $model->setId($id) ;
+            $model->setTag($tag) ;
             $model->setShortDescription($shortDescription) ;
             $model->setFullDescription($fullDescription) ;
             $model->setCreated($created) ;
