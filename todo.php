@@ -33,7 +33,7 @@ namespace com\kbcmdba\aql ;
 //          The longer we delay, the harder full coverage gets.
 //          Start with isolated, well-defined classes and expand outward.
 //          Bootstrap: DONE. Run `composer test` or `composer test-coverage`.
-//          Currently: 320 tests / 584 assertions / 53.94% project line coverage
+//          Currently: 382 tests / 762 assertions / 64.06% project line coverage
 //          Bugs caught and fixed during the initial sweep:
 //            - friendlyTime() PHP 8.x intdiv deprecation
 //            - ModelBase::validateId(null) preg_match deprecation
@@ -57,6 +57,7 @@ namespace com\kbcmdba\aql ;
 //          covered. Order is "easy first then hard" — pure functions before
 //          DB-bound code. Mocking strategy still TBD for the DB-bound classes.
 //          [DONE - 100%]
+//            - Libs/Config.php      — 100% lines, 100% methods
 //            - Libs/ConfigUpgrader.php
 //            - Libs/Models/HostGroupMapModel.php
 //            - Libs/Models/HostGroupModel.php
@@ -69,17 +70,16 @@ namespace com\kbcmdba\aql ;
 //            - Libs/Exceptions/DaoException.php            (no statements)
 //            - Libs/Exceptions/WebPageException.php        (no statements)
 //          [PARTIAL]
-//                Remaining: getNavBar() and bits that need a real Config
-//            - Libs/Config.php      — 86.35% lines, 81.97% methods
-//                Remaining: getDbTypes/getDbTypeProperties/getEnabledDbTypes/
-//                getDbTypesInUse - all need a real mysqli connection
+//            - Libs/LDAP.php        — 71.91% lines
+//                Remaining: local-auth path (can't test when LDAP enabled),
+//                constructor (throw guard)
+//            - Libs/DBConnection.php — 49.44% lines, 50.00% methods
+//                Remaining: error paths, createDb branch, old mysql driver
+//            - Libs/Controllers/ControllerBase.php — 38.89% lines, 66.67% methods
+//                Remaining: constructor, doDDL, deleteModelById (all DB-bound)
 //            - Libs/MaintenanceWindow.php — 29.91% lines, 38.89% methods
-//                Remaining: 4 public methods that take a mysqli (need mocking
-//                or integration test setup), formatMaintenanceInfo helper
+//                Remaining: 4 public methods that take a mysqli, formatMaintenanceInfo
 //          [TODO - 0%]
-//            - Libs/DBConnection.php (231 lines, needs DB mocking)
-//            - Libs/LDAP.php (171 lines, needs LDAP mocking or integration test)
-//            - Libs/Controllers/ControllerBase.php (165 lines, DB-bound)
 //            - Libs/Controllers/HostController.php (442 lines, DB-bound)
 //            - Libs/Controllers/HostGroupController.php (312 lines, DB-bound)
 //            - Libs/Controllers/HostGroupMapController.php (354 lines, DB-bound)
