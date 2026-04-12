@@ -103,6 +103,8 @@ if ( file_exists( $configFile ) && is_readable( $configFile ) ) {
                 ],
                 'testing' => [
                     'dbUser' => 'testDbUser', 'dbPass' => 'testDbPass', 'dbName' => 'testDbName',
+                    'ldapTestUser' => 'ldapTestUser', 'ldapTestPass' => 'ldapTestPass',
+                    'ldapTestUserNoGroup' => 'ldapTestUserNoGroup', 'ldapTestPassNoGroup' => 'ldapTestPassNoGroup',
                 ],
             ] ;
             foreach ( $groupedMapping as $elementName => $attrMap ) {

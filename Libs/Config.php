@@ -335,6 +335,10 @@ class Config
                 'dbUser' => 'testDbUser',
                 'dbPass' => 'testDbPass',
                 'dbName' => 'testDbName',
+                'ldapTestUser'        => 'ldapTestUser',
+                'ldapTestPass'        => 'ldapTestPass',
+                'ldapTestUserNoGroup' => 'ldapTestUserNoGroup',
+                'ldapTestPassNoGroup' => 'ldapTestPassNoGroup',
             ],
         ] ;
     }

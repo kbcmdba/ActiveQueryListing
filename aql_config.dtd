@@ -115,4 +115,8 @@
     dbUser CDATA #IMPLIED
     dbPass CDATA #IMPLIED
     dbName CDATA #IMPLIED
+    ldapTestUser          CDATA #IMPLIED
+    ldapTestPass          CDATA #IMPLIED
+    ldapTestUserNoGroup   CDATA #IMPLIED
+    ldapTestPassNoGroup   CDATA #IMPLIED
 >
