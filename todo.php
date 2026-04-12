@@ -33,7 +33,7 @@ namespace com\kbcmdba\aql ;
 //          The longer we delay, the harder full coverage gets.
 //          Start with isolated, well-defined classes and expand outward.
 //          Bootstrap: DONE. Run `composer test` or `composer test-coverage`.
-//          Currently: 382 tests / 762 assertions / 64.06% project line coverage
+//          Currently: 420 tests / 847 assertions / 82.68% project line coverage
 //          Bugs caught and fixed during the initial sweep:
 //            - friendlyTime() PHP 8.x intdiv deprecation
 //            - ModelBase::validateId(null) preg_match deprecation
@@ -70,19 +70,15 @@ namespace com\kbcmdba\aql ;
 //            - Libs/Exceptions/DaoException.php            (no statements)
 //            - Libs/Exceptions/WebPageException.php        (no statements)
 //          [PARTIAL]
+//            - Libs/Controllers/HostGroupController.php — 80.88% lines
 //            - Libs/LDAP.php        — 71.91% lines
-//                Remaining: local-auth path (can't test when LDAP enabled),
-//                constructor (throw guard)
-//            - Libs/DBConnection.php — 49.44% lines, 50.00% methods
-//                Remaining: error paths, createDb branch, old mysql driver
-//            - Libs/Controllers/ControllerBase.php — 38.89% lines, 66.67% methods
-//                Remaining: constructor, doDDL, deleteModelById (all DB-bound)
-//            - Libs/MaintenanceWindow.php — 29.91% lines, 38.89% methods
-//                Remaining: 4 public methods that take a mysqli, formatMaintenanceInfo
+//            - Libs/Controllers/HostController.php — 70.97% lines
+//            - Libs/Controllers/ControllerBase.php — 69.44% lines
+//            - Libs/Controllers/HostGroupMapController.php — 66.44% lines
+//            - Libs/DBConnection.php — 49.44% lines
+//            - Libs/MaintenanceWindow.php — 36.61% lines
 //          [TODO - 0%]
-//            - Libs/Controllers/HostController.php (442 lines, DB-bound)
-//            - Libs/Controllers/HostGroupController.php (312 lines, DB-bound)
-//            - Libs/Controllers/HostGroupMapController.php (354 lines, DB-bound)
+//            (none — every Libs/ class now has at least some coverage)
 // @todo 05-95 utility.php tests
 //          Standalone procedural functions in utility.php (processHost, etc.)
 //          interact with web request context. Need separate test fixture
