@@ -665,4 +665,182 @@ class MaintenanceWindowTest extends TestCase
         $result = MaintenanceWindow::getAllActiveWindows( $dbh ) ;
         $this->assertIsArray( $result ) ;
     }
+
+    public function testGetActiveWindowForHostViaGroup() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $hostId = $this->getAnyHostId( $dbh ) ;
+        if ( $hostId === null ) {
+            $this->markTestSkipped( 'No monitored hosts in database' ) ;
+        }
+
+        // Find a group that this host belongs to
+        $result = $dbh->query(
+            "SELECT host_group_id FROM host_group_map WHERE host_id = $hostId LIMIT 1"
+        ) ;
+        if ( ! $result || $result->num_rows === 0 ) {
+            // Host isn't in any group — create a temporary group + mapping
+            $dbh->query( "INSERT INTO host_group (tag, short_description) VALUES ('_mw_test', 'MW test group')" ) ;
+            $groupId = $dbh->insert_id ;
+            $dbh->query( "INSERT INTO host_group_map (host_group_id, host_id) VALUES ($groupId, $hostId)" ) ;
+            $createdGroup = true ;
+        } else {
+            $row = $result->fetch_row() ;
+            $groupId = (int) $row[0] ;
+            $createdGroup = false ;
+        }
+
+        // Create an adhoc window on the GROUP
+        $windowId = MaintenanceWindow::createAdhocWindow(
+            'group', $groupId, 60, 'Group MW test', 'phpunit', $dbh
+        ) ;
+
+        // Host should be found via group membership
+        $info = MaintenanceWindow::getActiveWindowForHostViaGroup( $hostId, $dbh ) ;
+        $this->assertNotNull( $info, 'Should find active window via group membership' ) ;
+        $this->assertTrue( $info['active'] ) ;
+        $this->assertSame( 'group', $info['targetType'] ) ;
+
+        // Cleanup
+        $this->cleanupWindow( $dbh, $windowId ) ;
+        if ( $createdGroup ) {
+            $dbh->query( "DELETE FROM host_group_map WHERE host_group_id = $groupId AND host_id = $hostId" ) ;
+            $dbh->query( "DELETE FROM host_group WHERE host_group_id = $groupId" ) ;
+        }
+    }
+
+    public function testGetActiveWindowForHostViaGroupReturnsNullWhenNoGroupWindow() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        // Use a host ID that's unlikely to have a group maintenance window
+        $info = MaintenanceWindow::getActiveWindowForHostViaGroup( 999999999, $dbh ) ;
+        $this->assertNull( $info ) ;
+    }
+
+    public function testGetAllActiveWindowsIncludesCreatedWindow() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $hostId = $this->getAnyHostId( $dbh ) ;
+        if ( $hostId === null ) {
+            $this->markTestSkipped( 'No monitored hosts in database' ) ;
+        }
+
+        $windowId = MaintenanceWindow::createAdhocWindow(
+            'host', $hostId, 60, 'getAllActiveWindows test', 'phpunit', $dbh
+        ) ;
+
+        $activeWindows = MaintenanceWindow::getAllActiveWindows( $dbh ) ;
+        $this->assertIsArray( $activeWindows ) ;
+
+        // Find our window in the list
+        $found = false ;
+        foreach ( $activeWindows as $w ) {
+            if ( (int) ( $w['windowId'] ?? 0 ) === $windowId ) {
+                $found = true ;
+                $this->assertSame( 'adhoc', $w['windowType'] ) ;
+                break ;
+            }
+        }
+        $this->assertTrue( $found, 'Our test window should appear in getAllActiveWindows' ) ;
+
+        // Cleanup
+        $this->cleanupWindow( $dbh, $windowId ) ;
+    }
+
+    // ========================================================================
+    // isScheduledWindowActive — additional branch coverage
+    // ========================================================================
+
+    public function testScheduledWindowActiveDaytimeInRange() : void
+    {
+        // Window from 00:00 to 23:59 — always in range regardless of time
+        $window = [
+            'window_type'   => 'scheduled',
+            'schedule_type' => 'weekly',
+            'days_of_week'  => 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+            'start_time'    => '00:00:00',
+            'end_time'      => '23:59:59',
+            'timezone'      => 'UTC',
+        ] ;
+        $this->assertTrue( $this->callPrivate( 'isScheduledWindowActive', [ $window ] ) ) ;
+    }
+
+    public function testScheduledWindowOvernightAllDays() : void
+    {
+        // Overnight window 22:00-06:00 on all days — should be active
+        // at any time because either the evening or morning portion matches
+        $window = [
+            'window_type'   => 'scheduled',
+            'schedule_type' => 'weekly',
+            'days_of_week'  => 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+            'start_time'    => '22:00:00',
+            'end_time'      => '06:00:00',
+            'timezone'      => 'UTC',
+        ] ;
+        $result = $this->callPrivate( 'isScheduledWindowActive', [ $window ] ) ;
+        // This depends on current time — if between 06:01-21:59 UTC, it's inactive
+        // Just verify it doesn't crash; the overnight logic is tested via
+        // isTimeInWindow and isOvernightWindow already
+        $this->assertIsBool( $result ) ;
+    }
+
+    public function testScheduledWindowDaytimeNotMatchingDay() : void
+    {
+        // Use an impossible day name to guarantee no match
+        $window = [
+            'window_type'   => 'scheduled',
+            'schedule_type' => 'weekly',
+            'days_of_week'  => '',  // empty = no days match
+            'start_time'    => '00:00:00',
+            'end_time'      => '23:59:59',
+            'timezone'      => 'UTC',
+        ] ;
+        $this->assertFalse( $this->callPrivate( 'isScheduledWindowActive', [ $window ] ) ) ;
+    }
+
+    // ========================================================================
+    // isScheduleMatchingToday — remaining dispatch paths
+    // ========================================================================
+
+    public function testIsScheduleMatchingTodayDispatchesToQuarterly() : void
+    {
+        // Current month's position in quarter + current day
+        $now = new \DateTime() ;
+        $currentMonth = (int) $now->format( 'n' ) ;
+        $monthInQuarter = ( ( $currentMonth - 1 ) % 3 ) + 1 ;
+        $currentDay = (int) $now->format( 'j' ) ;
+
+        $window = [
+            'schedule_type' => 'quarterly',
+            'month_of_year' => $monthInQuarter,
+            'day_of_month'  => $currentDay,
+        ] ;
+        $this->assertTrue( $this->callPrivate( 'isScheduleMatchingToday', [ $window, $now ] ) ) ;
+    }
+
+    public function testIsScheduleMatchingTodayDispatchesToAnnually() : void
+    {
+        $now = new \DateTime() ;
+        $currentMonth = (int) $now->format( 'n' ) ;
+        $currentDay = (int) $now->format( 'j' ) ;
+
+        $window = [
+            'schedule_type' => 'annually',
+            'month_of_year' => $currentMonth,
+            'day_of_month'  => $currentDay,
+        ] ;
+        $this->assertTrue( $this->callPrivate( 'isScheduleMatchingToday', [ $window, $now ] ) ) ;
+    }
+
+    public function testIsScheduleMatchingTodayDispatchesToPeriodic() : void
+    {
+        $now = new \DateTime() ;
+        // Period starts today, every 1 day — always matches
+        $window = [
+            'schedule_type'    => 'periodic',
+            'period_start_date' => $now->format( 'Y-m-d' ),
+            'period_days'      => 1,
+        ] ;
+        $this->assertTrue( $this->callPrivate( 'isScheduleMatchingToday', [ $window, $now ] ) ) ;
+    }
 }
