@@ -26,6 +26,7 @@ namespace com\kbcmdba\aql ;
 
 require_once 'vendor/autoload.php';
 
+use com\kbcmdba\aql\Libs\AJAXHelper ;
 use com\kbcmdba\aql\Libs\Config ;
 use com\kbcmdba\aql\Libs\DBConnection ;
 use com\kbcmdba\aql\Libs\MaintenanceWindow ;
@@ -103,13 +104,11 @@ function getBlockingCacheRedis() {
 }
 
 function getBlockingCacheKey( $hostname ) {
-    $safeHost = preg_replace( '/[^a-zA-Z0-9._-]/', '_', $hostname ) ;
-    return BLOCKING_CACHE_REDIS_PREFIX . $safeHost ;
+    return AJAXHelper::getBlockingCacheKey( $hostname, BLOCKING_CACHE_REDIS_PREFIX ) ;
 }
 
 function getBlockingCacheFile( $hostname ) {
-    $safeHost = preg_replace( '/[^a-zA-Z0-9._-]/', '_', $hostname ) ;
-    return BLOCKING_CACHE_DIR . '/blocking_' . $safeHost . '.json' ;
+    return AJAXHelper::getBlockingCacheFile( $hostname, BLOCKING_CACHE_DIR ) ;
 }
 
 function readBlockingCache( $hostname ) {
@@ -137,45 +136,13 @@ function readBlockingCache( $hostname ) {
         return [] ;
     }
     // Filter out expired entries (file cache only - Redis handles TTL)
-    $now = time() ;
-    $valid = [] ;
-    foreach ( $data as $entry ) {
-        if ( isset( $entry['timestamp'] ) && ( $now - $entry['timestamp'] ) < BLOCKING_CACHE_TTL ) {
-            $valid[] = $entry ;
-        }
-    }
-    return $valid ;
+    return AJAXHelper::filterExpiredCacheEntries( $data, time(), BLOCKING_CACHE_TTL ) ;
 }
 
 function writeBlockingCache( $hostname, $entries ) {
     $redis = getBlockingCacheRedis() ;
-
-    // Read existing, merge new
     $existing = readBlockingCache( $hostname ) ;
-    $now = time() ;
-
-    // Add timestamp to new entries
-    foreach ( $entries as &$entry ) {
-        if ( !isset( $entry['timestamp'] ) ) {
-            $entry['timestamp'] = $now ;
-        }
-    }
-
-    // Merge: keep existing entries that aren't duplicates of new ones
-    $merged = $entries ;
-    foreach ( $existing as $old ) {
-        $isDupe = false ;
-        foreach ( $entries as $new ) {
-            if ( $old['blockerThreadId'] == $new['blockerThreadId']
-                 && $old['waitingThreadId'] == $new['waitingThreadId'] ) {
-                $isDupe = true ;
-                break ;
-            }
-        }
-        if ( !$isDupe ) {
-            $merged[] = $old ;
-        }
-    }
+    $merged = AJAXHelper::mergeBlockingCacheEntries( $entries, $existing, time() ) ;
 
     if ( $redis ) {
         // Redis: set with TTL
@@ -188,14 +155,7 @@ function writeBlockingCache( $hostname, $entries ) {
 }
 
 function getCachedBlockersForThread( $hostname, $waitingThreadId ) {
-    $cache = readBlockingCache( $hostname ) ;
-    $blockers = [] ;
-    foreach ( $cache as $entry ) {
-        if ( $entry['waitingThreadId'] == $waitingThreadId ) {
-            $blockers[] = $entry ;
-        }
-    }
-    return $blockers ;
+    return AJAXHelper::findCachedBlockers( readBlockingCache( $hostname ), $waitingThreadId ) ;
 }
 
 function getBlockingCacheType() {
@@ -211,32 +171,7 @@ function getBlockingCacheType() {
  * @return string Normalized query
  */
 function normalizeQueryForHash( $query ) {
-    $normalized = $query ;
-    // Remove SQL comments first (may contain sensitive data)
-    // Multi-line comments: /* ... */
-    $normalized = preg_replace( '/\/\*.*?\*\//s', '/**/deleted', $normalized ) ;
-    // Single-line comments: -- ... (MySQL requires space after --)
-    $normalized = preg_replace( '/-- .*$/m', '-- deleted', $normalized ) ;
-    // Single-line comments: # ... (MySQL style)
-    $normalized = preg_replace( '/#.*$/m', '# deleted', $normalized ) ;
-    // Hex/binary literals BEFORE string literals (they use quotes too)
-    // Hex: 0xDEADBEEF, x'1A2B', X'1A2B'
-    $normalized = preg_replace( '/0x[0-9a-fA-F]+/', 'N', $normalized ) ;
-    $normalized = preg_replace( "/[xX]'[0-9a-fA-F]*'/", 'N', $normalized ) ;
-    // Binary: 0b1010, b'1010', B'1010'
-    $normalized = preg_replace( '/0b[01]+/', 'N', $normalized ) ;
-    $normalized = preg_replace( "/[bB]'[01]*'/", 'N', $normalized ) ;
-    // Single-quoted strings with escaped quotes -> 'S'
-    // Handles: 'simple', 'it\'s escaped', 'has ''doubled'' quotes'
-    $normalized = preg_replace( "/'(?:[^'\\\\]|\\\\.)*'/", "'S'", $normalized ) ;
-    $normalized = preg_replace( "/'(?:[^']|'')*'/", "'S'", $normalized ) ; // MySQL doubled quotes
-    // Double-quoted strings with escaped quotes -> "S"
-    $normalized = preg_replace( '/"(?:[^"\\\\]|\\\\.)*"/', '"S"', $normalized ) ;
-    // Numbers -> N (integers, decimals, scientific notation)
-    $normalized = preg_replace( '/\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/', 'N', $normalized ) ;
-    // Collapse multiple blank lines into single newline for compact storage
-    $normalized = preg_replace( '/\n\s*\n/', "\n", $normalized ) ;
-    return $normalized ;
+    return AJAXHelper::normalizeQueryForHash( $query ) ;
 }
 
 /**
@@ -245,13 +180,7 @@ function normalizeQueryForHash( $query ) {
  * @return string Hex hash (16 chars)
  */
 function hashQueryString( $str ) {
-    $hash = 5381 ;
-    $len = strlen( $str ) ;
-    for ( $i = 0 ; $i < $len ; $i++ ) {
-        $hash = ( ( $hash << 5 ) + $hash ) + ord( $str[$i] ) ;
-        $hash = $hash & 0xFFFFFFFF ; // Keep as 32-bit
-    }
-    return str_pad( dechex( abs( $hash ) ), 16, '0', STR_PAD_LEFT ) ;
+    return AJAXHelper::hashQueryString( $str ) ;
 }
 
 /**

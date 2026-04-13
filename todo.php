@@ -26,13 +26,15 @@ namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
 // @todo 05 Adopt PHPUnit for incremental TDD (parent - see subtasks)
-//          467 tests / 937 assertions / 100% lines, 100% methods across all Libs/ classes.
+//          516 tests / 996 assertions / 100% lines, 100% methods across all Libs/ classes.
 //          Pre-commit hook runs full suite on every commit (advisory mode).
 // @todo 05-50 AJAXgetaql.php handler tests (requires mocking DB connections)
-//          - Test JSON output shape for each handler
-//          - Test alert level thresholds
-//          - Test blocking cache logic
-//          - May need to extract handler logic into testable classes first
+//          DONE: Extracted pure helpers into Libs/AJAXHelper.php (100% covered):
+//            normalizeQueryForHash, hashQueryString, getBlockingCacheKey,
+//            getBlockingCacheFile, filterExpiredCacheEntries, findCachedBlockers,
+//            mergeBlockingCacheEntries
+//          REMAINING: handler integration tests (handleMySQLHost, handleRedisHost,
+//            handlePostgreSQLHost) require real DB connections or heavy mocking
 // @todo 05-95 utility.php tests
 //          Standalone procedural functions in utility.php (processHost, etc.)
 //          interact with web request context. Need separate test fixture
