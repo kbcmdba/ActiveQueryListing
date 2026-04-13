@@ -25,60 +25,14 @@
 namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
-// @todo 02-60 LDAP/authentication tests (when doLDAPAuthentication=true)
-//             - Test LDAP server connectivity
-//             - Verify SSL certificate (if ldapVerifyCert=true)
-//             - Test bind with a known test credential (optional, manual)
 // @todo 05 Adopt PHPUnit for incremental TDD (parent - see subtasks)
-//          The longer we delay, the harder full coverage gets.
-//          Start with isolated, well-defined classes and expand outward.
-//          Bootstrap: DONE. Run `composer test` or `composer test-coverage`.
-//          Currently: 420 tests / 847 assertions / 82.68% project line coverage
-//          Bugs caught and fixed during the initial sweep:
-//            - friendlyTime() PHP 8.x intdiv deprecation
-//            - ModelBase::validateId(null) preg_match deprecation
-//            - HostGroupMapModel::validateForAdd literal-string check broke
-//              host-to-group mapping (silent failure for years)
-//            - HostModel::populateFromForm called non-existent setHostId
-//            - Config::assignProperties missing 5 LDAP ?? defaults
-//            - Tools::makeQuotedStringPIISafe escaped-quote PII leak
-//          (See @todo 05-90 for the per-class coverage matrix.)
+//          467 tests / 937 assertions / 100% lines, 100% methods across all Libs/ classes.
+//          Pre-commit hook runs full suite on every commit (advisory mode).
 // @todo 05-50 AJAXgetaql.php handler tests (requires mocking DB connections)
 //          - Test JSON output shape for each handler
 //          - Test alert level thresholds
 //          - Test blocking cache logic
 //          - May need to extract handler logic into testable classes first
-// @todo 05-60 Pre-commit hook integration
-//          DONE: .githooks/pre-commit runs PHP -l on staged files and full
-//          PHPUnit suite. ADVISORY mode - reports failures loudly but never
-//          blocks the commit (so WIP can always be saved).
-// @todo 05-90 Per-class coverage matrix for Libs/ — drive each to 100%
-//          Updated as classes get to 100%. Goal: every Libs/ class fully
-//          covered. Order is "easy first then hard" — pure functions before
-//          DB-bound code. Mocking strategy still TBD for the DB-bound classes.
-//          [DONE - 100%]
-//            - Libs/Config.php      — 100% lines, 100% methods
-//            - Libs/ConfigUpgrader.php
-//            - Libs/Models/HostGroupMapModel.php
-//            - Libs/Models/HostGroupModel.php
-//            - Libs/Models/HostModel.php
-//            - Libs/Models/ModelBase.php
-//            - Libs/Tools.php       — 100% lines, 100% methods
-//            - Libs/WebPage.php     — 100% lines, 100% methods
-//            - Libs/Exceptions/ConfigurationException.php  (no statements)
-//            - Libs/Exceptions/ControllerException.php     (no statements)
-//            - Libs/Exceptions/DaoException.php            (no statements)
-//            - Libs/Exceptions/WebPageException.php        (no statements)
-//          [PARTIAL]
-//            - Libs/Controllers/HostGroupController.php — 80.88% lines
-//            - Libs/LDAP.php        — 71.91% lines
-//            - Libs/Controllers/HostController.php — 70.97% lines
-//            - Libs/Controllers/ControllerBase.php — 69.44% lines
-//            - Libs/Controllers/HostGroupMapController.php — 66.44% lines
-//            - Libs/DBConnection.php — 49.44% lines
-//            - Libs/MaintenanceWindow.php — 36.61% lines
-//          [TODO - 0%]
-//            (none — every Libs/ class now has at least some coverage)
 // @todo 05-95 utility.php tests
 //          Standalone procedural functions in utility.php (processHost, etc.)
 //          interact with web request context. Need separate test fixture
