@@ -610,3 +610,31 @@ namespace com\kbcmdba\aql ;
 // @rfe 961 MySQL Router / MaxScale support
 //          - Router-level metrics
 //          - Backend health visibility
+
+// ----------------------------------------------------------------------------
+// TERMINAL / CLI
+// ----------------------------------------------------------------------------
+// @rfe 970 TUI (Terminal User Interface) for AQL
+//          Provide the same real-time monitoring output in a terminal as the
+//          web UI, for users who prefer or need CLI access (SSH sessions,
+//          script integration, no browser available).
+//          Technology options to evaluate:
+//          - PHP: Built on existing AJAXgetaql.php logic, stays in-repo.
+//            Libraries: php-tui (https://github.com/php-tui/php-tui),
+//            or raw ANSI/ncurses via php-ncurses extension.
+//          - Python: Rich or Textual libraries; good ecosystem but adds a
+//            second language dependency.
+//          - Go: Bubbletea / Lipgloss; fast, single binary, cross-platform;
+//            would call AQL's AJAX endpoints or replicate DB connection logic.
+//          Key features to match from the web UI:
+//          - Per-host process list table (host, user, db, time, state, query)
+//          - Alert level coloring (level 0-4, L9 error) — ANSI colors
+//          - Overview/scoreboard row per host (threads, QPS, longest running)
+//          - Auto-refresh on a configurable interval (default: same as web)
+//          - Maintenance window indicator
+//          - Replication lag display
+//          - Host group labels
+//          - Silence / un-silence a host (store in a local file or DB)
+//          - Scrollable query list when output exceeds terminal height
+//          - Filter by host group or alert level
+//          - Debug mode (pass debug=MySQL etc. to underlying handler)
