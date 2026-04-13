@@ -26,7 +26,7 @@ namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
 // @todo 05 Adopt PHPUnit for incremental TDD (parent - see subtasks)
-//          516 tests / 996 assertions / 100% lines, 100% methods across all Libs/ classes.
+//          551 tests / 1051 assertions / 100% lines, 100% methods across all Libs/ classes.
 //          Pre-commit hook runs full suite on every commit (advisory mode).
 // @todo 05-50 AJAXgetaql.php handler tests (requires mocking DB connections)
 //          DONE: Extracted pure helpers into Libs/AJAXHelper.php (100% covered):
@@ -35,12 +35,10 @@ namespace com\kbcmdba\aql ;
 //            mergeBlockingCacheEntries
 //          REMAINING: handler integration tests (handleMySQLHost, handleRedisHost,
 //            handlePostgreSQLHost) require real DB connections or heavy mocking
-// @todo 05-95 utility.php tests
-//          Standalone procedural functions in utility.php (processHost, etc.)
-//          interact with web request context. Need separate test fixture
-//          setup. Currently 0% covered.
-//          Install per-clone via scripts/install-hooks.sh.
-//          TODO: Optionally add phpstan/psalm static analysis to the same hook
+// @todo 05-95 utility.php tests — DONE
+//          Extracted into Libs/Utility.php (100% covered): applyParamToLimits,
+//          buildRadioChoicesHtml, applyAndOr, appendSelectOption, buildHostAjaxJs.
+//          TODO: Optionally add phpstan/psalm static analysis to the pre-commit hook
 // @todo 06 Code efficiency review (after TDD coverage is solid)
 //          Review the codebase for performance inefficiencies now that
 //          tests are in place to catch regressions. TDD must come first
