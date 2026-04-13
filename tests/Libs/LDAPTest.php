@@ -31,7 +31,7 @@ class LDAPTest extends TestCase
     {
         // Start a session if one isn't active (LDAP::authenticate writes to $_SESSION)
         if ( session_status() !== PHP_SESSION_ACTIVE ) {
-            @session_start() ;
+            session_start() ;
         }
         // Clear any existing auth state
         unset( $_SESSION['AuthUser'], $_SESSION['AuthCanAccess'], $_SESSION['AuthLoginTime'] ) ;
