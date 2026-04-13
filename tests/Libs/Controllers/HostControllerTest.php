@@ -203,6 +203,61 @@ class HostControllerTest extends TestCase
         $this->controller->add( $model ) ;
     }
 
+    public function testUpdateHost() : void
+    {
+        $hostname = self::$testHostPrefix . uniqid() ;
+        $this->setRequestForAdd( $hostname ) ;
+        $model = $this->buildModelFromRequest() ;
+        $newId = $this->controller->add( $model ) ;
+
+        // Update it
+        $updatedHostname = self::$testHostPrefix . uniqid() ;
+        $_REQUEST = [
+            'id'               => (string) $newId,
+            'hostName'         => $updatedHostname,
+            'portNumber'       => '5432',
+            'description'      => 'Updated description',
+            'shouldMonitor'    => '0',
+            'shouldBackup'     => '0',
+            'shouldSchemaspy'  => '0',
+            'revenueImpacting' => '0',
+            'decommissioned'   => '1',
+            'alertCritSecs'    => '120',
+            'alertWarnSecs'    => '60',
+            'alertInfoSecs'    => '30',
+            'alertLowSecs'     => '5',
+        ] ;
+        $updateModel = $this->buildModelFromRequest() ;
+        $updateModel->setId( $newId ) ;
+        $returnedId = $this->controller->update( $updateModel ) ;
+        $this->assertSame( $newId, $returnedId ) ;
+
+        // Verify
+        $fetched = $this->controller->get( $newId ) ;
+        $this->assertSame( $updatedHostname, $fetched->getHostName() ) ;
+        $this->assertSame( 5432, $fetched->getPortNumber() ) ;
+        $this->assertSame( 'Updated description', $fetched->getDescription() ) ;
+
+        // Cleanup
+        $this->controller->delete( $fetched ) ;
+    }
+
+    public function testUpdateHostInvalidDataThrows() : void
+    {
+        // validateForUpdate requires id + hostName — don't set them
+        $_REQUEST = [
+            'alertCritSecs' => '60',
+            'alertWarnSecs' => '30',
+            'alertInfoSecs' => '10',
+            'alertLowSecs'  => '0',
+        ] ;
+        $model = $this->buildModelFromRequest() ;
+
+        $this->expectException( ControllerException::class ) ;
+        $this->expectExceptionMessageMatches( '/Invalid data/' ) ;
+        $this->controller->update( $model ) ;
+    }
+
     // ========================================================================
     // DDL methods (no-ops or safe)
     // ========================================================================

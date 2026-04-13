@@ -222,6 +222,48 @@ class HostGroupMapControllerTest extends TestCase
         $this->mapController->add( $model ) ;
     }
 
+    public function testUpdateMapping() : void
+    {
+        $hostId = $this->createTestHost() ;
+        $groupId = $this->createTestGroup() ;
+
+        $_REQUEST = [
+            'hostGroupId' => (string) $groupId,
+            'hostId'      => (string) $hostId,
+        ] ;
+        $model = new HostGroupMapModel() ;
+        $model->populateFromForm() ;
+        $this->mapController->add( $model ) ;
+
+        // Update it — only last_audited can be changed on this join table
+        $newAudited = date( 'Y-m-d H:i:s', strtotime( '-1 hour' ) ) ;
+        $_REQUEST = [
+            'hostGroupId' => (string) $groupId,
+            'hostId'      => (string) $hostId,
+            'lastAudited' => $newAudited,
+        ] ;
+        $updateModel = new HostGroupMapModel() ;
+        $updateModel->populateFromForm() ;
+        $result = $this->mapController->update( $updateModel ) ;
+        $this->assertSame( 0, $result ) ;
+
+        // Verify the row still exists
+        $fetched = $this->mapController->get( $groupId, $hostId ) ;
+        $this->assertInstanceOf( HostGroupMapModel::class, $fetched ) ;
+    }
+
+    public function testUpdateMappingInvalidDataThrows() : void
+    {
+        // validateForUpdate = validateForAdd: requires hostGroupId + hostId
+        $_REQUEST = [] ;
+        $model = new HostGroupMapModel() ;
+        $model->populateFromForm() ;
+
+        $this->expectException( ControllerException::class ) ;
+        $this->expectExceptionMessageMatches( '/Invalid data/' ) ;
+        $this->mapController->update( $model ) ;
+    }
+
     // ========================================================================
     // DDL stubs
     // ========================================================================

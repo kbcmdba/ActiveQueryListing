@@ -186,6 +186,17 @@ class HostGroupControllerTest extends TestCase
         $this->controller->add( $model ) ;
     }
 
+    public function testUpdateGroupInvalidDataThrows() : void
+    {
+        // validateForUpdate requires id + tag — don't set them
+        $_REQUEST = [] ;
+        $model = $this->buildModelFromRequest() ;
+
+        $this->expectException( ControllerException::class ) ;
+        $this->expectExceptionMessageMatches( '/Invalid data/' ) ;
+        $this->controller->update( $model ) ;
+    }
+
     // ========================================================================
     // DDL stubs
     // ========================================================================

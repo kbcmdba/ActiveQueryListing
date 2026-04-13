@@ -274,7 +274,7 @@ SQL;
                 $fullDescription  = $model->getFullDescription() ;
                 $stmt       = $this->dbh->prepare($query) ;
                 if (! $stmt) {
-                    throw new ControllerException('Prepared statement failed for ' . $query) ;
+                    throw new ControllerException('Prepared statement failed for ' . $query) ; // @codeCoverageIgnore
                 }
                 if (! ($stmt->bind_param(
                     'sssi',
@@ -283,20 +283,20 @@ SQL;
                     $fullDescription,
                     $id
                 ))) {
-                    throw new ControllerException('Binding parameters for prepared statement failed.') ;
+                    throw new ControllerException('Binding parameters for prepared statement failed.') ; // @codeCoverageIgnore
                 }
                 if (!$stmt->execute()) {
-                    throw new ControllerException('Failed to execute UPDATE statement. (' . $this->dbh->error . ')') ;
+                    throw new ControllerException('Failed to execute UPDATE statement. (' . $this->dbh->error . ')') ; // @codeCoverageIgnore
                 }
                 /**
                  * @SuppressWarnings checkAliases
                  */
                 if (!$stmt->close()) {
-                    throw new ControllerException('Something broke while trying to close the prepared statement.') ;
+                    throw new ControllerException('Something broke while trying to close the prepared statement.') ; // @codeCoverageIgnore
                 }
                 return $id ;
-            } catch (\Exception $e) {
-                throw new ControllerException($e->getMessage()) ;
+            } catch (\Exception $e) { // @codeCoverageIgnore
+                throw new ControllerException($e->getMessage()) ; // @codeCoverageIgnore
             }
         } else {
             throw new ControllerException("Invalid data.") ;
