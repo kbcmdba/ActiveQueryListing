@@ -42,6 +42,8 @@ class HostModel extends ModelBase
     private $alertWarnSecs ;
     private $alertInfoSecs ;
     private $alertLowSecs ;
+    private $connectTimeout ;
+    private $readTimeout ;
     private $created ;
     private $updated ;
     private $lastAudited ;
@@ -133,6 +135,10 @@ class HostModel extends ModelBase
         $this->setAlertWarnSecs(Tools::param('alertWarnSecs')) ;
         $this->setAlertInfoSecs(Tools::param('alertInfoSecs')) ;
         $this->setAlertLowSecs(Tools::param('alertLowSecs')) ;
+        $ct = Tools::param('connectTimeout') ;
+        $this->setConnectTimeout( ( $ct === '' || $ct === null ) ? null : (int) $ct ) ;
+        $rt = Tools::param('readTimeout') ;
+        $this->setReadTimeout( ( $rt === '' || $rt === null ) ? null : (int) $rt ) ;
         $this->setCreated(Tools::param('created')) ;
         $this->setUpdated(Tools::param('updated')) ;
         $this->setLastAudited(Tools::param('lastAudited')) ;
@@ -328,6 +334,38 @@ class HostModel extends ModelBase
     public function setAlertLowSecs($alertLowSecs)
     {
         $this->alertLowSecs = $alertLowSecs ;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getConnectTimeout()
+    {
+        return $this->connectTimeout ;
+    }
+
+    /**
+     * @param int|null $connectTimeout
+     */
+    public function setConnectTimeout($connectTimeout)
+    {
+        $this->connectTimeout = ( $connectTimeout === null || $connectTimeout === '' ) ? null : (int) $connectTimeout ;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getReadTimeout()
+    {
+        return $this->readTimeout ;
+    }
+
+    /**
+     * @param int|null $readTimeout
+     */
+    public function setReadTimeout($readTimeout)
+    {
+        $this->readTimeout = ( $readTimeout === null || $readTimeout === '' ) ? null : (int) $readTimeout ;
     }
 
     /**

@@ -1072,4 +1072,75 @@ class ConfigTest extends TestCase
         $this->assertSame( 2, $cfg['redisConnectTimeout'] ) ;
         $this->assertSame( 0, $cfg['redisDatabase'] ) ;
     }
+
+    // ========================================================================
+    // connectTimeout / readTimeout — per-host timeout defaults in config
+    // ========================================================================
+
+    public function testConnectTimeoutDefaultsTo4WhenAbsent() : void
+    {
+        $cfg = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertSame( 4, $cfg->getConnectTimeout() ) ;
+    }
+
+    public function testReadTimeoutDefaultsTo8WhenAbsent() : void
+    {
+        $cfg = Config::fromXmlString( $this->v2Config() ) ;
+        $this->assertSame( 8, $cfg->getReadTimeout() ) ;
+    }
+
+    public function testConnectTimeoutParsedFromV2TimeoutsElement() : void
+    {
+        $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"127.0.0.1\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"u\" password=\"p\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" />\n"
+             . "    <timeouts connectTimeout=\"10\" readTimeout=\"20\" />\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        $cfg = Config::fromXmlString( $xml ) ;
+        $this->assertSame( 10, $cfg->getConnectTimeout() ) ;
+        $this->assertSame( 20, $cfg->getReadTimeout() ) ;
+    }
+
+    public function testConnectTimeoutParsedAsInteger() : void
+    {
+        $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"127.0.0.1\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"u\" password=\"p\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" />\n"
+             . "    <timeouts connectTimeout=\"15\" readTimeout=\"30\" />\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        $parsed = Config::parseConfigXml( $xml ) ;
+        $this->assertSame( 15, $parsed['connectTimeout'] ) ;
+        $this->assertSame( 30, $parsed['readTimeout'] ) ;
+    }
+
+    public function testTimeoutsAppearsInToString() : void
+    {
+        $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config version=\"2\">\n"
+             . "    <configdb type=\"mysql\" host=\"127.0.0.1\" port=\"3306\" name=\"aql_db\" />\n"
+             . "    <user type=\"admin\" name=\"u\" password=\"p\" />\n"
+             . "    <monitoring baseUrl=\"http://x\" timeZone=\"UTC\" "
+             . "issueTrackerBaseUrl=\"http://x\" roQueryPart=\"@@global.read_only\" />\n"
+             . "    <timeouts connectTimeout=\"6\" readTimeout=\"12\" />\n"
+             . "    <dbtype name=\"mysql\" enabled=\"true\" />\n"
+             . "</config>\n" ;
+        $cfg = Config::fromXmlString( $xml ) ;
+        $str = (string) $cfg ;
+        $this->assertStringContainsString( 'timeouts:', $str ) ;
+        $this->assertStringContainsString( 'connectTimeout = 6', $str ) ;
+        $this->assertStringContainsString( 'readTimeout    = 12', $str ) ;
+    }
+
+    public function testV1ConnectTimeoutDefaultsTo4() : void
+    {
+        // v1 flat format has no <timeouts> element — should fall through to defaults
+        $cfg = Config::parseConfigXml( $this->v1Config() ) ;
+        $this->assertSame( 4, $cfg['connectTimeout'] ) ;
+        $this->assertSame( 8, $cfg['readTimeout'] ) ;
+    }
 }

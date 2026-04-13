@@ -318,4 +318,100 @@ class HostModelTest extends TestCase
         $this->assertSame( '2024-01-16 11:00:00', $m->getUpdated() ) ;
         $this->assertSame( '2024-01-17 12:00:00', $m->getLastAudited() ) ;
     }
+
+    // ========================================================================
+    // connectTimeout / readTimeout - nullable per-host timeout overrides
+    // ========================================================================
+
+    public function testConnectTimeoutDefaultsToNull() : void
+    {
+        $m = new HostModel() ;
+        $this->assertNull( $m->getConnectTimeout() ) ;
+    }
+
+    public function testReadTimeoutDefaultsToNull() : void
+    {
+        $m = new HostModel() ;
+        $this->assertNull( $m->getReadTimeout() ) ;
+    }
+
+    public function testSetConnectTimeoutIntValue() : void
+    {
+        $m = new HostModel() ;
+        $m->setConnectTimeout( 10 ) ;
+        $this->assertSame( 10, $m->getConnectTimeout() ) ;
+    }
+
+    public function testSetReadTimeoutIntValue() : void
+    {
+        $m = new HostModel() ;
+        $m->setReadTimeout( 30 ) ;
+        $this->assertSame( 30, $m->getReadTimeout() ) ;
+    }
+
+    public function testSetConnectTimeoutNullClearsValue() : void
+    {
+        $m = new HostModel() ;
+        $m->setConnectTimeout( 5 ) ;
+        $m->setConnectTimeout( null ) ;
+        $this->assertNull( $m->getConnectTimeout() ) ;
+    }
+
+    public function testSetReadTimeoutNullClearsValue() : void
+    {
+        $m = new HostModel() ;
+        $m->setReadTimeout( 5 ) ;
+        $m->setReadTimeout( null ) ;
+        $this->assertNull( $m->getReadTimeout() ) ;
+    }
+
+    public function testSetConnectTimeoutEmptyStringBecomesNull() : void
+    {
+        $m = new HostModel() ;
+        $m->setConnectTimeout( '' ) ;
+        $this->assertNull( $m->getConnectTimeout() ) ;
+    }
+
+    public function testSetReadTimeoutEmptyStringBecomesNull() : void
+    {
+        $m = new HostModel() ;
+        $m->setReadTimeout( '' ) ;
+        $this->assertNull( $m->getReadTimeout() ) ;
+    }
+
+    public function testPopulateFromFormWithTimeoutValues() : void
+    {
+        $_REQUEST = [
+            'id' => '3',
+            'hostName' => 'wan1.remote',
+            'alertCritSecs' => '60',
+            'alertWarnSecs' => '30',
+            'alertInfoSecs' => '10',
+            'alertLowSecs' => '0',
+            'connectTimeout' => '15',
+            'readTimeout' => '45',
+        ] ;
+        $m = new HostModel() ;
+        $m->populateFromForm() ;
+        $this->assertSame( 15, $m->getConnectTimeout() ) ;
+        $this->assertSame( 45, $m->getReadTimeout() ) ;
+    }
+
+    public function testPopulateFromFormWithEmptyTimeoutsBecomesNull() : void
+    {
+        $_REQUEST = [
+            'id' => '3',
+            'hostName' => 'local1',
+            'alertCritSecs' => '60',
+            'alertWarnSecs' => '30',
+            'alertInfoSecs' => '10',
+            'alertLowSecs' => '0',
+            'connectTimeout' => '',
+            'readTimeout' => '',
+        ] ;
+        $m = new HostModel() ;
+        $m->populateFromForm() ;
+        $this->assertNull( $m->getConnectTimeout() ) ;
+        $this->assertNull( $m->getReadTimeout() ) ;
+    }
 }

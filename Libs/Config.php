@@ -90,6 +90,8 @@ class Config
     private $testDbName = null;
     private $enableMaintenanceWindows = null;
     private $dbaSessionTimeout = null;
+    private $connectTimeout = null;
+    private $readTimeout = null;
     private $redisEnabled = null;
     private $redisUser = null;
     private $redisPassword = null;
@@ -149,6 +151,8 @@ class Config
             'testDbName' => '',
             'enableMaintenanceWindows' => 'false',
             'dbaSessionTimeout' => '86400',
+            'connectTimeout' => 4,
+            'readTimeout' => 8,
             'redisEnabled' => 'false',
             'redisUser' => '',
             'redisPassword' => '',
@@ -200,6 +204,8 @@ class Config
             'testDbName'               => [ 'isRequired' => 0, 'value' => 0 ],
             'enableMaintenanceWindows' => [ 'isRequired' => 0, 'value' => 0 ],
             'dbaSessionTimeout'        => [ 'isRequired' => 0, 'value' => 0 ],
+            'connectTimeout'           => [ 'isRequired' => 0, 'value' => 0 ],
+            'readTimeout'              => [ 'isRequired' => 0, 'value' => 0 ],
             'redisEnabled'             => [ 'isRequired' => 0, 'value' => 0 ],
             'redisUser'                => [ 'isRequired' => 0, 'value' => 0 ],
             'redisPassword'            => [ 'isRequired' => 0, 'value' => 0 ],
@@ -255,6 +261,8 @@ class Config
                     switch ( $key ) {
                         case 'minRefresh' :
                         case 'defaultRefresh' :
+                        case 'connectTimeout' :
+                        case 'readTimeout' :
                         case 'redisConnectTimeout' :
                         case 'redisDatabase' :
                             $cfgValues[$key] = (int) $v ;
@@ -320,6 +328,10 @@ class Config
                 'issueTypeId'      => 'jiraIssueTypeId',
                 'queryHashFieldId' => 'jiraQueryHashFieldId',
             ],
+            'timeouts' => [
+                'connectTimeout' => 'connectTimeout',
+                'readTimeout'    => 'readTimeout',
+            ],
             'redis' => [
                 'user'           => 'redisUser',
                 'password'       => 'redisPassword',
@@ -347,7 +359,8 @@ class Config
      * Integer-typed config keys that need (int) casting
      */
     private static $intKeys = [
-        'minRefresh', 'defaultRefresh', 'redisConnectTimeout', 'redisDatabase',
+        'minRefresh', 'defaultRefresh', 'connectTimeout', 'readTimeout',
+        'redisConnectTimeout', 'redisDatabase',
     ] ;
 
     /**
@@ -547,6 +560,8 @@ class Config
         $this->testDbUser = $cfgValues[ 'testDbUser' ] ?? '' ;
         $this->testDbPass = $cfgValues[ 'testDbPass' ] ?? '' ;
         $this->testDbName = $cfgValues[ 'testDbName' ] ?? '' ;
+        $this->connectTimeout = $cfgValues[ 'connectTimeout' ] ?? 4 ;
+        $this->readTimeout = $cfgValues[ 'readTimeout' ] ?? 8 ;
         $this->enableMaintenanceWindows = $cfgValues[ 'enableMaintenanceWindows' ] ?? 'false' ;
         $this->dbaSessionTimeout = $cfgValues[ 'dbaSessionTimeout' ] ?? '86400' ;
         $this->redisEnabled = $cfgValues[ 'redisEnabled' ] ?? 'false' ;
@@ -727,6 +742,9 @@ class Config
             "    database       = " . $or( $this->redisDatabase ),
             "  postgresql:",
             "    enabled = " . $or( $this->postgresqlEnabled ),
+            "  timeouts:",
+            "    connectTimeout = " . $or( $this->connectTimeout ),
+            "    readTimeout    = " . $or( $this->readTimeout ),
             "  features:",
             "    enableMaintenanceWindows = " . $or( $this->enableMaintenanceWindows ),
             "    dbaSessionTimeout        = " . $or( $this->dbaSessionTimeout ),
@@ -1087,6 +1105,26 @@ class Config
      */
     public function getRedisDatabase() {
         return (int) ( $this->redisDatabase ?? 0 ) ;
+    }
+
+    /**
+     * Get site-wide default connection timeout in seconds
+     * Per-host overrides live in host.connect_timeout (NULL = use this default)
+     *
+     * @return int
+     */
+    public function getConnectTimeout() {
+        return (int) ( $this->connectTimeout ?? 4 ) ;
+    }
+
+    /**
+     * Get site-wide default read/query timeout in seconds
+     * Per-host overrides live in host.read_timeout (NULL = use this default)
+     *
+     * @return int
+     */
+    public function getReadTimeout() {
+        return (int) ( $this->readTimeout ?? 8 ) ;
     }
 
     /**

@@ -102,6 +102,8 @@ SELECT host_id
      , alert_warn_secs
      , alert_info_secs
      , alert_low_secs
+     , connect_timeout
+     , read_timeout
      , created
      , updated
      , last_audited
@@ -117,7 +119,8 @@ SQL;
         }
         $id = $hostName = $portNumber = $description = $shouldMonitor = $shouldBackup = null ;
         $revenueImpacting = $decommissioned = $alertCritSecs = $alertWarnSecs = null ;
-        $alertInfoSecs = $alertLowSecs = $created = $updated = $lastAudited = null ;
+        $alertInfoSecs = $alertLowSecs = $connectTimeout = $readTimeout = null ;
+        $created = $updated = $lastAudited = null ;
         if (! $stmt->bind_result(
             $id,
             $hostName,
@@ -131,6 +134,8 @@ SQL;
             $alertWarnSecs,
             $alertInfoSecs,
             $alertLowSecs,
+            $connectTimeout,
+            $readTimeout,
             $created,
             $updated,
             $lastAudited
@@ -151,6 +156,8 @@ SQL;
             $model->setAlertWarnSecs($alertWarnSecs) ;
             $model->setAlertInfoSecs($alertInfoSecs) ;
             $model->setAlertLowSecs($alertLowSecs) ;
+            $model->setConnectTimeout($connectTimeout) ;
+            $model->setReadTimeout($readTimeout) ;
             $model->setCreated($created) ;
             $model->setUpdated($updated) ;
             $model->setLastAudited($lastAudited) ;
@@ -211,6 +218,8 @@ SELECT host_id
      , alert_warn_secs
      , alert_info_secs
      , alert_low_secs
+     , connect_timeout
+     , read_timeout
      , created
      , updated
      , last_audited
@@ -230,7 +239,8 @@ SQL;
         }
         $id = $hostName = $portNumber = $description = $shouldMonitor = $shouldBackup = null ;
         $revenueImpacting = $decommissioned = $alertCritSecs = $alertWarnSecs = null ;
-        $alertInfoSecs = $alertLowSecs = $created = $updated = $lastAudited = null ;
+        $alertInfoSecs = $alertLowSecs = $connectTimeout = $readTimeout = null ;
+        $created = $updated = $lastAudited = null ;
         if (! $stmt->bind_result(
             $id,
             $hostName,
@@ -244,6 +254,8 @@ SQL;
             $alertWarnSecs,
             $alertInfoSecs,
             $alertLowSecs,
+            $connectTimeout,
+            $readTimeout,
             $created,
             $updated,
             $lastAudited
@@ -265,6 +277,8 @@ SQL;
             $model->setAlertWarnSecs($alertWarnSecs) ;
             $model->setAlertInfoSecs($alertInfoSecs) ;
             $model->setAlertLowSecs($alertLowSecs) ;
+            $model->setConnectTimeout($connectTimeout) ;
+            $model->setReadTimeout($readTimeout) ;
             $model->setCreated($created) ;
             $model->setUpdated($updated) ;
             $model->setLastAudited($lastAudited) ;
@@ -299,9 +313,11 @@ INSERT host
      , alert_warn_secs
      , alert_info_secs
      , alert_low_secs
+     , connect_timeout
+     , read_timeout
      , last_audited
      )
-VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
 SQL;
                 $hostName         = $model->getHostName() ;
                 $portNumber       = $model->getPortNumber() ;
@@ -314,13 +330,15 @@ SQL;
                 $alertWarnSecs    = $model->getAlertWarnSecs() ;
                 $alertInfoSecs    = $model->getAlertInfoSecs() ;
                 $alertLowSecs     = $model->getAlertLowSecs() ;
+                $connectTimeout   = $model->getConnectTimeout() ;
+                $readTimeout      = $model->getReadTimeout() ;
                 $lastAudited      = $model->getLastAudited() ;
                 $stmt             = $this->dbh->prepare($query) ;
                 if (! $stmt) {
                     throw new ControllerException('Prepared statement failed for ' . $query) ; // @codeCoverageIgnore
                 }
                 if (! ($stmt->bind_param(
-                    'ssiiiiiiiiis',
+                    'ssiiiiiiiiiiis',
                     $hostName,
                     $description,
                     $portNumber,
@@ -332,6 +350,8 @@ SQL;
                     $alertWarnSecs,
                     $alertInfoSecs,
                     $alertLowSecs,
+                    $connectTimeout,
+                    $readTimeout,
                     $lastAudited
                 ))) {
                     throw new ControllerException('Binding parameters for prepared statement failed.') ; // @codeCoverageIgnore
@@ -379,6 +399,8 @@ UPDATE host
      , alert_warn_secs = ?
      , alert_info_secs = ?
      , alert_low_secs = ?
+     , connect_timeout = ?
+     , read_timeout = ?
      , last_audited = ?
  WHERE host_id = ?
 SQL;
@@ -394,13 +416,15 @@ SQL;
                 $alertWarnSecs    = $model->getAlertWarnSecs() ;
                 $alertInfoSecs    = $model->getAlertInfoSecs() ;
                 $alertLowSecs     = $model->getAlertLowSecs() ;
+                $connectTimeout   = $model->getConnectTimeout() ;
+                $readTimeout      = $model->getReadTimeout() ;
                 $lastAudited      = $model->getLastAudited() ;
                 $stmt       = $this->dbh->prepare($query) ;
                 if (! $stmt) {
                     throw new ControllerException('Prepared statement failed for ' . $query) ; // @codeCoverageIgnore
                 }
                 if (! ($stmt->bind_param(
-                    'sisiiiiiiiisi',
+                    'sisiiiiiiiiiisi',
                     $hostName,
                     $portNumber,
                     $description,
@@ -412,6 +436,8 @@ SQL;
                     $alertWarnSecs,
                     $alertInfoSecs,
                     $alertLowSecs,
+                    $connectTimeout,
+                    $readTimeout,
                     $lastAudited,
                     $id
                 ))) {

@@ -725,6 +725,29 @@ if ( tableExists( $dbh, 'host' ) && ! columnExists( $dbh, 'host', 'environment_i
     $body .= "<tr><td>host.environment_id column</td><td>OK</td><td>-</td></tr>\n" ;
 }
 
+// ---------------------------------------------------------------------------
+// Migration 008: Add per-host connection and read timeout columns
+// ---------------------------------------------------------------------------
+
+if ( tableExists( $dbh, 'host' ) && ! columnExists( $dbh, 'host', 'connect_timeout' ) ) {
+    $sql = "ALTER TABLE host
+              ADD COLUMN connect_timeout INT UNSIGNED NULL DEFAULT NULL
+                  COMMENT 'When NULL, the site-wide default from aql_config.xml <timeouts> is used; set per-host for WAN or slow targets'
+                  AFTER alert_low_secs,
+              ADD COLUMN read_timeout INT UNSIGNED NULL DEFAULT NULL
+                  COMMENT 'When NULL, the site-wide default from aql_config.xml <timeouts> is used; set per-host for queries on high-latency or heavily-loaded hosts'
+                  AFTER connect_timeout" ;
+    if ( $dbh->query( $sql ) ) {
+        $body .= "<tr><td>host.connect_timeout + read_timeout columns</td><td>ADDED</td><td>Per-host timeout overrides</td></tr>\n" ;
+        $results[] = "Added connect_timeout and read_timeout columns to host table" ;
+    } else {
+        $body .= "<tr><td>host.connect_timeout + read_timeout columns</td><td>ERROR</td><td>" . htmlspecialchars( $dbh->error ) . "</td></tr>\n" ;
+        $errors[] = "Failed to add timeout columns: " . $dbh->error ;
+    }
+} else if ( tableExists( $dbh, 'host' ) ) {
+    $body .= "<tr><td>host.connect_timeout + read_timeout columns</td><td>OK</td><td>-</td></tr>\n" ;
+}
+
 $body .= "</tbody>\n</table>\n" ;
 
 // ///////////////////////////////////////////////////////////////////////////

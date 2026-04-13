@@ -309,9 +309,13 @@ switch ( Tools::param( 'data' ) ) {
         $alertWarnSecs    = Tools::param( 'alertWarnSecs',    '', 0,   16 ) ;
         $alertInfoSecs    = Tools::param( 'alertInfoSecs',    '', 0,   16 ) ;
         $alertLowSecs     = Tools::param( 'alertLowSecs',     '', 0,   16 ) ;
+        $connectTimeout   = Tools::param( 'connectTimeout',   '', 0,   16 ) ;
+        $readTimeout      = Tools::param( 'readTimeout',      '', 0,   16 ) ;
         $dbType           = Tools::param( 'dbType',           '', 0,   32 ) ;
         $environmentId    = Tools::param( 'environmentId',    '', 0,   16 ) ;
-        if ( $environmentId === '' || $environmentId === null ) { $environmentId = null ; }
+        if ( $connectTimeout  === '' || $connectTimeout  === null ) { $connectTimeout  = null ; }
+        if ( $readTimeout     === '' || $readTimeout     === null ) { $readTimeout     = null ; }
+        if ( $environmentId   === '' || $environmentId   === null ) { $environmentId   = null ; }
 
         if (  ( ( 'Update' === $action ) || ( 'Delete' === $action ) )
              && ! Tools::isNumeric( $hostId )
@@ -332,6 +336,12 @@ switch ( Tools::param( 'data' ) ) {
             checkIsNumeric( $alertWarnSecs, "Alert Seconds: Warning", $errors ) ;
             checkIsNumeric( $alertInfoSecs, "Alert Seconds: Info", $errors ) ;
             checkIsNumeric( $alertLowSecs, "Alert Seconds: Low", $errors ) ;
+            if ( $connectTimeout !== null && ! Tools::isNumeric( $connectTimeout ) ) {
+                $errors .= "Connect Timeout must be a positive integer (or leave blank to use the site-wide default).<br />\n" ;
+            }
+            if ( $readTimeout !== null && ! Tools::isNumeric( $readTimeout ) ) {
+                $errors .= "Read Timeout must be a positive integer (or leave blank to use the site-wide default).<br />\n" ;
+            }
             if ( ! in_array( $dbType, $validDbTypes ) ) {
                 $errors .= "Invalid Database Type.<br />\n" ;
             }
@@ -387,16 +397,19 @@ switch ( Tools::param( 'data' ) ) {
                      . ', description = ?, should_monitor = ?, should_backup = ?'
                      . ', should_schemaspy = ?, revenue_impacting = ?, decommissioned = ?'
                      . ', alert_crit_secs = ?, alert_warn_secs = ?'
-                     . ', alert_info_secs = ?, alert_low_secs = ?, db_type = ?'
+                     . ', alert_info_secs = ?, alert_low_secs = ?'
+                     . ', connect_timeout = ?, read_timeout = ?'
+                     . ', db_type = ?'
                      . ', environment_id = ?'
                      . ', created = NOW(), updated = NOW(), last_audited = NOW()'
                      ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sisiiiiiiiiisi'
+                $stmt->bind_param( 'sisiiiiiiiiiiisi'
                                  , $hostName, $portNumber, $description, $shouldMonitor
                                  , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
-                                 , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs, $dbType
-                                 , $environmentId
+                                 , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs
+                                 , $connectTimeout, $readTimeout
+                                 , $dbType, $environmentId
                                  ) ;
                 $body .= ( $stmt->execute() ) ? "<span class='msg-success'>Success.</span><br />\n" : "Failed.<br />\n" ;
             break ;
@@ -407,17 +420,20 @@ switch ( Tools::param( 'data' ) ) {
                      . ', should_backup = ?, should_schemaspy = ?'
                      . ', revenue_impacting = ?, decommissioned = ?'
                      . ', alert_crit_secs = ?, alert_warn_secs = ?'
-                     . ', alert_info_secs = ?, alert_low_secs = ?, db_type = ?'
+                     . ', alert_info_secs = ?, alert_low_secs = ?'
+                     . ', connect_timeout = ?, read_timeout = ?'
+                     . ', db_type = ?'
                      . ', environment_id = ?'
                      . ', updated = NOW(), last_audited = NOW()'
                      . ' WHERE host_id = ?'
                      ;
                 $stmt = $dbh->prepare( $sql ) ;
-                $stmt->bind_param( 'sisiiiiiiiiisii'
+                $stmt->bind_param( 'sisiiiiiiiiiiisii'
                                  , $hostName, $portNumber, $description, $shouldMonitor
                                  , $shouldBackup, $shouldSchemaspy, $revenueImpacting, $decommissioned
-                                 , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs, $dbType
-                                 , $environmentId, $hostId
+                                 , $alertCritSecs, $alertWarnSecs, $alertInfoSecs, $alertLowSecs
+                                 , $connectTimeout, $readTimeout
+                                 , $dbType, $environmentId, $hostId
                                  ) ;
                 $body .= ( $stmt->execute() ) ? "Success.<br />\n" : "Failed.<br />\n" ;
                 break ;
@@ -450,9 +466,11 @@ SELECT host_id
      , alert_low_secs
      , db_type
      , environment_id
+     , connect_timeout
+     , read_timeout
   FROM host
  ORDER BY decommissioned DESC, hostname ASC, port_number ASC
- 
+
 SQL;
         // Generate db_type dropdown options dynamically from ENUM values
         $dbTypeOptions = '' ;
@@ -500,6 +518,8 @@ SQL;
     <tr><th>Warning</th><td><input type="number" id="alertWarnSecs" name="alertWarnSecs" size="3" value="" /></td></tr>
     <tr><th>Info</th><td><input type="number" id="alertInfoSecs" name="alertInfoSecs" size="3" value="" /></td></tr>
     <tr><th>Low</th><td><input type="number" id="alertLowSecs" name="alertLowSecs" size="3" value="" /></td></tr>
+    <tr><th rowspan="2">Timeouts (s)</th><th>Connect</th><td><input type="number" id="connectTimeout" name="connectTimeout" size="3" placeholder="default" value="" /></td></tr>
+    <tr><th>Read</th><td><input type="number" id="readTimeout" name="readTimeout" size="3" placeholder="default" value="" /></td></tr>
     </tr>
   </table>
   <input type="submit" name="action" value="Add"> &nbsp;
@@ -549,12 +569,15 @@ document.getElementById('dbType').addEventListener('change', function() {
       <th colspan="4">Alert Seconds</th>
       <th rowspan="2">DB Type</th>
       <th rowspan="2">Environment</th>
+      <th colspan="2">Timeouts (s)</th>
     </tr>
     <tr>
       <th>Critical</th>
       <th>Warn</th>
       <th>Info</th>
       <th>Low</th>
+      <th>Connect</th>
+      <th>Read</th>
     </tr>
   </thead>
   <tbody>
@@ -571,6 +594,8 @@ HTML;
                 $jsDescription = htmlspecialchars( json_encode( $row[3] ), ENT_QUOTES, 'UTF-8' ) ;
                 $jsDbType = htmlspecialchars( json_encode( $row[13] ), ENT_QUOTES, 'UTF-8' ) ;
                 $jsEnvId = ( $row[14] !== null ) ? intval( $row[14] ) : 'null' ;
+                $jsConnectTimeout = ( $row[15] !== null ) ? intval( $row[15] ) : 'null' ;
+                $jsReadTimeout    = ( $row[16] !== null ) ? intval( $row[16] ) : 'null' ;
                 $body .= "      <tr>"
                       .  "<td class=\"text-center\">"
                       .  "<button type=\"button\" onclick=\"fillHostForm("
@@ -588,13 +613,15 @@ HTML;
                       .  intval( $row[11] ) . ", "
                       .  intval( $row[12] ) . ", "
                       .  $jsDbType . ", "
-                      .  $jsEnvId
+                      .  $jsEnvId . ", "
+                      .  $jsConnectTimeout . ", "
+                      .  $jsReadTimeout
                       .  "); return false;\">Fill Host Form</button>"
                       .  "</td>"
                       ;
                 // Columns 4-8 are boolean flags that get color coding
                 $boolCols = [ 4, 5, 6, 7, 8 ] ;
-                for ( $i = 0 ; $i < 15 ; $i++ ) {
+                for ( $i = 0 ; $i < 17 ; $i++ ) {
                     if ( $i === 14 ) {
                         // Environment column: show name from lookup instead of raw ID
                         $envName = ( $row[$i] !== null && isset( $envMap[ (int) $row[$i] ] ) )

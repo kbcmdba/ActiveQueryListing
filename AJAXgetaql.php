@@ -279,7 +279,7 @@ function getHostIdFromHostname( $hostnamePort ) {
  * @param array|null $maintenanceInfo Active maintenance window info
  * @param Config $config AQL configuration object
  */
-function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0 ) {
+function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0, $connectTimeout = null, $readTimeout = null ) {
     if ( $startTime <= 0 ) { $startTime = microtime( true ) ; }
     $renderTimeData = [ 'dispatch' => $dispatchMs ] ;
 
@@ -339,10 +339,10 @@ function handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $co
             throw new \Exception( 'phpredis extension not installed' ) ;
         }
 
-        // Connect to Redis
+        // Connect to Redis - per-host timeout overrides the Redis-specific config setting
         $phaseStart = microtime( true ) ;
         $redis = new \Redis() ;
-        $timeout = $config->getRedisConnectTimeout() ;
+        $timeout = $connectTimeout ?? $config->getRedisConnectTimeout() ;
         if ( !@$redis->connect( $redisHost, $redisPort, $timeout ) ) {
             throw new \Exception( "Failed to connect to Redis at $redisHost:$redisPort" ) ;
         }
@@ -930,13 +930,15 @@ $hostname = Tools::param('hostname', '', 0, 261) ;
 // Look up host ID and db_type early (needed for Redis vs MySQL handling)
 $hostId = null ;
 $dbType = 'MySQL' ; // Default
+$hostConnectTimeout = null ;
+$hostReadTimeout    = null ;
 try {
     $parts = explode( ':', $hostname ) ;
     $lookupHostname = $parts[0] ;
     $lookupPort = isset( $parts[1] ) ? (int) $parts[1] : 3306 ;
     $lookupDbc = new DBConnection() ;
     $lookupDbh = $lookupDbc->getConnection() ;
-    $lookupStmt = $lookupDbh->prepare( "SELECT host_id, db_type FROM host WHERE hostname = ? AND port_number = ?" ) ;
+    $lookupStmt = $lookupDbh->prepare( "SELECT host_id, db_type, connect_timeout, read_timeout FROM host WHERE hostname = ? AND port_number = ?" ) ;
     $lookupStmt->bind_param( 'si', $lookupHostname, $lookupPort ) ;
     $lookupStmt->execute() ;
     $lookupResult = $lookupStmt->get_result() ;
@@ -944,6 +946,8 @@ try {
     if ( $lookupRow ) {
         $hostId = (int) $lookupRow['host_id'] ;
         $dbType = $lookupRow['db_type'] ;
+        $hostConnectTimeout = $lookupRow['connect_timeout'] !== null ? (int) $lookupRow['connect_timeout'] : null ;
+        $hostReadTimeout    = $lookupRow['read_timeout']    !== null ? (int) $lookupRow['read_timeout']    : null ;
     }
     $lookupStmt->close() ;
 } catch ( \Exception $e ) {
@@ -991,6 +995,10 @@ if ( $config->getEnableMaintenanceWindows() && $hostId !== null ) {
     }
 }
 
+// Resolve per-host timeouts: per-host (host table) → global default (XML) → hardcoded fallback
+$resolvedConnectTimeout = $hostConnectTimeout ?? $config->getConnectTimeout() ;
+$resolvedReadTimeout    = $hostReadTimeout    ?? $config->getReadTimeout() ;
+
 // Debug param: debug=MySQL,Redis,AQL (AQL means all, or comma-separated types)
 // Backward compat: debug=1 treated as debug=AQL
 $debugParam = Tools::param('debug', '', 0, 256) ?? '' ;
@@ -1012,11 +1020,11 @@ $dispatchMs = round( ( microtime( true ) - $startTime ) * 1000, 1 ) ;
 
 // Dispatch to appropriate handler based on db_type
 if ( $dbType === 'Redis' ) {
-    handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs ) ;
+    handleRedisHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs, $resolvedConnectTimeout, $resolvedReadTimeout ) ;
 } elseif ( $dbType === 'PostgreSQL' ) {
-    handlePostgreSQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs ) ;
+    handlePostgreSQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs, $resolvedConnectTimeout, $resolvedReadTimeout ) ;
 } else {
-    handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs ) ;
+    handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debugThisType, $startTime, $dispatchMs, $resolvedConnectTimeout, $resolvedReadTimeout ) ;
 }
 exit( 0 ) ;
 
@@ -1032,7 +1040,7 @@ exit( 0 ) ;
  * @param float $startTime Microtime start for render timing
  * @param float $dispatchMs Pre-handler dispatch time in ms
  */
-function handlePostgreSQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0 ) {
+function handlePostgreSQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0, $connectTimeout = null, $readTimeout = null ) {
     if ( $startTime <= 0 ) { $startTime = microtime( true ) ; }
     $renderTimeData = [ 'dispatch' => $dispatchMs ] ;
 
@@ -1083,7 +1091,8 @@ try {
 
     // Connect via pg_connect
     $phaseStart = microtime( true ) ;
-    $connStr = "host=$pgHost port=$pgPort user=$monUser dbname=postgres connect_timeout=4" ;
+    $resolvedConnectTimeout = $connectTimeout ?? 4 ;
+    $connStr = "host=$pgHost port=$pgPort user=$monUser dbname=postgres connect_timeout=$resolvedConnectTimeout" ;
     if ( ! empty( $monPass ) ) {
         // Escape single quotes in password and wrap in single quotes for libpq
         $escapedPass = str_replace( [ '\\', "'" ], [ '\\\\', "\\'" ], $monPass ) ;
@@ -1288,7 +1297,7 @@ echo json_encode( $output ) . "\n" ;
  * @param array|null $maintenanceInfo Active maintenance window info
  * @param Config $config AQL configuration object
  */
-function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0 ) {
+function handleMySQLHost( $hostname, $hostId, $hostGroups, $maintenanceInfo, $config, $debug = false, $startTime = 0, $dispatchMs = 0, $connectTimeout = null, $readTimeout = null ) {
     if ( $startTime <= 0 ) { $startTime = microtime( true ) ; }
     $renderTimeData = [ 'dispatch' => $dispatchMs ] ;
 
@@ -1334,7 +1343,7 @@ try {
     $phaseStart    = microtime( true ) ;
     $monUser = $config->getConfigValue('mysqlUsername', $config->getDbUser()) ;
     $monPass = $config->getConfigValue('mysqlPassword', $config->getDbPass()) ;
-    $dbc           = new DBConnection('process', $hostname, null, '', $monUser, $monPass) ;
+    $dbc           = new DBConnection('process', $hostname, null, '', $monUser, $monPass, null, 'mysqli', false, $connectTimeout, $readTimeout) ;
     $dbh           = $dbc->getConnection() ;
     $renderTimeData['connect'] = round( ( microtime( true ) - $phaseStart ) * 1000, 1 ) ;
     $outputList    = [] ;

@@ -65,7 +65,9 @@ class DBConnection
         $dbPass         = null,
         $dbPort         = null,
         $connClass      = 'mysqli',
-        $createDb       = false
+        $createDb       = false,
+        $connectTimeout = null,
+        $readTimeout    = null
     ) {
         $oConfig = new Config($dbHost, $dbPort, $dbInstanceName, $dbName, $dbUser, $dbPass);
         $this->oConfig = $oConfig;
@@ -96,10 +98,10 @@ class DBConnection
                 if (! $mysqli) {
                     throw new DaoException("Failed to allocate connection class!"); // @codeCoverageIgnore
                 }
-                if (! $mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, self::CONNECT_TIMEOUT_SECONDS)) {
+                if (! $mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, $connectTimeout ?? self::CONNECT_TIMEOUT_SECONDS)) {
                     throw new DaoException('Failed setting connection timeout.'); // @codeCoverageIgnore
                 }
-                if (! $mysqli->options(MYSQLI_OPT_READ_TIMEOUT, self::READ_TIMEOUT_SECONDS)) {
+                if (! $mysqli->options(MYSQLI_OPT_READ_TIMEOUT, $readTimeout ?? self::READ_TIMEOUT_SECONDS)) {
                     throw new DaoException('Failed setting read timeout.'); // @codeCoverageIgnore
                 }
                 try {

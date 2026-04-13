@@ -2,7 +2,7 @@
 <!-- Supports both legacy flat <param> format and new grouped element format -->
 
 <!ELEMENT config (param | dbtype | configdb | user | monitoring | authentication |
-                  ldap | jira | environment_types | redis | features | testing)*>
+                  ldap | jira | environment_types | redis | features | testing | timeouts)*>
 <!ATTLIST config
     version CDATA #IMPLIED
 >
@@ -107,6 +107,14 @@
     enableMaintenanceWindows (true|false) #IMPLIED
     dbaSessionTimeout        CDATA #IMPLIED
     enableSpeechAlerts       (true|false) #IMPLIED
+>
+
+<!-- Site-wide connection timeout defaults (per-host overrides stored in host table) -->
+<!-- When absent: connectTimeout=4s, readTimeout=8s (hard-coded fallbacks in DBConnection) -->
+<!ELEMENT timeouts EMPTY>
+<!ATTLIST timeouts
+    connectTimeout CDATA #IMPLIED
+    readTimeout    CDATA #IMPLIED
 >
 
 <!-- Test harness settings (optional) -->

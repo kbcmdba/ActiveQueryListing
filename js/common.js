@@ -2139,7 +2139,9 @@ function fillHostForm( host_id
                      , alert_info_secs
                      , alert_low_secs
                      , db_type
-                     , environment_id ) {
+                     , environment_id
+                     , connect_timeout
+                     , read_timeout ) {
     document.getElementById( 'hostId' ).value = host_id ;
     document.getElementById( 'hostName' ).value = hostname ;
     document.getElementById( 'portNumber' ).value = port_number ;
@@ -2156,6 +2158,8 @@ function fillHostForm( host_id
     document.getElementById( 'alertWarnSecs' ).value = alert_warn_secs ;
     document.getElementById( 'alertInfoSecs' ).value = alert_info_secs ;
     document.getElementById( 'alertLowSecs' ).value = alert_low_secs ;
+    document.getElementById( 'connectTimeout' ).value = ( connect_timeout !== null && connect_timeout !== undefined ) ? connect_timeout : '' ;
+    document.getElementById( 'readTimeout' ).value = ( read_timeout !== null && read_timeout !== undefined ) ? read_timeout : '' ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
