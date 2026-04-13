@@ -89,6 +89,13 @@
     </environment_types>
 
     <!-- ================================================================== -->
+    <!-- Site-wide DB Timeout Defaults (optional)                          -->
+    <!-- Fallbacks: 4s connect, 8s read. Override per-host in manageData  -->
+    <!-- to tune WAN or heavily-loaded targets individually.               -->
+    <!-- ================================================================== -->
+    <!-- <timeouts connectTimeout="4" readTimeout="8" /> -->
+
+    <!-- ================================================================== -->
     <!-- Redis Connection Tuning (optional)                                 -->
     <!-- Separate from dbtype enable/disable - these are connection params  -->
     <!-- ================================================================== -->
