@@ -197,9 +197,25 @@ class HostGroupControllerTest extends TestCase
         $this->controller->update( $model ) ;
     }
 
+    public function testDeleteInvalidModelThrows() : void
+    {
+        // Model with no id — validateForDelete() returns false
+        $model = new HostGroupModel() ;
+        $this->expectException( ControllerException::class ) ;
+        $this->expectExceptionMessageMatches( '/Invalid data/' ) ;
+        $this->controller->delete( $model ) ;
+    }
+
     // ========================================================================
-    // DDL stubs
+    // DDL methods
     // ========================================================================
+
+    public function testCreateTableDoesNotCrash() : void
+    {
+        // Uses IF NOT EXISTS — safe to call when table already exists.
+        $this->controller->createTable() ;
+        $this->assertTrue( true ) ;
+    }
 
     public function testDropTriggersDoesNotCrash() : void
     {

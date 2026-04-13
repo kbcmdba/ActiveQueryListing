@@ -258,9 +258,26 @@ class HostControllerTest extends TestCase
         $this->controller->update( $model ) ;
     }
 
+    public function testDeleteInvalidModelThrows() : void
+    {
+        // Model with no id — validateForDelete() returns false → deleteModelById() throws
+        $model = new HostModel() ;
+        $this->expectException( ControllerException::class ) ;
+        $this->expectExceptionMessageMatches( '/Invalid data/' ) ;
+        $this->controller->delete( $model ) ;
+    }
+
     // ========================================================================
-    // DDL methods (no-ops or safe)
+    // DDL methods
     // ========================================================================
+
+    public function testCreateTableDoesNotCrash() : void
+    {
+        // Uses IF NOT EXISTS — safe to call even when table already exists.
+        // Exercises doDDL() success path in ControllerBase.
+        $this->controller->createTable() ;
+        $this->assertTrue( true ) ;
+    }
 
     public function testDropTriggersDoesNotCrash() : void
     {

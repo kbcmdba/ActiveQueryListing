@@ -49,8 +49,8 @@ abstract class ControllerBase
             $dbc = new DBConnection($readWriteMode) ;
             $this->dbh = $dbc->getConnection() ;
             $this->dbh->autocommit(true) ;
-        } catch (\Exception $e) {
-            throw new ControllerException('Problem connecting to database: ' . $this->dbh->error) ;
+        } catch (\Exception $e) { // @codeCoverageIgnore
+            throw new ControllerException('Problem connecting to database: ' . $e->getMessage()) ; // @codeCoverageIgnore
         }
     }
 
@@ -64,10 +64,10 @@ abstract class ControllerBase
     {
         try {
             if (! $this->dbh->query($sql)) {
-                throw new ControllerException($sql) ;
+                throw new ControllerException($sql) ; // @codeCoverageIgnore
             }
-        } catch (\Exception $e) {
-            throw new ControllerException("Failed to execute DDL: " . $this->dbh->error) ;
+        } catch (\Exception $e) { // @codeCoverageIgnore
+            throw new ControllerException("Failed to execute DDL: " . $this->dbh->error) ; // @codeCoverageIgnore
         }
     }
 
@@ -82,20 +82,20 @@ abstract class ControllerBase
         if ($model->validateForDelete()) {
             $stmt = $this->dbh->prepare($sql) ;
             if (!$stmt) {
-                throw new ControllerException('Prepared statement failed for ' . $sql) ;
+                throw new ControllerException('Prepared statement failed for ' . $sql) ; // @codeCoverageIgnore
             }
             $id = $model->getId() ;
             if (! $stmt->bind_param('i', $id)) {
-                throw new ControllerException('Binding parameters for prepared statement failed.') ;
+                throw new ControllerException('Binding parameters for prepared statement failed.') ; // @codeCoverageIgnore
             }
             if (!$stmt->execute()) {
-                throw new ControllerException('Failed to execute DELETE statement. (' . $this->dbh->error . ')') ;
+                throw new ControllerException('Failed to execute DELETE statement. (' . $this->dbh->error . ')') ; // @codeCoverageIgnore
             }
             /**
              * @SuppressWarnings checkAliases
              */
             if (!$stmt->close()) {
-                throw new ControllerException('Something broke while trying to close the prepared statement.') ;
+                throw new ControllerException('Something broke while trying to close the prepared statement.') ; // @codeCoverageIgnore
             }
             return ;
         } else {

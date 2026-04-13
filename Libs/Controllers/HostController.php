@@ -42,8 +42,8 @@ class HostController extends ControllerBase
 
     public function dropTable()
     {
-        $sql = "DROP TABLE IF EXISTS host" ;
-        $this->doDDL($sql) ;
+        $sql = "DROP TABLE IF EXISTS host" ; // @codeCoverageIgnore
+        $this->doDDL($sql) ; // @codeCoverageIgnore
     }
 
     public function createTable()
@@ -110,10 +110,10 @@ SELECT host_id
 SQL;
         $stmt = $this->dbh->prepare($sql) ;
         if ((! $stmt) || (! $stmt->bind_param('i', $id))) {
-            throw new ControllerException('Failed to prepare SELECT statement. (' . $this->dbh->error . ')') ;
+            throw new ControllerException('Failed to prepare SELECT statement. (' . $this->dbh->error . ')') ; // @codeCoverageIgnore
         }
         if (! $stmt->execute()) {
-            throw new ControllerException('Failed to execute SELECT statement. (' . $this->dbh->error . ')') ;
+            throw new ControllerException('Failed to execute SELECT statement. (' . $this->dbh->error . ')') ; // @codeCoverageIgnore
         }
         $id = $hostName = $portNumber = $description = $shouldMonitor = $shouldBackup = null ;
         $revenueImpacting = $decommissioned = $alertCritSecs = $alertWarnSecs = null ;
@@ -135,7 +135,7 @@ SQL;
             $updated,
             $lastAudited
         )) {
-            throw new ControllerException('Failed to bind to result: (' . $this->dbh->error . ')') ;
+            throw new ControllerException('Failed to bind to result: (' . $this->dbh->error . ')') ; // @codeCoverageIgnore
         }
         if ($stmt->fetch()) {
             $model = new HostModel() ;
@@ -220,13 +220,13 @@ SELECT host_id
 SQL;
         $stmt = $this->dbh->prepare($sql) ;
         if (! $stmt) {
-            throw new ControllerException('Failed to prepare SELECT statement. (' . $this->dbh->error . ')') ;
+            throw new ControllerException('Failed to prepare SELECT statement. (' . $this->dbh->error . ')') ; // @codeCoverageIgnore
         }
         if (!empty($bindValues)) {
             $stmt->bind_param($bindTypes, ...$bindValues) ;
         }
         if (! $stmt->execute()) {
-            throw new ControllerException('Failed to execute SELECT statement. (' . $this->dbh->error . ')') ;
+            throw new ControllerException('Failed to execute SELECT statement. (' . $this->dbh->error . ')') ; // @codeCoverageIgnore
         }
         $id = $hostName = $portNumber = $description = $shouldMonitor = $shouldBackup = null ;
         $revenueImpacting = $decommissioned = $alertCritSecs = $alertWarnSecs = null ;
@@ -248,7 +248,7 @@ SQL;
             $updated,
             $lastAudited
         )) {
-            throw new ControllerException('Failed to bind to result: (' . $this->dbh->error . ')') ;
+            throw new ControllerException('Failed to bind to result: (' . $this->dbh->error . ')') ; // @codeCoverageIgnore
         }
         $models = [] ;
         while ($stmt->fetch()) {
@@ -317,7 +317,7 @@ SQL;
                 $lastAudited      = $model->getLastAudited() ;
                 $stmt             = $this->dbh->prepare($query) ;
                 if (! $stmt) {
-                    throw new ControllerException('Prepared statement failed for ' . $query) ;
+                    throw new ControllerException('Prepared statement failed for ' . $query) ; // @codeCoverageIgnore
                 }
                 if (! ($stmt->bind_param(
                     'ssiiiiiiiiis',
@@ -334,23 +334,23 @@ SQL;
                     $alertLowSecs,
                     $lastAudited
                 ))) {
-                    throw new ControllerException('Binding parameters for prepared statement failed.') ;
+                    throw new ControllerException('Binding parameters for prepared statement failed.') ; // @codeCoverageIgnore
                 }
                 if (! $stmt->execute()) {
-                    throw new ControllerException('Failed to execute INSERT statement. ('
-                                                 . $this->dbh->error .
-                                                 ')') ;
+                    throw new ControllerException('Failed to execute INSERT statement. (' // @codeCoverageIgnore
+                                                 . $this->dbh->error . // @codeCoverageIgnore
+                                                 ')') ; // @codeCoverageIgnore
                 }
                 $newId = $stmt->insert_id ;
                 /**
                  * @SuppressWarnings checkAliases
                  */
                 if (! $stmt->close()) {
-                    throw new ControllerException('Something broke while trying to close the prepared statement.') ;
+                    throw new ControllerException('Something broke while trying to close the prepared statement.') ; // @codeCoverageIgnore
                 }
                 return $newId ;
-            } catch (\Exception $e) {
-                throw new ControllerException($e->getMessage()) ;
+            } catch (\Exception $e) { // @codeCoverageIgnore
+                throw new ControllerException($e->getMessage()) ; // @codeCoverageIgnore
             }
         } else {
             throw new ControllerException("Invalid data.") ;

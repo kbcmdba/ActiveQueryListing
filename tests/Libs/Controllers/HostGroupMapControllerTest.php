@@ -264,9 +264,28 @@ class HostGroupMapControllerTest extends TestCase
         $this->mapController->update( $model ) ;
     }
 
+    public function testDeleteInvalidModelThrows() : void
+    {
+        // Model with no hostGroupId/hostId — validateForDelete() returns false
+        $_REQUEST = [] ;
+        $model = new HostGroupMapModel() ;
+        $model->populateFromForm() ;
+
+        $this->expectException( ControllerException::class ) ;
+        $this->expectExceptionMessageMatches( '/Invalid data/' ) ;
+        $this->mapController->delete( $model ) ;
+    }
+
     // ========================================================================
-    // DDL stubs
+    // DDL methods
     // ========================================================================
+
+    public function testCreateTableDoesNotCrash() : void
+    {
+        // Uses IF NOT EXISTS — safe to call when table already exists.
+        $this->mapController->createTable() ;
+        $this->assertTrue( true ) ;
+    }
 
     public function testDropTriggersDoesNotCrash() : void
     {
