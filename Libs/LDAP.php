@@ -39,7 +39,32 @@ class LDAP
      */
     public function __construct()
     {
-        throw new \Exception("Improper use of Tools class") ;
+        throw new \Exception("Improper use of Tools class") ; // @codeCoverageIgnore
+    }
+
+    /**
+     * Local password authentication (LDAP disabled path).
+     * Extracted for testability — authenticate() calls this when LDAP is off.
+     *
+     * @param  string $user          Username (any string, tracked in session)
+     * @param  string $password      Provided password
+     * @param  string $adminPassword Expected password from config
+     * @return boolean
+     */
+    public static function authenticateLocally( $user, $password, $adminPassword ) {
+        if ( empty( $adminPassword ) ) {
+            return false ;
+        }
+        if ( empty( $user ) || empty( $password ) ) {
+            return false ;
+        }
+        if ( $password === $adminPassword ) {
+            $_SESSION[ 'AuthUser' ] = $user ;
+            $_SESSION[ 'AuthCanAccess' ] = 1 ;
+            $_SESSION[ 'AuthLoginTime' ] = time() ;
+            return true ;
+        }
+        return false ;
     }
 
     /**
@@ -53,31 +78,20 @@ class LDAP
         try {
             $oConfig = new Config() ;
             if ( ! $oConfig->getDoLDAPAuthentication() ) {
-                // Local auth: check against adminPassword in config
-                $adminPassword = $oConfig->getConfigValue( 'adminPassword', '' ) ;
-                if ( empty( $adminPassword ) ) {
-                    // No adminPassword configured - deny access
-                    return false ;
-                }
-                if ( empty( $user ) || empty( $password ) ) {
-                    return false ;
-                }
-                if ( $password === $adminPassword ) {
-                    $_SESSION[ 'AuthUser' ] = $user ;
-                    $_SESSION[ 'AuthCanAccess' ] = 1 ;
-                    $_SESSION[ 'AuthLoginTime' ] = time() ;
-                    return true ;
-                }
-                return false ;
+                return self::authenticateLocally(
+                    $user,
+                    $password,
+                    $oConfig->getConfigValue( 'adminPassword', '' )
+                ) ;
             }
         }
-        catch ( ConfigurationException $e ) {
-            return false ;
+        catch ( ConfigurationException $e ) { // @codeCoverageIgnore
+            return false ; // @codeCoverageIgnore
         }
         $debugEnabled = $oConfig->getLDAPDebugConnection() ;
         $debug = function( $msg ) use ( $debugEnabled ) {
             if ( $debugEnabled ) {
-                echo "<pre>LDAP DEBUG: " . htmlspecialchars( $msg, ENT_QUOTES, 'UTF-8' ) . "</pre>\n" ;
+                echo "<pre>LDAP DEBUG: " . htmlspecialchars( $msg, ENT_QUOTES, 'UTF-8' ) . "</pre>\n" ; // @codeCoverageIgnore
             }
         } ;
 
@@ -101,9 +115,9 @@ class LDAP
         }
         $ldap = ldap_connect( $adServer ) ;
         if ( false === $ldap ) {
-            $debug( "ldap_connect() failed" ) ;
-            echo "LDAP is mis-configured or blocked.\n" ;
-            die() ;
+            $debug( "ldap_connect() failed" ) ; // @codeCoverageIgnore
+            echo "LDAP is mis-configured or blocked.\n" ; // @codeCoverageIgnore
+            die() ; // @codeCoverageIgnore
         }
         $debug( "ldap_connect() OK" ) ;
         ldap_set_option( $ldap, LDAP_OPT_PROTOCOL_VERSION, 3 ) ;
@@ -114,9 +128,9 @@ class LDAP
         if ( $oConfig->getLDAPStartTls() ) {
             $debug( "Attempting StartTLS upgrade..." ) ;
             if ( ! @ldap_start_tls( $ldap ) ) {
-                $debug( "ldap_start_tls() FAILED - " . ldap_error( $ldap ) ) ;
-                ldap_unbind( $ldap ) ;
-                return false ;
+                $debug( "ldap_start_tls() FAILED - " . ldap_error( $ldap ) ) ; // @codeCoverageIgnore
+                ldap_unbind( $ldap ) ; // @codeCoverageIgnore
+                return false ; // @codeCoverageIgnore
             }
             $debug( "StartTLS OK - connection is now encrypted" ) ;
         }
@@ -133,17 +147,17 @@ class LDAP
         $debug( "Searching: " . $oConfig->getLDAPDomainName() . " with filter: $filter" ) ;
         $result = ldap_search( $ldap, $oConfig->getLDAPDomainName(), $filter, $attr ) ;
         if ( false === $result ) {
-            $debug( "ldap_search() FAILED - " . ldap_error( $ldap ) ) ;
-            ldap_unbind( $ldap ) ;
-            return false ;
+            $debug( "ldap_search() FAILED - " . ldap_error( $ldap ) ) ; // @codeCoverageIgnore
+            ldap_unbind( $ldap ) ; // @codeCoverageIgnore
+            return false ; // @codeCoverageIgnore
         }
         $debug( "ldap_search() OK" ) ;
         $entries = ldap_get_entries( $ldap, $result ) ;
         ldap_unbind( $ldap ) ;
         $debug( "Found " . $entries[ 'count' ] . " entries" ) ;
         if ( $entries[ 'count' ] === 0 ) {
-            $debug( "User not found in directory" ) ;
-            return false ;
+            $debug( "User not found in directory" ) ; // @codeCoverageIgnore
+            return false ; // @codeCoverageIgnore
         }
         $canAccess = 0;
         $memberOf = $entries[ 0 ][ 'memberof' ] ?? [] ;

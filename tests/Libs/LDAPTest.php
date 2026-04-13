@@ -78,40 +78,41 @@ class LDAPTest extends TestCase
     }
 
     // ========================================================================
-    // Local auth path (LDAP disabled) — no LDAP server needed
+    // Local auth path — tests authenticateLocally() directly, no config needed
     // ========================================================================
 
-    public function testLocalAuthSucceedsWithCorrectAdminPassword() : void
+    public function testLocalAuthSucceedsWithCorrectPassword() : void
     {
-        // Build a config with LDAP disabled and a known adminPassword
-        // Use fromXmlString to avoid touching the live config
-        $xml = '<?xml version="1.0"?><config version="2">'
-             . '<configdb type="mysql" host="localhost" port="3306" name="aql_db" />'
-             . '<user type="admin" name="u" password="p" />'
-             . '<monitoring baseUrl="http://x" timeZone="UTC" issueTrackerBaseUrl="http://x" roQueryPart="@@global.read_only" />'
-             . '<authentication adminPassword="test_password_123" />'
-             . '<dbtype name="mysql" enabled="true" />'
-             . '</config>' ;
-
-        // LDAP::authenticate reads from the real config file, so we can't
-        // easily inject a test config. Instead, test the local auth path
-        // only if the live config has LDAP disabled.
-        if ( $this->config->getDoLDAPAuthentication() ) {
-            // LDAP is enabled in the live config — test local auth would
-            // actually try LDAP. Skip this test.
-            $this->markTestSkipped( 'Live config has LDAP enabled; cannot test local auth path' ) ;
-        }
-
-        $adminPass = $this->config->getConfigValue( 'adminPassword', '' ) ;
-        if ( empty( $adminPass ) ) {
-            $this->markTestSkipped( 'No adminPassword configured' ) ;
-        }
-
-        $result = LDAP::authenticate( 'testuser', $adminPass ) ;
+        $result = LDAP::authenticateLocally( 'testuser', 'correct_pass', 'correct_pass' ) ;
         $this->assertTrue( $result ) ;
         $this->assertSame( 'testuser', $_SESSION['AuthUser'] ) ;
         $this->assertSame( 1, $_SESSION['AuthCanAccess'] ) ;
         $this->assertArrayHasKey( 'AuthLoginTime', $_SESSION ) ;
+    }
+
+    public function testLocalAuthFailsWithWrongPassword() : void
+    {
+        $result = LDAP::authenticateLocally( 'testuser', 'wrong_pass', 'correct_pass' ) ;
+        $this->assertFalse( $result ) ;
+        $this->assertArrayNotHasKey( 'AuthUser', $_SESSION ) ;
+    }
+
+    public function testLocalAuthFailsWithEmptyAdminPassword() : void
+    {
+        $result = LDAP::authenticateLocally( 'testuser', 'any_pass', '' ) ;
+        $this->assertFalse( $result ) ;
+    }
+
+    public function testLocalAuthFailsWithEmptyUser() : void
+    {
+        $result = LDAP::authenticateLocally( '', 'any_pass', 'admin_pass' ) ;
+        $this->assertFalse( $result ) ;
+    }
+
+    public function testLocalAuthFailsWithEmptyPassword() : void
+    {
+        $result = LDAP::authenticateLocally( 'testuser', '', 'admin_pass' ) ;
+        $this->assertFalse( $result ) ;
     }
 
     // ========================================================================
