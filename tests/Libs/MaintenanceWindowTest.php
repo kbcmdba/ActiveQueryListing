@@ -13,6 +13,12 @@ use PHPUnit\Framework\TestCase ;
  * connection and are tested elsewhere via integration tests. This file
  * focuses on the private static helpers via reflection - the time and
  * schedule matching logic that determines whether a window is "active".
+ *
+ * NOTE: Integration tests currently require MySQL (mysqli). The raw SQL
+ * and DBConnection class assume MySQL. When configdb supports PostgreSQL
+ * or other engines, the integration tests will need a DB-agnostic layer
+ * or separate fixtures per DB type. For now, tests skip gracefully if
+ * MySQL is unavailable.
  */
 class MaintenanceWindowTest extends TestCase
 {
@@ -901,6 +907,38 @@ class MaintenanceWindowTest extends TestCase
     // getAllActiveWindows — deeper verification of the host-list building
     // ========================================================================
 
+    /**
+     * Helper: directly insert a scheduled maintenance window into the DB.
+     * createAdhocWindow only creates adhoc windows; we need scheduled for
+     * full coverage of getAllActiveWindows.
+     */
+    private function createScheduledWindow( \mysqli $dbh, string $scheduleType, string $daysOfWeek,
+                                            ?string $startTime, ?string $endTime, string $description ) : int
+    {
+        $stmt = $dbh->prepare(
+            "INSERT INTO maintenance_window (window_type, schedule_type, days_of_week, start_time, end_time, timezone, description, created_by)
+             VALUES ('scheduled', ?, ?, ?, ?, 'UTC', ?, 'phpunit')"
+        ) ;
+        $stmt->bind_param( 'sssss', $scheduleType, $daysOfWeek, $startTime, $endTime, $description ) ;
+        $stmt->execute() ;
+        $windowId = $dbh->insert_id ;
+        $stmt->close() ;
+        return $windowId ;
+    }
+
+    /**
+     * Helper: map a window to a host group.
+     */
+    private function mapWindowToGroup( \mysqli $dbh, int $windowId, int $groupId ) : void
+    {
+        $stmt = $dbh->prepare(
+            "INSERT INTO maintenance_window_host_group_map (window_id, host_group_id) VALUES (?, ?)"
+        ) ;
+        $stmt->bind_param( 'ii', $windowId, $groupId ) ;
+        $stmt->execute() ;
+        $stmt->close() ;
+    }
+
     public function testGetAllActiveWindowsIncludesHostList() : void
     {
         $dbh = $this->getDbhOrSkip() ;
@@ -935,6 +973,161 @@ class MaintenanceWindowTest extends TestCase
         }
         $this->assertTrue( $found ) ;
 
+        $this->cleanupWindow( $dbh, $windowId ) ;
+    }
+
+    // ========================================================================
+    // isScheduledWindowActive overnight branches — use timezone trick
+    // ========================================================================
+
+    public function testScheduledWindowOvernightEveningPortion() : void
+    {
+        // Find a timezone where it's currently between 22:00 and 23:59
+        // using the full IANA timezone database.
+        $found = false ;
+        foreach ( \DateTimeZone::listIdentifiers() as $tzName ) {
+            $tz = new \DateTimeZone( $tzName ) ;
+            $now = new \DateTime( 'now', $tz ) ;
+            $hour = (int) $now->format( 'H' ) ;
+            if ( $hour >= 22 ) {
+                $dayName = [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ][ (int) $now->format( 'w' ) ] ;
+                $window = [
+                    'window_type'   => 'scheduled',
+                    'schedule_type' => 'weekly',
+                    'days_of_week'  => $dayName,
+                    'start_time'    => '22:00:00',
+                    'end_time'      => '06:00:00',
+                    'timezone'      => $tzName,
+                ] ;
+                $result = $this->callPrivate( 'isScheduledWindowActive', [ $window ] ) ;
+                $this->assertTrue( $result, "Overnight window should be active during evening in $tzName (hour=$hour)" ) ;
+                $found = true ;
+                break ;
+            }
+        }
+        if ( ! $found ) {
+            $this->markTestSkipped( 'Could not find a timezone currently in the 22:00-23:59 range' ) ; // @codeCoverageIgnore
+        }
+    }
+
+    public function testScheduledWindowOvernightMorningPortion() : void
+    {
+        // Find a timezone where it's currently between 00:00 and 05:59.
+        $found = false ;
+        foreach ( \DateTimeZone::listIdentifiers() as $tzName ) {
+            $tz = new \DateTimeZone( $tzName ) ;
+            $now = new \DateTime( 'now', $tz ) ;
+            $hour = (int) $now->format( 'H' ) ;
+            if ( $hour >= 0 && $hour <= 5 ) {
+                $yesterday = clone $now ;
+                $yesterday->modify( '-1 day' ) ;
+                $yesterdayName = [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ][ (int) $yesterday->format( 'w' ) ] ;
+                $window = [
+                    'window_type'   => 'scheduled',
+                    'schedule_type' => 'weekly',
+                    'days_of_week'  => $yesterdayName,
+                    'start_time'    => '22:00:00',
+                    'end_time'      => '06:00:00',
+                    'timezone'      => $tzName,
+                ] ;
+                $result = $this->callPrivate( 'isScheduledWindowActive', [ $window ] ) ;
+                $this->assertTrue( $result, "Overnight window should be active during morning in $tzName (hour=$hour, yesterday=$yesterdayName)" ) ;
+                $found = true ;
+                break ;
+            }
+        }
+        if ( ! $found ) {
+            $this->markTestSkipped( 'Could not find a timezone currently in the 00:00-05:59 range' ) ; // @codeCoverageIgnore
+        }
+    }
+
+    // ========================================================================
+    // getAllActiveWindows — scheduled window with group mapping
+    // ========================================================================
+
+    public function testGetAllActiveWindowsScheduledWithGroupMapping() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $hostId = $this->getAnyHostId( $dbh ) ;
+        if ( $hostId === null ) {
+            $this->markTestSkipped( 'No monitored hosts in database' ) ;
+        }
+
+        // Create a group with this host
+        $dbh->query( "INSERT INTO host_group (tag, short_description) VALUES ('_mw_sched', 'Scheduled MW test')" ) ;
+        $groupId = $dbh->insert_id ;
+        $dbh->query( "INSERT INTO host_group_map (host_group_id, host_id) VALUES ($groupId, $hostId)" ) ;
+
+        // Create a scheduled window on all days, 00:00-23:59 (always active)
+        $windowId = $this->createScheduledWindow(
+            $dbh, 'weekly', 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+            '00:00:00', '23:59:59', 'Scheduled group test'
+        ) ;
+        $this->mapWindowToGroup( $dbh, $windowId, $groupId ) ;
+
+        $activeWindows = MaintenanceWindow::getAllActiveWindows( $dbh ) ;
+
+        // Find our window
+        $found = false ;
+        foreach ( $activeWindows as $w ) {
+            if ( (int) ( $w['windowId'] ?? 0 ) === $windowId ) {
+                $found = true ;
+                $this->assertSame( 'scheduled', $w['windowType'] ) ;
+                $this->assertSame( 'weekly', $w['scheduleType'] ) ;
+                $this->assertArrayHasKey( 'daysOfWeek', $w ) ;
+                $this->assertArrayHasKey( 'timeWindow', $w ) ;
+                $this->assertSame( '00:00 - 23:59', $w['timeWindow'] ) ;
+                $this->assertArrayHasKey( 'hosts', $w ) ;
+                $this->assertNotEmpty( $w['hosts'] ) ;
+                // At least one host should have "(via _mw_sched)"
+                $hasGroupHost = false ;
+                foreach ( $w['hosts'] as $h ) {
+                    if ( str_contains( $h, '(via _mw_sched)' ) ) {
+                        $hasGroupHost = true ;
+                        break ;
+                    }
+                }
+                $this->assertTrue( $hasGroupHost, 'Should show host via group mapping' ) ;
+                break ;
+            }
+        }
+        $this->assertTrue( $found, 'Scheduled window should appear in getAllActiveWindows' ) ;
+
+        // Cleanup
+        $this->cleanupWindow( $dbh, $windowId ) ;
+        $dbh->query( "DELETE FROM host_group_map WHERE host_group_id = $groupId AND host_id = $hostId" ) ;
+        $dbh->query( "DELETE FROM host_group WHERE host_group_id = $groupId" ) ;
+    }
+
+    public function testGetAllActiveWindowsSkipsInactiveScheduled() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $hostId = $this->getAnyHostId( $dbh ) ;
+        if ( $hostId === null ) {
+            $this->markTestSkipped( 'No monitored hosts in database' ) ;
+        }
+
+        // Create a scheduled window on NO days — never active
+        $windowId = $this->createScheduledWindow(
+            $dbh, 'weekly', '', null, null, 'Inactive scheduled test'
+        ) ;
+        $dbh->query(
+            "INSERT INTO maintenance_window_host_map (window_id, host_id) VALUES ($windowId, $hostId)"
+        ) ;
+
+        $activeWindows = MaintenanceWindow::getAllActiveWindows( $dbh ) ;
+
+        // Should NOT find our window
+        $found = false ;
+        foreach ( $activeWindows as $w ) {
+            if ( (int) ( $w['windowId'] ?? 0 ) === $windowId ) {
+                $found = true ;
+                break ;
+            }
+        }
+        $this->assertFalse( $found, 'Inactive scheduled window should be skipped' ) ;
+
+        // Cleanup
         $this->cleanupWindow( $dbh, $windowId ) ;
     }
 }
