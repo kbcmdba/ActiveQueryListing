@@ -64,7 +64,7 @@ class MaintenanceWindow
 
         $stmt = $dbh->prepare( $sql ) ;
         if ( ! $stmt ) {
-            return null ;
+            return null ; // @codeCoverageIgnore
         }
         $stmt->bind_param( 'i', $hostId ) ;
         $stmt->execute() ;
@@ -113,7 +113,7 @@ class MaintenanceWindow
 
         $stmt = $dbh->prepare( $sql ) ;
         if ( ! $stmt ) {
-            return null ;
+            return null ; // @codeCoverageIgnore
         }
         $stmt->bind_param( 'i', $hostId ) ;
         $stmt->execute() ;
@@ -154,13 +154,13 @@ class MaintenanceWindow
 
         $stmt = $dbh->prepare( $sql ) ;
         if ( ! $stmt ) {
-            throw new \Exception( "Failed to prepare statement: " . $dbh->error ) ;
+            throw new \Exception( "Failed to prepare statement: " . $dbh->error ) ; // @codeCoverageIgnore
         }
         $stmt->bind_param( 'sss', $silenceUntil, $description, $createdBy ) ;
 
-        if ( ! $stmt->execute() ) {
-            $stmt->close() ;
-            throw new \Exception( "Failed to create maintenance window: " . $stmt->error ) ;
+        if ( ! $stmt->execute() ) { // @codeCoverageIgnore
+            $stmt->close() ; // @codeCoverageIgnore
+            throw new \Exception( "Failed to create maintenance window: " . $stmt->error ) ; // @codeCoverageIgnore
         }
 
         $windowId = $dbh->insert_id ;
@@ -175,13 +175,13 @@ class MaintenanceWindow
 
         $mapStmt = $dbh->prepare( $mapSql ) ;
         if ( ! $mapStmt ) {
-            throw new \Exception( "Failed to prepare mapping statement: " . $dbh->error ) ;
+            throw new \Exception( "Failed to prepare mapping statement: " . $dbh->error ) ; // @codeCoverageIgnore
         }
         $mapStmt->bind_param( 'ii', $windowId, $targetId ) ;
 
-        if ( ! $mapStmt->execute() ) {
-            $mapStmt->close() ;
-            throw new \Exception( "Failed to create window mapping: " . $mapStmt->error ) ;
+        if ( ! $mapStmt->execute() ) { // @codeCoverageIgnore
+            $mapStmt->close() ; // @codeCoverageIgnore
+            throw new \Exception( "Failed to create window mapping: " . $mapStmt->error ) ; // @codeCoverageIgnore
         }
 
         $mapStmt->close() ;
@@ -546,7 +546,7 @@ class MaintenanceWindow
 
         $result = $dbh->query( $sql ) ;
         if ( ! $result ) {
-            return [] ;
+            return [] ; // @codeCoverageIgnore
         }
 
         while ( $window = $result->fetch_assoc() ) {

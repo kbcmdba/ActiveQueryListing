@@ -843,4 +843,98 @@ class MaintenanceWindowTest extends TestCase
         ] ;
         $this->assertTrue( $this->callPrivate( 'isScheduleMatchingToday', [ $window, $now ] ) ) ;
     }
+
+    // ========================================================================
+    // Schedule match edge cases — empty params and last-day-of-month (32)
+    // ========================================================================
+
+    public function testQuarterlyMatchEmptyParams() : void
+    {
+        $now = new \DateTime( '2024-01-15' ) ;
+        $this->assertFalse( $this->callPrivate( 'isQuarterlyMatch', [
+            [ 'month_of_year' => null, 'day_of_month' => 15 ], $now
+        ] ) ) ;
+        $this->assertFalse( $this->callPrivate( 'isQuarterlyMatch', [
+            [ 'month_of_year' => 1, 'day_of_month' => null ], $now
+        ] ) ) ;
+    }
+
+    public function testQuarterlyMatchLastDayOfMonth() : void
+    {
+        // January 31 — last day. day_of_month=32 means last day.
+        // Jan is month 1 of Q1, so month_of_year=1
+        $now = new \DateTime( '2024-01-31' ) ;
+        $window = [ 'month_of_year' => 1, 'day_of_month' => 32 ] ;
+        $this->assertTrue( $this->callPrivate( 'isQuarterlyMatch', [ $window, $now ] ) ) ;
+    }
+
+    public function testAnnuallyMatchEmptyParams() : void
+    {
+        $now = new \DateTime( '2024-04-15' ) ;
+        $this->assertFalse( $this->callPrivate( 'isAnnuallyMatch', [
+            [ 'month_of_year' => null, 'day_of_month' => 15 ], $now
+        ] ) ) ;
+        $this->assertFalse( $this->callPrivate( 'isAnnuallyMatch', [
+            [ 'month_of_year' => 4, 'day_of_month' => null ], $now
+        ] ) ) ;
+    }
+
+    public function testAnnuallyMatchLastDayOfMonth() : void
+    {
+        $now = new \DateTime( '2024-02-29' ) ; // Leap year last day of Feb
+        $window = [ 'month_of_year' => 2, 'day_of_month' => 32 ] ;
+        $this->assertTrue( $this->callPrivate( 'isAnnuallyMatch', [ $window, $now ] ) ) ;
+    }
+
+    public function testPeriodicMatchEmptyParams() : void
+    {
+        $now = new \DateTime( '2024-01-15' ) ;
+        $this->assertFalse( $this->callPrivate( 'isPeriodicMatch', [
+            [ 'period_days' => null, 'period_start_date' => '2024-01-01' ], $now
+        ] ) ) ;
+        $this->assertFalse( $this->callPrivate( 'isPeriodicMatch', [
+            [ 'period_days' => 7, 'period_start_date' => null ], $now
+        ] ) ) ;
+    }
+
+    // ========================================================================
+    // getAllActiveWindows — deeper verification of the host-list building
+    // ========================================================================
+
+    public function testGetAllActiveWindowsIncludesHostList() : void
+    {
+        $dbh = $this->getDbhOrSkip() ;
+        $hostId = $this->getAnyHostId( $dbh ) ;
+        if ( $hostId === null ) {
+            $this->markTestSkipped( 'No monitored hosts in database' ) ;
+        }
+
+        // Get hostname for verification
+        $hostResult = $dbh->query( "SELECT hostname, port_number FROM host WHERE host_id = $hostId" ) ;
+        $hostRow = $hostResult->fetch_assoc() ;
+        $expectedHost = $hostRow['hostname'] . ':' . $hostRow['port_number'] ;
+
+        $windowId = MaintenanceWindow::createAdhocWindow(
+            'host', $hostId, 60, 'Host list test', 'phpunit', $dbh
+        ) ;
+
+        $activeWindows = MaintenanceWindow::getAllActiveWindows( $dbh ) ;
+        $found = false ;
+        foreach ( $activeWindows as $w ) {
+            if ( (int) ( $w['windowId'] ?? 0 ) === $windowId ) {
+                $found = true ;
+                $this->assertArrayHasKey( 'hosts', $w ) ;
+                $this->assertContains( $expectedHost, $w['hosts'],
+                    'Host list should include the mapped host' ) ;
+                $this->assertArrayHasKey( 'expiresAt', $w,
+                    'Adhoc window should have expiresAt' ) ;
+                $this->assertArrayNotHasKey( 'scheduleType', $w,
+                    'Adhoc window should not have scheduleType' ) ;
+                break ;
+            }
+        }
+        $this->assertTrue( $found ) ;
+
+        $this->cleanupWindow( $dbh, $windowId ) ;
+    }
 }
