@@ -26,7 +26,7 @@ namespace com\kbcmdba\aql ;
 
 // @todo 02 Build out testAQL.php as comprehensive test harness (parent - see sub-tasks below)
 // @todo 05 Adopt PHPUnit for incremental TDD (parent - see subtasks)
-//          551 tests / 1051 assertions / 100% lines, 100% methods across all Libs/ classes.
+//          567 tests / 1074 assertions / 100% lines, 100% methods across all Libs/ classes.
 //          Pre-commit hook runs full suite on every commit (advisory mode).
 // @todo 05-50 AJAXgetaql.php handler tests (requires mocking DB connections)
 //          DONE: Extracted pure helpers into Libs/AJAXHelper.php (100% covered):
@@ -174,14 +174,6 @@ namespace com\kbcmdba\aql ;
 //          - BLOCKING_CACHE_REDIS_HOST (127.0.0.1), BLOCKING_CACHE_REDIS_PORT (6379)
 //          - BLOCKING_CACHE_TTL (60 seconds), BLOCKING_CACHE_REDIS_PREFIX ('aql:blocking:')
 //          - Add <blockingCache> element or attributes on <redis>
-// @todo 25-20 Timeout values
-//          - DB connection timeout (DBConnection.php: 4 seconds)
-//          - DB read timeout (DBConnection.php: 8 seconds)
-//          - AJAX execution limit (AJAXgetaql.php: 10 seconds)
-//          - LDAP timeout (LDAP.php: 10 seconds)
-//          - PG connection timeout (AJAXgetaql.php: 4 seconds)
-//          - Redis blocking cache connect timeout (AJAXgetaql.php: 0.5 seconds)
-//          - Add <timeouts> element or per-group timeout attributes
 // @todo 25-30 Redis alert thresholds (relates to @todo 40)
 //          - Memory critical (95%), warning (80%)
 //          - Fragmentation (100MB absolute)
