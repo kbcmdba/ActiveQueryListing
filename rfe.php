@@ -213,6 +213,17 @@ namespace com\kbcmdba\aql ;
 //          - Certification conflicts visibility
 //          - Note: Galera can be temperamental - good monitoring is essential
 //
+// @rfe 307-5 InnoDB Cluster / Group Replication support (handleInnoDBClusterHost)
+//          - Already in db_type ENUM; currently falls through to handleMySQLHost
+//          - Dedicated handler adds cluster-specific visibility:
+//          - performance_schema.replication_group_members — node count, role, state
+//          - performance_schema.replication_group_member_stats — lag, queued txns
+//          - Group Replication flow control: HOLD_percent, throttled writes
+//          - Single-primary vs multi-primary mode detection
+//          - Primary node identification and automatic failover status
+//          - Note: base processlist/lock/replication monitoring reuses MySQL handler
+//            logic; cluster layer is additive, not a replacement
+//
 // @rfe 308 CockroachDB support
 //          - crdb_internal schema for cluster status
 //          - SHOW QUERIES for active statements
