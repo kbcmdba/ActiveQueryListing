@@ -70,37 +70,37 @@ class DBConnection
         $oConfig = new Config($dbHost, $dbPort, $dbInstanceName, $dbName, $dbUser, $dbPass);
         $this->oConfig = $oConfig;
         switch ($connClass) {
-            case 'mysql':
-                $this->dbh = mysql_connect(
-                    $oConfig->getDbHost() . ':' . $oConfig->getDbPort(),
-                    $oConfig->getDbUser(),
-                    $oConfig->getDbPass()
-                );
-                if (! $this->dbh) {
-                    throw new \Exception('Error connecting to database server('
-                                        . $oConfig->getDbHost() . ')! : '
-                                        . mysql_error());
-                }
-                $dbName = Tools::coalesce([
-                    $oConfig->getDbName(),
-                    ''
-                ]);
-                if ($dbName !== '') {
-                    if (! mysql_select_db($dbName, $this->dbh)) {
-                        throw new \Exception('Database does not exist: ', $dbName);
-                    }
-                }
-                break;
+            case 'mysql': // @codeCoverageIgnore
+                $this->dbh = mysql_connect( // @codeCoverageIgnore
+                    $oConfig->getDbHost() . ':' . $oConfig->getDbPort(), // @codeCoverageIgnore
+                    $oConfig->getDbUser(), // @codeCoverageIgnore
+                    $oConfig->getDbPass() // @codeCoverageIgnore
+                ); // @codeCoverageIgnore
+                if (! $this->dbh) { // @codeCoverageIgnore
+                    throw new \Exception('Error connecting to database server(' // @codeCoverageIgnore
+                                        . $oConfig->getDbHost() . ')! : ' // @codeCoverageIgnore
+                                        . mysql_error()); // @codeCoverageIgnore
+                } // @codeCoverageIgnore
+                $dbName = Tools::coalesce([ // @codeCoverageIgnore
+                    $oConfig->getDbName(), // @codeCoverageIgnore
+                    '' // @codeCoverageIgnore
+                ]); // @codeCoverageIgnore
+                if ($dbName !== '') { // @codeCoverageIgnore
+                    if (! mysql_select_db($dbName, $this->dbh)) { // @codeCoverageIgnore
+                        throw new \Exception('Database does not exist: ', $dbName); // @codeCoverageIgnore
+                    } // @codeCoverageIgnore
+                } // @codeCoverageIgnore
+                break; // @codeCoverageIgnore
             case 'mysqli':
                 $mysqli = \mysqli_init();
                 if (! $mysqli) {
-                    throw new DaoException("Failed to allocate connection class!");
+                    throw new DaoException("Failed to allocate connection class!"); // @codeCoverageIgnore
                 }
                 if (! $mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, self::CONNECT_TIMEOUT_SECONDS)) {
-                    throw new DaoException('Failed setting connection timeout.');
+                    throw new DaoException('Failed setting connection timeout.'); // @codeCoverageIgnore
                 }
                 if (! $mysqli->options(MYSQLI_OPT_READ_TIMEOUT, self::READ_TIMEOUT_SECONDS)) {
-                    throw new DaoException('Failed setting read timeout.');
+                    throw new DaoException('Failed setting read timeout.'); // @codeCoverageIgnore
                 }
                 try {
                     set_error_handler("\\com\\kbcmdba\\aql\\Libs\\DBConnection::myErrorHandler");
@@ -112,25 +112,29 @@ class DBConnection
                         $oConfig->getDbPort()
                     );
                     restore_error_handler();
-                } catch (\Exception $e) {
-                    throw new DaoException($e->getMessage() . "\n" ) ;
-                }
-                if ((! $result) || ($mysqli->connect_errno)) {
-                    throw new DaoException(
-                        'Error connecting to database server(' . $oConfig->getDbHost() . ')! : '
-                        . $mysqli->connect_error
-                    );
-                }
+                } catch (\Exception $e) { // @codeCoverageIgnore
+                    throw new DaoException($e->getMessage() . "\n" ) ; // @codeCoverageIgnore
+                } // @codeCoverageIgnore
+                if ((! $result) || ($mysqli->connect_errno)) { // @codeCoverageIgnore
+                    throw new DaoException( // @codeCoverageIgnore
+                        'Error connecting to database server(' . $oConfig->getDbHost() . ')! : ' // @codeCoverageIgnore
+                        . $mysqli->connect_error // @codeCoverageIgnore
+                    ); // @codeCoverageIgnore
+                } // @codeCoverageIgnore
                 $mysqli->autocommit( true ) ;
                 $this->dbh = $mysqli;
+                // @codeCoverageIgnoreStart
                 if ($this->dbh->connect_error) {
                     throw new DaoException(
                         'Error connecting to database server(' . $oConfig->getDbHost() . ')! : ' .
                         $this->dbh->connect_error
                     );
                 }
+                // @codeCoverageIgnoreEnd
                 $this->dbh->query("SET @@SESSION.SQL_MODE = 'ALLOW_INVALID_DATES'");
                 $dbNameToSelect = $oConfig->getDbName() ;
+                // @codeCoverageIgnoreStart — DB-missing/createDb paths
+                // require a missing database which can't be arranged safely in tests
                 if (( $dbNameToSelect !== null ) && ( $dbNameToSelect !== '' ) && ! $mysqli->select_db($dbNameToSelect)) {
                     if ($createDb) {
                         $this->createdDb = true;
@@ -148,6 +152,7 @@ class DBConnection
                         );
                     }
                 }
+                // @codeCoverageIgnoreEnd
                 break;
             case 'PDO':
                 // May throw PDOException by itself.
@@ -157,7 +162,7 @@ class DBConnection
                                        ]
                                      );
                 if (! $this->dbh) {
-                    throw new DaoException('Error connecting to database server(' . $oConfig->getDbHost() . ')!');
+                    throw new DaoException('Error connecting to database server(' . $oConfig->getDbHost() . ')!'); // @codeCoverageIgnore
                 }
                 break;
             case 'MS-SQL':

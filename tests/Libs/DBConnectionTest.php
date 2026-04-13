@@ -106,4 +106,30 @@ class DBConnectionTest extends TestCase
         // and Config::__toString now returns a masked summary
         $this->assertStringContainsString( 'security', $str ) ;
     }
+
+    public function testToStringWithoutConnection() : void
+    {
+        // Create an instance via reflection without calling the constructor
+        // so dbh is null
+        $ref = new \ReflectionClass( DBConnection::class ) ;
+        $dbc = $ref->newInstanceWithoutConstructor() ;
+        $str = (string) $dbc ;
+        $this->assertSame( 'Not connected.', $str ) ;
+    }
+
+    public function testGetConnectionThrowsWhenNotConnected() : void
+    {
+        $ref = new \ReflectionClass( DBConnection::class ) ;
+        $dbc = $ref->newInstanceWithoutConstructor() ;
+        $this->expectException( \Exception::class ) ;
+        $this->expectExceptionMessageMatches( '/Invalid connection/' ) ;
+        $dbc->getConnection() ;
+    }
+
+    public function testGetCreatedDbNullByDefault() : void
+    {
+        $ref = new \ReflectionClass( DBConnection::class ) ;
+        $dbc = $ref->newInstanceWithoutConstructor() ;
+        $this->assertNull( $dbc->getCreatedDb() ) ;
+    }
 }
