@@ -647,35 +647,73 @@ class Config
      */
     public function __construct( $dbHost = null, $dbPort = null, $dbInstanceName = null, $dbName = null, $dbUser = null, $dbPass = null )
     {
-        $configFile = __DIR__ . '/../aql_config.xml' ;
-        if ( ! is_readable( $configFile ) ) {
-            throw new ConfigurationException( "Unable to load configuration from $configFile!" ) ; // @codeCoverageIgnore
+        $phpConfigFile = __DIR__ . '/../aql_config.php' ;
+        $xmlConfigFile = __DIR__ . '/../aql_config.xml' ;
+
+        if ( is_readable( $phpConfigFile ) ) {
+            $cfgValues = self::loadPhpConfig( $phpConfigFile ) ;
+        } elseif ( is_readable( $xmlConfigFile ) ) {
+            $cfgValues = self::loadXmlConfig( $xmlConfigFile ) ;
+        } else {
+            throw new ConfigurationException( // @codeCoverageIgnore
+                "Unable to load configuration! Looked for:\n  $phpConfigFile\n  $xmlConfigFile" // @codeCoverageIgnore
+            ) ; // @codeCoverageIgnore
         }
-        $xml = simplexml_load_file( $configFile ) ;
+        $this->assignProperties( $cfgValues, $dbHost, $dbPort, $dbInstanceName, $dbName, $dbUser, $dbPass ) ;
+    }
+
+    /**
+     * Load config from a PHP file that returns an array.
+     *
+     * @param string $filePath Absolute path to aql_config.php
+     * @return array Flat key=>value config array
+     * @throws ConfigurationException On invalid file format
+     */
+    private static function loadPhpConfig( string $filePath ) : array // @codeCoverageIgnore
+    {
+        $cfgValues = require $filePath ; // @codeCoverageIgnore
+        if ( ! is_array( $cfgValues ) ) { // @codeCoverageIgnore
+            throw new ConfigurationException( "$filePath must return an array" ) ; // @codeCoverageIgnore
+        } // @codeCoverageIgnore
+        return array_merge( self::getDefaults(), $cfgValues ) ; // @codeCoverageIgnore
+    }
+
+    /**
+     * Load config from a legacy XML file (v1 flat or v2 grouped format).
+     *
+     * @param string $filePath Absolute path to aql_config.xml
+     * @return array Flat key=>value config array
+     * @throws \Exception On parsing errors or missing required params
+     */
+    private static function loadXmlConfig( string $filePath ) : array
+    {
+        $xml = simplexml_load_file( $filePath ) ;
         if ( ! $xml ) {
-            throw new ConfigurationException( "Invalid syntax in $configFile!" ) ; // @codeCoverageIgnore
+            throw new ConfigurationException( "Invalid syntax in $filePath!" ) ; // @codeCoverageIgnore
         }
         $errors = "" ;
         $cfgValues = self::getDefaults() ;
         $paramList = self::getParamList() ;
 
+        $instance = ( new \ReflectionClass( self::class ) )->newInstanceWithoutConstructor() ;
+
         $isGrouped = self::isGroupedFormat( $xml ) ;
         if ( $isGrouped ) {
-            $this->parseGroupedConfig( $xml, $cfgValues, $paramList, $errors ) ;
+            $instance->parseGroupedConfig( $xml, $cfgValues, $paramList, $errors ) ;
         } else {
-            $this->parseFlatConfig( $xml, $cfgValues, $paramList, $errors ) ; // @codeCoverageIgnore
+            $instance->parseFlatConfig( $xml, $cfgValues, $paramList, $errors ) ; // @codeCoverageIgnore
         }
-        $this->parseDbTypes( $xml, $cfgValues, $paramList, $errors, $isGrouped ) ;
+        $instance->parseDbTypes( $xml, $cfgValues, $paramList, $errors, $isGrouped ) ;
 
-        foreach ($paramList as $key => $x) {
+        foreach ( $paramList as $key => $x ) {
             if ( ( 1 === $x[ 'isRequired' ] ) && ( 0 === $x[ 'value' ] ) ) {
                 $errors .= "Missing parameter: " . $key . "\n" ; // @codeCoverageIgnore
             }
         }
-        if ($errors !== '') {
+        if ( $errors !== '' ) {
             throw new \Exception( "\nConfiguration problem!\n\n" . $errors . "\n" ) ; // @codeCoverageIgnore
         }
-        $this->assignProperties( $cfgValues, $dbHost, $dbPort, $dbInstanceName, $dbName, $dbUser, $dbPass ) ;
+        return $cfgValues ;
     }
 
     /**

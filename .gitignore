@@ -7,6 +7,7 @@
 .vscode/
 *~
 *.swp
+aql_config.php
 aql_config.xml
 bob.php
 build/
