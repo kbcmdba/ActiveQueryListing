@@ -1419,8 +1419,36 @@ class Config
      * @return array|null Null if using legacy format (use getConfigValue('environments') instead)
      */
     public function getEnvironmentTypes() {
-        $configFile = __DIR__ . '/../aql_config.xml' ;
-        $xml = @simplexml_load_file( $configFile ) ;
+        $baseDir = dirname( __DIR__ ) ;
+        $phpConfigFile = $baseDir . '/aql_config.php' ;
+        $xmlConfigFile = $baseDir . '/aql_config.xml' ;
+
+        // PHP config: build from flat environments/defaultEnvironment values
+        if ( file_exists( $phpConfigFile ) ) {
+            $envString = $this->getConfigValue( 'environments', '' ) ; // @codeCoverageIgnore
+            if ( $envString === '' ) { // @codeCoverageIgnore
+                return null ; // @codeCoverageIgnore
+            } // @codeCoverageIgnore
+            $defaultEnv = $this->getConfigValue( 'defaultEnvironment', '' ) ; // @codeCoverageIgnore
+            $envNames = array_map( 'trim', explode( ',', $envString ) ) ; // @codeCoverageIgnore
+            $envTypes = [] ; // @codeCoverageIgnore
+            $position = 1 ; // @codeCoverageIgnore
+            foreach ( $envNames as $name ) { // @codeCoverageIgnore
+                $envTypes[] = [ // @codeCoverageIgnore
+                    'name'       => $name, // @codeCoverageIgnore
+                    'default'    => ( $name === $defaultEnv ), // @codeCoverageIgnore
+                    'sort_order' => $position * 10, // @codeCoverageIgnore
+                ] ; // @codeCoverageIgnore
+                $position ++ ; // @codeCoverageIgnore
+            } // @codeCoverageIgnore
+            return $envTypes ; // @codeCoverageIgnore
+        }
+
+        // XML config: parse structured <environment_types> element
+        if ( ! file_exists( $xmlConfigFile ) ) {
+            return null ; // @codeCoverageIgnore
+        }
+        $xml = @simplexml_load_file( $xmlConfigFile ) ;
         if ( ! $xml || ! isset( $xml->environment_types ) ) { // @codeCoverageIgnore
             return null ; // @codeCoverageIgnore
         }
