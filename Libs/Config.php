@@ -1356,9 +1356,14 @@ class Config
         // Access the raw config values array
         static $cfgValues = null ;
         if ( $cfgValues === null ) {
-            $configFile = dirname( __DIR__ ) . '/aql_config.xml' ;
-            if ( file_exists( $configFile ) ) {
-                $xml = @simplexml_load_file( $configFile ) ;
+            $baseDir = dirname( __DIR__ ) ;
+            $phpConfigFile = $baseDir . '/aql_config.php' ;
+            $xmlConfigFile = $baseDir . '/aql_config.xml' ;
+            if ( file_exists( $phpConfigFile ) ) {
+                $loaded = require $phpConfigFile ; // @codeCoverageIgnore
+                $cfgValues = is_array( $loaded ) ? $loaded : [] ; // @codeCoverageIgnore
+            } elseif ( file_exists( $xmlConfigFile ) ) {
+                $xml = @simplexml_load_file( $xmlConfigFile ) ;
                 if ( $xml ) {
                     $cfgValues = self::buildConfigValueArray( $xml ) ;
                 }
